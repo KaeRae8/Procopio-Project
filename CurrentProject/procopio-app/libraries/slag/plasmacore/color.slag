@@ -1,0 +1,339 @@
+#=====================================================================
+# color.slag
+#
+# 3.5.0 (2011.06.18)
+#
+# --------------------------------------------------------------------
+#
+# Copyright 2008-2011 Plasmaworks LLC
+#
+#   http://plasmaworks.com/plasmacore
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); 
+# you may not use this file except in compliance with the License. 
+# You may obtain a copy of the License at 
+#
+#   http://www.apache.org/licenses/LICENSE-2.0 
+#
+# Unless required by applicable law or agreed to in writing, 
+# software distributed under the License is distributed on an 
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, 
+# either express or implied. See the License for the specific 
+# language governing permissions and limitations under the License.
+#
+#=====================================================================
+
+#=====================================================================
+# Color, RealColor, HSV
+#=====================================================================
+compound Color( Int32 argb )
+  # Defines a 32-bit color 0xAARRGGBB.
+
+singleton class ColorManager
+  # Contains Color constands and methods for operating on Color compounds.
+  PROPERTIES
+    red(0xffff0000)        : Color
+    orange(0xffff8000)     : Color
+    yellow(0xffffff00)     : Color
+    green(0xff00ff00)      : Color
+    cyan(0xff00ffff)       : Color
+    blue(0xff0000ff)       : Color
+    magenta(0xffff00ff)    : Color
+    white(0xffffffff)      : Color
+    black(0xff000000)      : Color
+    gray(0xff808080)       : Color
+    light_gray(0xffc0c0c0) : Color
+    dark_gray(0xff404040)  : Color
+
+  METHODS
+    method create_from( Int32 r, Int32 g, Int32 b, Int32 a=255 ).Color:
+      # Creates a Color compound from the given integer 
+      # components.
+      #
+      # Parameters:
+      #   r - The red component 0-255.
+      #   g - The green component 0-255.
+      #   b - The blue component 0-255.
+      #   a - The alpha component 0-255.  0 is completely 
+      #       transparent, 255 [default] is completely opaque.
+      return Color(a.left_shifted(24)|r.left_shifted(16)|g.left_shifted(8)|b)
+
+    method create_from( RealColor real_color ).Color:
+      # Creates a Color compound from the given RealColor 
+      # compound.
+      return Color( real_color.red*255, real_color.green*255, real_color.blue*255, 
+          real_color.alpha*255 )
+
+    method create_from( HSV hsv ).Color:
+      # Creates a Color compound from the given HSV compound.
+      local Real64 h = hsv.hue
+      local Real64 s = hsv.saturation
+      local Real64 v = hsv.value
+      local Real64 r, g, b
+    
+      h %= 1.0
+
+      if (s > 1) s = 1
+      elseIf (s < 0) s = 0
+      if (v > 1) v = 1
+      elseIf (v < 0) v = 0
+      
+      if (v == 0) return Color(0,0,0) # Black!
+      if (s == 0) return Color(RealColor(v,v,v))
+      
+      local Real64 h5 = h * 5
+      local Int32  i = Int32(h5)
+      local Real64 f = h5 - i
+      
+      local Real64 p = v * (1 - s)
+      local Real64 q = v * (1 - s * f)
+      local Real64 t = v * (1 - s * (1 - f))
+      
+      which (i)
+        case 0: return Color( RealColor(v, t, p) )
+        case 1: return Color( RealColor(q, v, p) )
+        case 2: return Color( RealColor(p, v, t) )
+        case 3: return Color( RealColor(p, q, v) )
+        case 4: return Color( RealColor(t, p, v) )
+        #case 5 is below...
+      endWhich
+      
+      return Color(RealColor(v, p, q))
+
+    method create_from( Color top_color, Color bottom_color ).Color:
+      # Creates a Color compound by alpha-blending the two given 
+      # Colors. The top color is assumed to have premultiplied alpha.
+      #
+      # The alpha value of the new color is 255.
+      local Int32 inv_ta = 255 - (top_color.argb.right_shifted(24) & 255)
+      local Int32 tr = top_color.argb.right_shifted(16) & 255
+      local Int32 tg = top_color.argb.right_shifted(8) & 255
+      local Int32 tb = top_color.argb & 255
+
+      local Int32 r = bottom_color.argb.right_shifted(16) & 255
+      local Int32 g = bottom_color.argb.right_shifted(8) & 255
+      local Int32 b = bottom_color.argb & 255
+
+      tr += (r * inv_ta) / 255
+      tg += (g * inv_ta) / 255
+      tb += (b * inv_ta) / 255
+
+      return Color( tr, tg, tb, 255 )
+
+    method with_alpha( Color original, Int32 new_alpha ).Color:
+      # Returns a color with the RGB components of ''original''
+      # and ''new_alpha'' as the alpha component.
+      return Color( (original.argb & 0xffffff) | new_alpha.left_shifted(24) )
+
+    method times_alpha( Color color, Int32 alpha ).Color:
+      # Returns a color where all components have been multiplied by ''alpha''.
+      local Int32 c = color.argb;
+      local Int32 a = c.right_shifted(24) & 255
+      local Int32 r = c.right_shifted(16) & 255
+      local Int32 g = c.right_shifted(8) & 255
+      local Int32 b = c & 255
+      a = (a * alpha) / 255;
+      r = (r * alpha) / 255;
+      g = (g * alpha) / 255;
+      b = (b * alpha) / 255;
+      c = a.left_shifted(24) | r.left_shifted(16) | g.left_shifted(8) | b
+      return Color(c)
+
+    method alpha_multiplied( Color color ).Color:
+      # Returns a modified color where the R,G,B values 
+      # have been multiplied by the alpha value
+      local Int32 c = color.argb;
+      local Int32 a = c.right_shifted(24) & 255
+      local Int32 r = c.right_shifted(16) & 255
+      local Int32 g = c.right_shifted(8) & 255
+      local Int32 b = c & 255
+      r = (r * a) / 255;
+      g = (g * a) / 255;
+      b = (b * a) / 255;
+      c = a.left_shifted(24) | r.left_shifted(16) | g.left_shifted(8) | b
+      return Color(c)
+
+    method alpha( Color color ).Int32:
+      return (color.argb.right_shifted(24) & 0xff)
+
+    method red( Color color ).Int32:
+      return (color.argb.right_shifted(16) & 0xff)
+
+    method green( Color color ).Int32:
+      return (color.argb.right_shifted(8) & 0xff)
+
+    method blue( Color color ).Int32:
+      return (color.argb & 0xff)
+
+    method to_String( Color color ).String:
+      return color.argb.to_String(16)
+
+    method op*( Color c, Real64 factor ).Color:
+      # Multiplies the color components of 'c' by the given scaling factor
+      # while preserving Alpha.
+      return Color(
+          Int32(c.red*factor).clamped(0,255),
+          Int32(c.green*factor).clamped(0,255),
+          Int32(c.blue*factor).clamped(0,255),
+          c.alpha
+        )
+
+    method op/( Color c, Real64 factor ).Color:
+      # Divides the color components of 'c' by the given scaling factor
+      # while preserving Alpha.
+      return c * (1.0 / factor)
+
+    method op&( Color c, Int32 mask ).Color:
+      # Performs a bitwise AND of 'c' and 'mask'.  For example to set
+      # the alpha value of a color to zero:
+      #
+      #   c = c & 0x00ffffff   
+      return Color( c.argb & mask )
+
+    method op|( Color c, Int32 mask ).Color:
+      # Performs a bitwise OR of 'c' and 'mask'.  For example to set
+      # the alpha value of a color to 255:
+      #
+      #   c = c | 0xff000000   
+      return Color( c.argb | mask )
+
+    method op!( Color c ).Color:
+      # Performs a bitwise complement of color 'c'.
+      return Color( !c.argb )
+
+endClass
+
+
+compound RealColor( Real64 red, Real64 green, Real64 blue, Real64 alpha )
+  # Defines a color using real number red, green, blue, and alpha
+  # color components, each 0..1.0.
+
+singleton class RealColorManager
+  # Contains methods for operating on RealColor compounds.
+  METHODS
+    method create_from( Real64 r, Real64 g, Real64 b ).RealColor:
+      # Creates a RealColor compound from the given real number
+      # components.  The alpha value is set to be 1.0.
+      #
+      # Parameters:
+      #   r - The red component 0.0-1.0.
+      #   g - The green component 0.0-1.0.
+      #   b - The blue component 0.0-1.0.
+      return RealColor( r, g, b, 1.0 )
+
+    method create_from( Color c ).RealColor:
+      # Creates a RealColor compound from the given Color compound.
+      return RealColor( 
+          c.blue  / 255.0,
+          c.green / 255.0,
+          c.red   / 255.0,
+          c.alpha / 255.0
+        )
+
+    method create_from( HSV hsv ).RealColor:
+      # Creates a RealColor compound from the given real number 
+      # components.
+      #
+      # Parameters:
+      #   r - The red component 0-1.0.
+      #   g - The green component 0-1.0.
+      #   b - The blue component 0-1.0.
+      #   a - The alpha component 0-1.0.  0 is completely 
+      #       transparent, 1.0 [default] is completely opaque.
+      return RealColor(Color(hsv))
+
+    method to_String( RealColor color ).String:
+      # Returns an RGBA string representation of 'color'.
+      return "($,$,$,$)" (color.red, color.green, color.blue, color.alpha)
+
+    method op*( RealColor c, Real64 factor ).RealColor:
+      # Multiplies the color components of 'c' by the given scaling factor
+      # while preserving Alpha.
+      return RealColor(
+          (c.red*factor).clamped(0,1.0),
+          (c.green*factor).clamped(0,1.0),
+          (c.blue*factor).clamped(0,1.0),
+          c.alpha
+        )
+
+    method op/( RealColor c, Real64 factor ).RealColor:
+      # Divides the color components of 'c' by the given scaling factor
+      # while preserving Alpha.
+      return c * (1.0 / factor)
+
+endClass
+
+
+compound HSV( Real64 hue, Real64 saturation, Real64 value )
+  # Defines a color using real number hue, saturation, and value
+  # color components, each 0..1.0.
+
+singleton class HSVManager
+  # Contains methods for operating on HSV compounds.
+  METHODS
+    method create_from( Color color ).HSV:
+      # Creates a HSV compound from the given Color compound.
+      return HSV( RealColor(color) )
+
+    method create_from( RealColor argb ).HSV:
+      # Creates a HSV compound from the given RealColor compound.
+      local Real64 r = argb.red.clamped(0.0,1.0)
+      local Real64 g = argb.green.clamped(0.0,1.0)
+      local Real64 b = argb.blue.clamped(0.0,1.0)
+      
+      local Real64 maxrgb = max( max(r, g), b)
+      local Real64 minrgb = min( min(r, g), b)
+      
+      local Real64 hue, saturation
+      local Real64 value = maxrgb
+      
+      if (maxrgb != 0) saturation = (maxrgb - minrgb) / minrgb  # SATURATION
+
+      if (value != 0)
+        # HUE (not valid if saturation == 0)
+        local Real64 rc = (maxrgb - r) / (maxrgb - minrgb)
+        local Real64 gc = (maxrgb - g) / (maxrgb - minrgb)
+        local Real64 bc = (maxrgb - b) / (maxrgb - minrgb)
+        
+        if (r == maxrgb)     hue = (bc - gc) / 6.0
+        elseIf (g == maxrgb) hue = (rc - bc) / 6.0 + 2.0 / 6.0
+        else                 hue = (gc - rc) / 6.0 + 4.0 / 6.0
+        
+        if (value < 0) hue += 1
+      endIf
+    
+      return HSV( hue, saturation, value )
+
+    method to_String( HSV color ).String:
+      # Returns an HSV string representation of 'color'.
+      return "($,$,$)" (color.hue, color.saturation, color.value)
+
+    method op*( HSV c, Real64 factor ).HSV:
+      # Multiplies the color components of 'c' by the given scaling factor
+      # while preserving Alpha.
+      return HSV( RealColor(c) * factor )
+
+    method op/( HSV c, Real64 factor ).HSV:
+      # Divides the color components of 'c' by the given scaling factor
+      # while preserving Alpha.
+      return c * (1.0 / factor)
+endClass
+
+
+augment RandomNumberGenerator
+  METHODS
+    method random_Color.Color:
+      # Returns a color with randomized (r,g,b) values and an
+      # alpha of 255.
+      return Color(random_RealColor)
+  
+    method random_RealColor.RealColor:
+      # Returns a color with randomized (r,g,b) values and an
+      # alpha of 1.0.
+      return RealColor(random_Real64,random_Real64,random_Real64)
+
+    method random_HSV.HSV:
+      # Returns an HSV color with randomized (h,s,v) values.
+      return HSV(random_RealColor)
+endAugment
+

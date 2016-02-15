@@ -1,0 +1,1822 @@
+# THIS FILE IS AUTOMATICALLY REFRESHED DURING BUILDS.
+#
+# - The filenames of png and jpg/jpeg files in the images/ folder are 
+#   automatically added to this manifest.
+#
+# - Your changes to image file parameters on the same line following an image 
+#   filename) are saved.
+#
+# - Any line starting with two spaces contains auto-generated data and can be 
+#   deleted for readability.  It will be regenerated during the next build.
+#
+# - You can switch categories with [category new_catogory_name] and move image
+#   files under different categories to find the right balance of grouping
+#   like images and minimizing the total number of image sheets.
+#
+# - Images in [category standalone] will not be placed on texture sheets.
+#
+# - Images in [category permanent] will be retained after a call to
+#   ImageManager.release_all() - they are permanently cached.
+#
+# - Images in [category ignore] are not processed.  You cannot load ignored 
+#   images in-game.
+#
+# - You can follow any image filename with one of the following options:
+#
+#   composite           - Breaks a large image up into manageable chunks.
+#                         Load as a CompositeImage("filename").
+#
+#   split 4x2           - Splits an image up into (e.g.) 2 rows of 4 tiles.
+#                         Load as an image list "Image[](filename)" or
+#                         as an Animation("filename").
+#
+#   font                - Separates the character images of a fixed-width
+#   font 95               font.  May be followed by a count of how many
+#                         characters are in the font (default 95 - 
+#                         Unicode 32..126).
+#
+#   varfont             - Separates the character images of a variable-width
+#                         (proportional) font.  An extra row of pixels
+#                         should be at the top of the font image with
+#                         alternating colors to indicate letter widths.
+#                         The number of characters is automatically
+#                         determined.  Load as Font("filename").
+#
+#   ignore              - Leave this image out completely.
+#
+#   priority 1          - Assign a higher or lower priority to this image.
+#                         Higher-priority images are always placed first on
+#                         sheets, allowing manual tweaking of the placement
+#                         algorithm.  Priority is 0 by default.
+
+
+[category general]
+"BG.png" composite
+  size 1024 683
+  chunk_size 254 254
+  tile 0 0 0
+  tile 0 256 0
+  tile 0 512 0
+  tile 0 768 0
+  tile 3 638 117
+  tile 0 0 256
+  tile 0 256 256
+  tile 0 512 256
+  tile 0 768 256
+  tile 3 638 373
+  tile 2 413 0
+  tile 2 669 0
+  tile 2 219 194
+  tile 2 475 194
+  tile 3 638 629
+
+"Pala Casino Spa Resort.jpeg" composite
+  size 735 250
+  chunk_size 254 254
+  tile 1 768 0
+  tile 1 750 256
+  tile 1 0 760
+
+"ProcopioLogoWhite.jpg" composite
+  size 1540 369
+  chunk_size 254 254
+  tile 0 0 512
+  tile 0 256 512
+  tile 0 512 512
+  tile 0 768 512
+  tile 0 0 768
+  tile 0 256 768
+  tile 3 201 470
+  tile 2 617 371
+  tile 2 389 525
+  tile 2 645 525
+  tile 2 389 642
+  tile 2 645 642
+  tile 2 389 759
+  tile 1 1006 256
+
+"ProcopioLogo.png" composite
+  size 1294 296
+  chunk_size 254 254
+  tile 0 512 768
+  tile 0 768 768
+  tile 1 0 0
+  tile 1 256 0
+  tile 1 512 0
+  tile 4 374 569
+  tile 4 0 0
+  tile 4 256 0
+  tile 4 512 0
+  tile 4 768 0
+  tile 4 0 44
+  tile 4 238 217
+
+"Webdings40.png" varfont 95
+  height 41
+  char 3 477 434 15
+  char 3 477 475 15
+  char 5 929 609 17
+  char 4 764 44 28
+  char 4 904 44 27
+  char 4 585 44 30
+  char 4 615 44 30
+  char 3 585 117 11
+  char 3 477 516 15
+  char 3 477 557 15
+  char 5 951 890 21
+  char 4 256 44 34
+  char 3 477 598 15
+  char 4 136 784 25
+  char 3 477 639 15
+  char 4 0 390 24
+  char 4 931 44 27
+  char 4 958 44 27
+  char 4 985 44 27
+  char 4 714 981 27
+  char 4 476 978 27
+  char 4 408 655 27
+  char 4 408 696 27
+  char 4 408 737 27
+  char 4 408 778 27
+  char 4 408 819 27
+  char 3 477 680 15
+  char 3 477 721 15
+  char 4 290 44 34
+  char 4 324 44 34
+  char 4 358 44 34
+  char 3 201 388 19
+  char 3 596 977 36
+  char 4 645 44 30
+  char 4 136 825 25
+  char 4 675 44 30
+  char 4 459 44 32
+  char 4 0 431 24
+  char 5 575 0 23
+  char 4 523 44 31
+  char 4 554 44 31
+  char 2 870 954 14
+  char 3 477 762 15
+  char 4 792 44 28
+  char 4 0 472 24
+  char 3 165 644 36
+  char 4 491 44 32
+  char 4 426 44 33
+  char 4 0 513 24
+  char 3 55 981 35
+  char 4 820 44 28
+  char 4 0 554 24
+  char 4 848 44 28
+  char 4 705 44 30
+  char 4 735 44 29
+  char 3 907 975 38
+  char 4 408 860 27
+  char 4 876 44 28
+  char 4 374 981 26
+  char 3 477 803 15
+  char 5 598 0 23
+  char 3 477 844 15
+  char 4 408 901 27
+  char 2 1002 0 22
+  char 4 408 942 27
+  char 4 136 866 25
+  char 4 408 983 27
+  char 2 1002 41 22
+  char 4 374 159 27
+  char 4 0 595 24
+  char 3 201 429 19
+  char 4 374 200 27
+  char 4 374 241 27
+  char 5 907 516 14
+  char 3 477 885 15
+  char 4 136 907 25
+  char 5 907 557 14
+  char 2 278 974 39
+  char 4 374 282 27
+  char 4 374 323 27
+  char 4 374 364 27
+  char 4 374 405 27
+  char 3 90 983 18
+  char 2 1002 82 22
+  char 5 929 650 17
+  char 4 374 446 27
+  char 4 0 636 24
+  char 4 392 44 34
+  char 4 374 487 27
+  char 4 0 677 24
+  char 4 136 948 25
+  char 3 477 926 15
+  char 5 929 691 17
+  char 3 477 967 15
+  char 4 374 528 27
+
+"tahoma43.png" varfont 95
+  height 45
+  char 5 863 276 13
+  char 5 885 398 14
+  char 5 907 46 16
+  char 4 544 979 28
+  char 5 929 0 22
+  char 3 856 972 37
+  char 4 680 978 29
+  char 3 638 955 10
+  char 5 907 91 16
+  char 5 907 136 16
+  char 5 951 0 22
+  char 4 510 490 28
+  char 5 863 321 13
+  char 3 477 209 15
+  char 5 863 366 13
+  char 5 929 474 17
+  char 5 973 0 22
+  char 5 995 0 22
+  char 5 995 45 22
+  char 5 995 90 22
+  char 5 995 135 22
+  char 5 995 180 22
+  char 5 995 225 22
+  char 5 995 270 22
+  char 5 995 315 22
+  char 5 995 360 22
+  char 3 477 254 15
+  char 3 477 299 15
+  char 4 510 535 28
+  char 4 510 580 28
+  char 4 510 625 28
+  char 3 201 163 19
+  char 3 0 117 35
+  char 4 136 604 25
+  char 5 506 0 23
+  char 4 0 255 24
+  char 4 238 261 26
+  char 5 995 405 22
+  char 5 951 575 21
+  char 4 238 306 26
+  char 4 238 351 26
+  char 3 477 344 15
+  char 5 929 519 17
+  char 4 136 649 25
+  char 5 951 620 21
+  char 4 782 977 30
+  char 4 238 396 26
+  char 4 510 670 28
+  char 5 995 450 22
+  char 4 510 715 28
+  char 4 238 441 26
+  char 5 995 495 22
+  char 4 136 694 25
+  char 4 238 486 26
+  char 4 136 739 25
+  char 3 0 162 35
+  char 4 0 300 24
+  char 4 0 345 24
+  char 5 529 0 23
+  char 5 907 181 16
+  char 5 929 564 17
+  char 5 907 226 16
+  char 4 510 760 28
+  char 5 552 0 23
+  char 5 995 540 22
+  char 5 951 665 21
+  char 5 995 585 22
+  char 3 201 208 19
+  char 5 995 630 22
+  char 5 951 710 21
+  char 5 907 271 16
+  char 5 995 675 22
+  char 5 995 720 22
+  char 3 585 397 10
+  char 3 893 972 12
+  char 5 995 765 22
+  char 3 585 442 10
+  char 4 918 978 32
+  char 5 995 810 22
+  char 5 995 855 22
+  char 5 995 900 22
+  char 5 995 945 22
+  char 5 907 316 16
+  char 3 201 253 19
+  char 3 477 389 15
+  char 5 973 45 22
+  char 5 951 755 21
+  char 4 612 637 29
+  char 5 951 800 21
+  char 5 951 845 21
+  char 5 929 245 18
+  char 3 201 298 19
+  char 5 907 361 16
+  char 3 201 343 19
+  char 4 510 805 28
+
+"Webdings76.png" varfont 95
+  height 78
+  char 4 374 825 26
+  char 4 374 903 26
+  char 4 748 894 30
+  char 3 958 497 50
+  char 3 958 575 50
+  char 2 336 740 53
+  char 2 219 935 55
+  char 3 311 192 19
+  char 4 476 510 27
+  char 4 476 588 27
+  char 3 438 188 39
+  char 2 514 876 62
+  char 4 340 159 26
+  char 3 804 807 46
+  char 4 340 237 26
+  char 3 648 117 43
+  char 3 958 653 50
+  char 3 958 731 50
+  char 3 958 809 50
+  char 3 958 887 50
+  char 3 907 117 50
+  char 3 907 195 50
+  char 3 907 273 50
+  char 3 907 351 50
+  char 3 907 429 50
+  char 3 907 507 50
+  char 4 340 315 26
+  char 4 340 393 26
+  char 2 576 876 62
+  char 2 638 876 62
+  char 2 700 876 62
+  char 3 0 324 34
+  char 2 781 759 67
+  char 2 0 936 54
+  char 3 804 885 46
+  char 2 112 936 55
+  char 2 219 623 59
+  char 3 648 195 43
+  char 3 648 273 43
+  char 2 219 857 57
+  char 2 219 701 58
+  char 4 102 397 24
+  char 4 340 471 26
+  char 3 804 0 52
+  char 3 648 351 43
+  char 2 848 759 67
+  char 2 219 779 58
+  char 2 823 876 61
+  char 2 980 759 44
+  char 2 389 876 63
+  char 2 168 936 51
+  char 3 648 429 43
+  char 3 907 585 50
+  char 2 56 936 55
+  char 2 336 818 53
+  char 2 713 759 68
+  char 3 907 663 50
+  char 3 856 426 49
+  char 3 804 273 48
+  char 4 476 666 27
+  char 3 648 933 42
+  char 4 476 744 27
+  char 3 907 741 50
+  char 3 492 593 40
+  char 3 856 504 49
+  char 3 752 836 44
+  char 3 907 819 50
+  char 3 596 671 41
+  char 3 907 897 50
+  char 3 752 914 44
+  char 4 952 321 33
+  char 3 856 582 49
+  char 3 856 660 49
+  char 4 102 475 24
+  char 4 102 553 24
+  char 3 752 117 46
+  char 4 102 631 24
+  char 2 948 371 73
+  char 3 856 738 49
+  char 3 856 816 49
+  char 3 856 117 50
+  char 3 856 195 50
+  char 4 952 399 33
+  char 3 596 749 41
+  char 4 714 159 30
+  char 3 856 894 49
+  char 3 596 351 42
+  char 2 884 876 61
+  char 3 804 78 49
+  char 3 596 429 42
+  char 3 752 195 46
+  char 4 476 822 27
+  char 4 714 237 30
+  char 4 476 900 27
+  char 3 856 273 50
+
+"tahoma69.png" varfont 95
+  height 71
+  char 2 1004 952 20
+  char 5 973 534 21
+  char 4 204 903 25
+  char 3 700 266 44
+  char 4 272 88 34
+  char 1 953 877 59
+  char 3 700 337 44
+  char 5 907 902 14
+  char 4 34 237 24
+  char 4 34 308 24
+  char 4 306 88 34
+  char 3 700 408 44
+  char 3 145 712 20
+  char 5 46 0 23
+  char 3 145 783 20
+  char 4 170 162 25
+  char 4 340 88 34
+  char 4 374 88 34
+  char 4 408 88 34
+  char 4 442 88 34
+  char 4 476 88 34
+  char 4 510 88 34
+  char 4 544 88 34
+  char 4 578 88 34
+  char 4 612 88 34
+  char 4 646 88 34
+  char 5 69 0 23
+  char 5 92 0 23
+  char 3 700 479 44
+  char 3 700 550 44
+  char 3 700 621 44
+  char 4 612 381 29
+  char 1 875 877 55
+  char 3 492 899 39
+  char 3 165 340 36
+  char 3 330 567 37
+  char 3 544 191 41
+  char 3 110 564 35
+  char 4 918 907 33
+  char 3 544 262 41
+  char 3 544 333 41
+  char 4 34 379 24
+  char 4 306 381 26
+  char 3 384 481 38
+  char 4 850 682 32
+  char 3 804 619 47
+  char 3 544 404 41
+  char 3 700 951 43
+  char 4 680 88 34
+  char 3 648 583 43
+  char 3 492 343 40
+  char 4 714 88 34
+  char 3 330 638 37
+  char 3 492 414 40
+  char 3 384 552 38
+  char 3 438 0 54
+  char 3 330 709 37
+  char 3 330 780 37
+  char 4 748 88 34
+  char 4 34 450 24
+  char 4 306 452 26
+  char 4 34 521 24
+  char 3 700 692 44
+  char 3 165 411 36
+  char 4 782 88 34
+  char 4 850 753 32
+  char 4 816 88 34
+  char 4 612 452 29
+  char 4 850 88 34
+  char 4 884 159 33
+  char 5 115 0 23
+  char 4 884 88 34
+  char 4 918 88 34
+  char 3 1009 528 15
+  char 3 201 951 18
+  char 4 884 230 33
+  char 3 1009 599 15
+  char 3 958 192 51
+  char 4 952 88 34
+  char 4 884 301 33
+  char 4 986 88 34
+  char 4 986 159 34
+  char 5 138 0 23
+  char 4 544 908 28
+  char 5 973 90 22
+  char 4 986 230 34
+  char 4 850 824 32
+  char 3 752 574 45
+  char 4 850 895 32
+  char 4 816 159 32
+  char 4 510 159 28
+  char 4 714 839 30
+  char 4 34 592 24
+  char 4 714 910 30
+  char 3 700 763 44
+
+"Futura96Bold.png" varfont 95
+  height 117
+  char 4 612 902 28
+  char 3 0 207 34
+  char 3 596 117 42
+  char 2 112 468 55
+  char 2 112 585 55
+  char 1 953 760 71
+  char 2 915 759 65
+  char 4 102 163 24
+  char 3 165 685 35
+  char 3 165 802 35
+  char 2 112 702 55
+  char 2 112 819 55
+  char 4 646 159 29
+  char 4 102 280 24
+  char 4 578 159 28
+  char 2 452 876 62
+  char 2 56 351 55
+  char 2 56 468 55
+  char 2 56 585 55
+  char 2 56 702 55
+  char 2 56 819 55
+  char 2 0 351 55
+  char 2 0 468 55
+  char 2 0 234 56
+  char 2 0 585 55
+  char 2 0 702 55
+  char 4 578 276 28
+  char 4 816 502 31
+  char 2 0 819 55
+  char 3 0 0 55
+  char 3 55 0 55
+  char 2 971 642 53
+  char 2 901 525 71
+  char 3 110 0 55
+  char 3 165 0 55
+  char 3 804 690 46
+  char 3 220 0 55
+  char 3 700 834 43
+  char 3 544 529 41
+  char 2 278 623 58
+  char 2 56 234 56
+  char 4 646 276 29
+  char 2 987 194 37
+  char 2 112 234 56
+  char 3 438 71 39
+  char 1 875 760 78
+  char 2 278 740 58
+  char 2 278 857 58
+  char 2 972 525 52
+  char 2 945 876 59
+  char 3 275 0 55
+  char 3 596 234 42
+  char 3 544 646 41
+  char 2 112 351 56
+  char 3 330 0 54
+  char 2 925 0 77
+  char 3 384 0 54
+  char 2 336 896 52
+  char 2 336 623 53
+  char 3 384 623 37
+  char 2 762 876 61
+  char 3 384 740 37
+  char 3 492 0 52
+  char 3 544 0 52
+  char 3 596 0 52
+  char 2 168 234 51
+  char 2 168 351 51
+  char 4 884 647 32
+  char 2 168 468 51
+  char 3 958 263 50
+  char 4 884 764 32
+  char 2 168 585 51
+  char 2 168 702 51
+  char 4 476 159 27
+  char 4 476 276 27
+  char 3 648 0 52
+  char 4 476 393 27
+  char 2 873 371 75
+  char 2 168 819 51
+  char 3 856 0 51
+  char 3 907 0 51
+  char 3 958 0 51
+  char 3 330 851 36
+  char 3 544 763 41
+  char 4 884 881 32
+  char 3 700 0 52
+  char 3 804 502 47
+  char 2 901 642 70
+  char 3 958 380 50
+  char 3 804 156 48
+  char 3 752 645 45
+  char 3 438 546 38
+  char 3 752 0 52
+  char 3 438 663 38
+  char 2 645 759 68
+
+"tahoma53.png" varfont 95
+  height 55
+  char 3 422 793 16
+  char 3 367 322 17
+  char 3 145 968 20
+  char 4 986 358 34
+  char 4 306 751 26
+  char 2 638 954 45
+  char 4 986 413 34
+  char 3 585 158 11
+  char 3 311 965 19
+  char 3 256 117 19
+  char 4 306 806 26
+  char 4 986 468 34
+  char 5 907 406 15
+  char 3 35 443 18
+  char 5 907 461 15
+  char 3 90 459 20
+  char 4 306 861 26
+  char 4 306 916 26
+  char 4 272 159 26
+  char 4 272 214 26
+  char 4 272 269 26
+  char 4 272 324 26
+  char 4 272 379 26
+  char 4 272 434 26
+  char 4 272 489 26
+  char 4 272 544 26
+  char 3 35 498 18
+  char 3 35 553 18
+  char 4 986 523 34
+  char 4 986 578 34
+  char 4 986 633 34
+  char 5 299 0 23
+  char 3 596 507 42
+  char 4 680 651 30
+  char 4 510 850 28
+  char 4 612 682 29
+  char 4 816 230 32
+  char 4 408 216 27
+  char 4 272 599 26
+  char 4 748 674 31
+  char 4 816 285 32
+  char 3 35 608 18
+  char 3 90 514 20
+  char 4 680 706 30
+  char 4 136 219 25
+  char 3 330 968 36
+  char 4 748 729 31
+  char 4 884 429 33
+  char 4 408 271 27
+  char 4 884 484 33
+  char 4 748 784 31
+  char 4 408 326 27
+  char 4 612 737 29
+  char 4 748 839 31
+  char 4 680 761 30
+  char 3 596 562 42
+  char 4 612 792 29
+  char 4 612 847 29
+  char 4 408 381 27
+  char 3 256 172 19
+  char 5 973 947 21
+  char 3 256 227 19
+  char 4 986 688 34
+  char 4 510 905 28
+  char 4 272 654 26
+  char 4 136 274 25
+  char 4 272 709 26
+  char 5 322 0 23
+  char 4 272 764 26
+  char 4 136 329 25
+  char 3 35 663 18
+  char 4 272 819 26
+  char 4 408 436 27
+  char 3 532 421 12
+  char 5 885 443 14
+  char 4 136 384 25
+  char 3 532 476 12
+  char 3 438 266 39
+  char 4 408 491 27
+  char 4 272 874 26
+  char 4 272 929 26
+  char 4 238 162 26
+  char 3 35 718 18
+  char 5 819 0 22
+  char 3 35 773 18
+  char 4 408 546 27
+  char 4 136 439 25
+  char 3 110 692 35
+  char 4 136 494 25
+  char 4 136 549 25
+  char 5 841 0 22
+  char 5 345 0 23
+  char 3 256 282 19
+  char 5 368 0 23
+  char 4 986 743 34
+
+"Webdings52.png" varfont 95
+  height 54
+  char 3 35 828 18
+  char 3 35 882 18
+  char 5 951 45 21
+  char 3 165 482 36
+  char 3 110 747 35
+  char 3 492 970 38
+  char 3 384 265 38
+  char 5 885 160 14
+  char 3 256 337 19
+  char 3 256 391 19
+  char 4 408 601 27
+  char 2 514 954 43
+  char 3 35 936 18
+  char 4 816 340 32
+  char 5 951 931 18
+  char 4 680 273 30
+  char 3 110 801 35
+  char 3 110 855 35
+  char 3 110 909 35
+  char 3 110 963 35
+  char 3 55 117 35
+  char 3 55 171 35
+  char 3 55 225 35
+  char 3 55 279 35
+  char 3 55 333 35
+  char 3 55 387 35
+  char 5 929 45 18
+  char 5 929 99 18
+  char 2 389 954 43
+  char 3 958 965 43
+  char 3 804 963 43
+  char 4 34 834 24
+  char 2 823 954 47
+  char 3 384 319 38
+  char 4 816 394 32
+  char 3 384 373 38
+  char 3 544 475 41
+  char 4 680 327 30
+  char 4 680 381 30
+  char 3 544 956 40
+  char 3 492 485 40
+  char 3 367 377 17
+  char 3 256 445 19
+  char 3 165 536 36
+  char 4 680 435 30
+  char 2 700 954 47
+  char 3 492 539 40
+  char 3 596 617 42
+  char 4 748 512 31
+  char 2 576 954 44
+  char 3 55 441 35
+  char 4 680 489 30
+  char 3 55 495 35
+  char 3 384 427 38
+  char 3 165 590 36
+  char 2 884 954 48
+  char 3 55 549 35
+  char 3 55 603 35
+  char 4 884 539 33
+  char 3 256 499 19
+  char 4 680 816 29
+  char 3 256 553 19
+  char 3 55 657 35
+  char 4 510 344 28
+  char 4 986 798 34
+  char 4 748 566 31
+  char 3 55 711 35
+  char 4 680 870 29
+  char 3 55 765 35
+  char 4 748 620 31
+  char 4 34 888 24
+  char 4 986 852 34
+  char 4 986 906 34
+  char 3 367 431 17
+  char 3 367 485 17
+  char 4 884 593 33
+  char 3 367 539 17
+  char 2 925 117 51
+  char 4 986 960 34
+  char 4 952 159 34
+  char 3 55 819 35
+  char 3 55 873 35
+  char 4 34 942 24
+  char 4 680 924 29
+  char 5 951 99 21
+  char 4 952 213 34
+  char 4 680 543 30
+  char 3 648 654 43
+  char 4 952 267 34
+  char 4 680 597 30
+  char 4 816 448 32
+  char 3 256 607 19
+  char 5 951 153 21
+  char 3 256 661 19
+  char 3 55 927 35
+
+"Futura73Bold.png" varfont 95
+  height 75
+  char 1 1005 508 19
+  char 5 643 0 22
+  char 4 544 387 28
+  char 3 275 421 36
+  char 3 275 496 36
+  char 3 752 349 46
+  char 3 648 858 42
+  char 3 422 193 16
+  char 4 0 870 23
+  char 4 0 945 23
+  char 3 275 571 36
+  char 3 275 646 36
+  char 3 145 193 20
+  char 3 422 268 16
+  char 1 1005 583 19
+  char 3 596 827 41
+  char 3 275 721 36
+  char 3 275 796 36
+  char 3 275 871 36
+  char 3 275 946 36
+  char 3 220 117 36
+  char 3 220 192 36
+  char 3 220 267 36
+  char 3 330 193 37
+  char 3 220 342 36
+  char 3 220 417 36
+  char 1 1005 658 19
+  char 5 973 161 21
+  char 3 220 492 36
+  char 3 220 567 36
+  char 3 220 642 36
+  char 3 0 630 34
+  char 3 752 424 46
+  char 3 330 268 37
+  char 3 220 717 36
+  char 4 714 467 30
+  char 3 220 792 36
+  char 4 544 462 28
+  char 4 442 235 27
+  char 3 330 343 37
+  char 3 220 867 36
+  char 3 311 117 19
+  char 4 68 315 24
+  char 3 220 942 36
+  char 4 238 835 25
+  char 3 958 117 51
+  char 3 438 321 38
+  char 3 438 396 38
+  char 3 0 705 34
+  char 3 438 471 38
+  char 3 165 117 36
+  char 4 544 537 28
+  char 4 442 310 27
+  char 3 330 418 37
+  char 3 110 117 35
+  char 3 856 351 50
+  char 3 110 192 35
+  char 3 0 780 34
+  char 3 110 267 35
+  char 4 68 390 24
+  char 3 596 902 41
+  char 4 68 465 24
+  char 3 0 855 34
+  char 3 0 930 34
+  char 4 0 88 34
+  char 4 952 857 33
+  char 4 952 932 33
+  char 5 973 236 21
+  char 4 918 159 33
+  char 4 850 311 32
+  char 5 665 0 22
+  char 4 918 234 33
+  char 4 918 309 33
+  char 3 201 726 18
+  char 3 201 801 18
+  char 4 34 88 34
+  char 3 201 876 18
+  char 3 804 427 48
+  char 4 918 384 33
+  char 4 918 459 33
+  char 4 918 534 33
+  char 4 918 609 33
+  char 4 68 540 24
+  char 4 442 385 27
+  char 5 973 311 21
+  char 4 68 88 34
+  char 4 782 235 31
+  char 3 752 499 46
+  char 4 918 684 33
+  char 4 782 310 31
+  char 4 714 542 30
+  char 4 238 910 25
+  char 4 102 88 34
+  char 4 204 162 25
+  char 3 700 117 44
+
+"HanziPen44.png" varfont 95
+  height 46
+  char 5 885 857 13
+  char 5 907 973 14
+  char 3 1009 955 15
+  char 4 510 960 27
+  char 2 317 974 19
+  char 4 204 974 25
+  char 5 391 0 23
+  char 3 691 117 9
+  char 5 885 903 13
+  char 5 885 949 13
+  char 3 367 593 17
+  char 5 951 207 21
+  char 3 585 213 11
+  char 3 422 848 16
+  char 3 585 259 11
+  char 5 951 253 21
+  char 3 90 569 20
+  char 3 90 615 20
+  char 3 90 661 20
+  char 3 90 707 20
+  char 5 951 299 21
+  char 3 90 753 20
+  char 3 90 799 20
+  char 5 951 345 21
+  char 3 90 845 20
+  char 3 90 891 20
+  char 3 638 863 10
+  char 5 863 46 13
+  char 3 367 639 17
+  char 5 951 391 21
+  char 3 422 894 16
+  char 3 256 715 19
+  char 4 748 972 29
+  char 4 0 163 24
+  char 5 951 437 21
+  char 3 256 761 19
+  char 3 90 937 20
+  char 3 256 807 19
+  char 3 35 117 20
+  char 2 1002 123 22
+  char 5 414 0 23
+  char 3 585 305 11
+  char 5 951 483 21
+  char 5 863 0 22
+  char 3 367 685 17
+  char 4 510 398 28
+  char 5 885 0 22
+  char 4 0 209 24
+  char 5 929 153 18
+  char 5 437 0 23
+  char 3 256 853 19
+  char 3 422 940 16
+  char 5 460 0 23
+  char 5 951 529 21
+  char 5 483 0 23
+  char 4 510 444 28
+  char 5 907 0 22
+  char 3 35 163 20
+  char 3 256 899 19
+  char 5 863 92 13
+  char 3 35 209 20
+  char 5 863 138 13
+  char 3 367 731 17
+  char 3 256 945 19
+  char 5 863 184 13
+  char 5 929 732 16
+  char 3 367 777 17
+  char 5 885 214 14
+  char 5 929 778 16
+  char 3 367 823 17
+  char 3 201 117 19
+  char 3 477 71 15
+  char 3 367 869 17
+  char 3 585 351 11
+  char 5 929 824 16
+  char 3 367 915 17
+  char 3 638 909 10
+  char 4 306 971 26
+  char 3 367 961 17
+  char 3 477 117 15
+  char 5 929 870 16
+  char 5 929 290 17
+  char 5 929 916 16
+  char 5 885 260 14
+  char 3 477 163 15
+  char 5 929 336 17
+  char 5 929 382 17
+  char 4 170 974 25
+  char 5 929 428 17
+  char 5 929 962 16
+  char 5 929 199 18
+  char 5 885 306 14
+  char 3 945 975 12
+  char 5 885 352 14
+  char 5 863 230 13
+
+"HanziPen55.png" varfont 95
+  height 57
+  char 2 747 954 15
+  char 2 683 954 17
+  char 1 1006 449 18
+  char 4 850 966 32
+  char 5 731 0 22
+  char 4 680 159 30
+  char 4 510 230 28
+  char 3 638 806 10
+  char 3 1009 670 15
+  char 3 1009 727 15
+  char 5 973 605 21
+  char 4 170 233 25
+  char 3 532 193 12
+  char 2 557 954 19
+  char 2 932 954 13
+  char 4 170 290 25
+  char 4 170 347 25
+  char 4 170 404 25
+  char 4 170 461 25
+  char 4 170 518 25
+  char 4 170 575 25
+  char 4 170 632 25
+  char 4 170 689 25
+  char 4 170 746 25
+  char 4 170 803 25
+  char 4 170 860 25
+  char 3 532 250 12
+  char 5 885 46 14
+  char 5 973 662 21
+  char 2 976 117 26
+  char 3 311 566 19
+  char 5 753 0 22
+  char 3 110 635 35
+  char 4 612 523 29
+  char 4 170 917 25
+  char 5 161 0 23
+  char 4 34 663 24
+  char 5 184 0 23
+  char 5 207 0 23
+  char 4 442 830 27
+  char 4 442 887 27
+  char 5 885 800 13
+  char 4 306 523 26
+  char 4 306 580 26
+  char 2 432 954 20
+  char 4 884 372 33
+  char 4 306 637 26
+  char 4 612 580 29
+  char 5 973 719 21
+  char 4 510 287 28
+  char 5 230 0 23
+  char 3 311 623 19
+  char 4 442 944 27
+  char 4 136 162 25
+  char 4 408 159 27
+  char 4 986 301 34
+  char 4 306 694 26
+  char 4 34 720 24
+  char 5 253 0 23
+  char 3 1009 784 15
+  char 4 34 777 24
+  char 3 1009 841 15
+  char 5 973 776 21
+  char 5 276 0 23
+  char 3 1009 898 15
+  char 3 311 680 19
+  char 5 973 833 21
+  char 3 367 265 17
+  char 3 311 737 19
+  char 3 145 854 20
+  char 5 775 0 22
+  char 2 620 954 18
+  char 3 145 911 20
+  char 3 532 307 12
+  char 3 311 794 19
+  char 3 90 117 20
+  char 3 532 364 12
+  char 4 748 455 31
+  char 3 90 174 20
+  char 3 35 329 18
+  char 3 311 851 19
+  char 3 90 231 20
+  char 3 311 908 19
+  char 3 422 565 16
+  char 3 35 386 18
+  char 5 973 890 21
+  char 3 90 288 20
+  char 4 680 216 30
+  char 3 90 345 20
+  char 3 90 402 20
+  char 5 797 0 22
+  char 3 422 622 16
+  char 5 885 103 14
+  char 3 422 679 16
+  char 3 422 736 16
+
+"HanziPen72.png" varfont 95
+  height 74
+  char 3 311 270 19
+  char 5 973 386 21
+  char 5 687 0 22
+  char 3 544 117 41
+  char 4 646 925 29
+  char 3 438 932 38
+  char 3 165 192 36
+  char 5 885 726 13
+  char 3 145 268 20
+  char 3 145 342 20
+  char 4 442 460 27
+  char 4 850 386 32
+  char 3 422 343 16
+  char 4 68 615 24
+  char 3 422 417 16
+  char 4 782 385 31
+  char 4 782 459 31
+  char 4 782 533 31
+  char 4 782 607 31
+  char 4 782 681 31
+  char 4 850 460 32
+  char 4 782 755 31
+  char 4 782 829 31
+  char 4 782 903 31
+  char 4 748 159 31
+  char 4 748 233 31
+  char 3 1009 380 15
+  char 3 35 255 18
+  char 4 306 159 26
+  char 4 918 759 33
+  char 4 204 237 25
+  char 4 544 612 28
+  char 3 752 762 45
+  char 3 330 493 37
+  char 4 850 534 32
+  char 4 612 159 29
+  char 4 748 307 31
+  char 4 612 233 29
+  char 4 714 617 30
+  char 4 136 88 34
+  char 3 110 342 35
+  char 3 367 117 17
+  char 4 918 833 33
+  char 4 170 88 34
+  char 4 204 311 25
+  char 3 648 708 43
+  char 4 204 88 34
+  char 3 384 117 38
+  char 4 442 534 27
+  char 3 165 266 36
+  char 4 714 691 30
+  char 4 68 689 24
+  char 3 110 416 35
+  char 4 850 608 32
+  char 3 110 490 35
+  char 3 700 192 44
+  char 4 238 88 34
+  char 4 748 381 31
+  char 4 544 686 28
+  char 3 311 344 19
+  char 4 714 765 30
+  char 3 311 418 19
+  char 4 442 608 27
+  char 4 612 307 29
+  char 3 311 492 19
+  char 4 204 385 25
+  char 4 442 682 27
+  char 5 973 460 21
+  char 4 68 763 24
+  char 4 204 459 25
+  char 4 544 760 28
+  char 5 0 0 23
+  char 4 204 533 25
+  char 3 422 491 16
+  char 4 68 837 24
+  char 4 306 233 26
+  char 3 1009 454 15
+  char 3 492 269 40
+  char 4 204 607 25
+  char 5 23 0 23
+  char 4 68 911 24
+  char 4 204 681 25
+  char 4 34 163 24
+  char 3 145 416 20
+  char 5 709 0 22
+  char 4 442 756 27
+  char 4 306 307 26
+  char 3 384 191 38
+  char 4 204 755 25
+  char 4 204 829 25
+  char 4 544 834 28
+  char 3 145 490 20
+  char 3 367 191 17
+  char 3 145 564 20
+  char 3 145 638 20
+
+"Papyrus74.png" varfont 95
+  height 76
+  char 5 885 498 13
+  char 3 1009 0 15
+  char 1 1006 373 18
+  char 4 816 619 31
+  char 4 578 393 28
+  char 3 492 671 39
+  char 3 544 880 40
+  char 1 1012 877 12
+  char 4 102 709 24
+  char 1 930 877 23
+  char 2 1004 876 20
+  char 4 340 549 26
+  char 3 1009 76 15
+  char 4 102 785 24
+  char 3 1009 152 15
+  char 4 646 393 29
+  char 3 0 402 34
+  char 5 907 598 14
+  char 4 578 469 28
+  char 4 238 531 25
+  char 3 0 478 34
+  char 4 340 625 26
+  char 4 578 545 28
+  char 4 646 469 29
+  char 4 340 701 26
+  char 4 578 621 28
+  char 3 1009 228 15
+  char 3 1009 304 15
+  char 4 646 545 29
+  char 4 102 861 24
+  char 4 646 621 29
+  char 4 238 607 25
+  char 4 816 695 31
+  char 3 492 747 39
+  char 3 384 857 37
+  char 3 438 780 38
+  char 3 648 782 42
+  char 3 384 933 37
+  char 4 952 477 33
+  char 3 330 117 37
+  char 3 492 823 39
+  char 5 907 674 14
+  char 4 578 697 28
+  char 3 438 856 38
+  char 4 850 159 32
+  char 3 648 507 43
+  char 4 952 553 33
+  char 3 752 273 46
+  char 3 0 554 34
+  char 3 804 351 48
+  char 3 275 117 36
+  char 4 952 629 33
+  char 3 275 193 36
+  char 3 492 117 40
+  char 4 714 315 30
+  char 3 492 193 40
+  char 3 165 919 35
+  char 4 850 235 32
+  char 3 275 269 36
+  char 4 102 937 24
+  char 4 578 773 28
+  char 4 0 718 23
+  char 4 442 159 27
+  char 4 340 777 26
+  char 3 422 117 16
+  char 4 578 849 28
+  char 4 816 771 31
+  char 4 340 853 26
+  char 4 816 847 31
+  char 4 578 925 28
+  char 4 68 163 24
+  char 4 952 705 33
+  char 4 646 697 29
+  char 3 532 117 12
+  char 4 0 794 23
+  char 4 646 773 29
+  char 5 885 574 13
+  char 3 275 345 36
+  char 4 544 159 28
+  char 4 816 923 31
+  char 4 782 159 31
+  char 4 714 391 30
+  char 5 621 0 22
+  char 4 238 683 25
+  char 3 145 117 20
+  char 4 646 849 29
+  char 4 68 239 24
+  char 4 952 781 33
+  char 4 340 929 26
+  char 4 544 235 28
+  char 4 238 759 25
+  char 5 907 750 14
+  char 5 885 650 13
+  char 5 907 826 14
+  char 4 544 311 28
+
+"Down_Arrow.png"
+  tile 1 681 954 32 32
+
+"Up_Arrow.png"
+  tile 1 713 954 32 32
+
+"Logo.png"
+  tile 1 681 760 194 194
+
+"BackArrow.png"
+  tile 1 455 986 68 38
+
+"curvedArrow.png"
+  tile 1 229 760 226 227
+
+"Close.png"
+  tile 2 0 0 219 234
+
+"Sound.png"
+  tile 1 455 760 226 226
+
+"SCTCALogo.png" composite
+  size 480 152
+  chunk_size 254 254
+  tile 2 731 194
+  tile 2 389 371
+
+"Misc2.jpeg"
+  tile 1 0 256 375 252
+
+"Misc3.jpeg"
+  tile 2 219 371 170 252
+
+"Misc4.jpeg"
+  tile 1 375 256 375 252
+
+"Misc5.jpeg"
+  tile 1 0 508 335 252
+
+"Misc6.jpeg"
+  tile 1 335 508 335 252
+
+"Wasxayam Pomki Museum.jpeg"
+  tile 1 670 508 335 252
+
+"Logo.png"
+  tile 2 219 0 194 194
+
+[category tribalmuseums]
+"Barona Cultural Center & Museum.jpeg" composite
+  size 168 250
+  chunk_size 254 254
+  tile 0 512 0
+
+"Cupa Cultural Center.jpeg" composite
+  size 333 250
+  chunk_size 254 254
+  tile 0 0 0
+  tile 0 682 0
+
+"Southern Indian Health Council.jpeg" composite
+  size 333 250
+  chunk_size 254 254
+  tile 0 256 0
+  tile 0 763 0
+
+[category tribalbusinesses]
+"Barona Resort & Casino.jpeg" composite
+  size 168 250
+  chunk_size 254 254
+  tile 1 760 252
+
+"Barona Creek Golf Club.jpeg" composite
+  size 168 250
+  chunk_size 254 254
+  tile 1 760 504
+
+"Best Western Marina Gateway Hotel.jpeg" composite
+  size 188 250
+  chunk_size 254 254
+  tile 0 0 756
+
+"Casino Pauma.jpeg" composite
+  size 333 250
+  chunk_size 254 254
+  tile 0 0 0
+  tile 1 380 252
+
+"Golden Acorn Casino & Travel Center.jpeg" composite
+  size 333 250
+  chunk_size 254 254
+  tile 0 256 0
+  tile 1 461 252
+
+"Harrah's Resort Southern California.jpeg" composite
+  size 188 250
+  chunk_size 254 254
+  tile 0 190 756
+
+"La Jolla Campground.jpeg" composite
+  size 167 250
+  chunk_size 254 254
+  tile 1 760 756
+
+"La Jolla Zip Zoom.jpeg" composite
+  size 188 250
+  chunk_size 254 254
+  tile 0 380 756
+
+"Ma-Tar-Awa Recreational Vehicle Park.jpeg" composite
+  size 188 250
+  chunk_size 254 254
+  tile 0 570 756
+
+"Pala Casino Spa Resort.jpeg" composite
+  size 735 250
+  chunk_size 254 254
+  tile 0 512 0
+  tile 0 768 0
+  tile 0 768 504
+
+"Pala Fitness Center & Skate Park.jpeg" composite
+  size 166 250
+  chunk_size 254 254
+  tile 1 570 252
+
+"Pala Postal.jpeg" composite
+  size 333 250
+  chunk_size 254 254
+  tile 0 0 252
+  tile 1 461 504
+
+"Pala Raceway.jpeg" composite
+  size 370 250
+  chunk_size 254 254
+  tile 0 256 252
+  tile 1 570 756
+
+"Pala Transfer Station.jpeg" composite
+  size 377 250
+  chunk_size 254 254
+  tile 0 512 252
+  tile 1 570 504
+
+"Rincon Travel Plaza.jpeg" composite
+  size 188 250
+  chunk_size 254 254
+  tile 0 760 756
+
+"Sycuan Casino.jpeg" composite
+  size 333 250
+  chunk_size 254 254
+  tile 0 768 252
+  tile 1 461 756
+
+"Sycuan Golf Resort.jpeg" composite
+  size 188 250
+  chunk_size 254 254
+  tile 1 0 0
+
+"THE US GRANT.jpeg" composite
+  size 188 250
+  chunk_size 254 254
+  tile 1 190 0
+
+"UP Smoke Shop.jpeg" composite
+  size 333 250
+  chunk_size 254 254
+  tile 0 0 504
+  tile 1 380 504
+
+"Valley View Casino.jpeg" composite
+  size 188 250
+  chunk_size 254 254
+  tile 1 380 0
+
+"Viejas Casino & Resort.jpeg" composite
+  size 188 250
+  chunk_size 254 254
+  tile 1 570 0
+
+"Viejas Outlet Center.jpeg" composite
+  size 333 250
+  chunk_size 254 254
+  tile 0 256 504
+  tile 1 380 756
+
+"Woods Valley Golf Club.jpeg" composite
+  size 333 250
+  chunk_size 254 254
+  tile 0 512 504
+  tile 1 190 252
+
+"Viejas Bowl.jpeg" composite
+  size 188 250
+  chunk_size 254 254
+  tile 1 760 0
+
+[category triballands]
+"Barona Band of Mission Indians Reservation.jpeg" composite
+  size 188 250
+  chunk_size 254 254
+  tile 0 511 504
+
+"Campo Band of Kumeyaay Indians Reservation.jpeg" composite
+  size 188 250
+  chunk_size 254 254
+  tile 0 701 504
+
+"Ewiiaapaayp Band of Kumeyaay Indians Reservation.jpeg" composite
+  size 333 250
+  chunk_size 254 254
+  tile 0 0 0
+  tile 0 891 504
+
+"Iipay Nation of Santa Ysabel Reservation.jpeg" composite
+  size 333 250
+  chunk_size 254 254
+  tile 0 256 0
+  tile 0 760 756
+
+"Jamul Indian Village Reservation.jpeg" composite
+  size 313 250
+  chunk_size 254 254
+  tile 0 512 0
+  tile 1 324 0
+
+"La Jolla Band of Luiseno Indians Reservsation.jpeg" composite
+  size 333 250
+  chunk_size 254 254
+  tile 0 768 0
+  tile 0 841 756
+
+"La Posta Band of Mission Indians Reservation.jpeg" composite
+  size 188 250
+  chunk_size 254 254
+  tile 0 0 756
+
+"Los Coyotes Band of Cahuilla and Cupeno Indians Reservation.jpeg" composite
+  size 333 250
+  chunk_size 254 254
+  tile 0 0 252
+  tile 0 922 756
+
+"Manzanita Band of the Kumeyaay Nation Reservation.jpeg" composite
+  size 188 250
+  chunk_size 254 254
+  tile 0 190 756
+
+"Mesa Grande Band of Mission Indians Reservation.jpeg" composite
+  size 333 250
+  chunk_size 254 254
+  tile 0 256 252
+  tile 1 0 0
+
+"Pala Band of Mission Indians Reservation.jpeg" composite
+  size 188 250
+  chunk_size 254 254
+  tile 0 380 756
+
+"Pauma Band of Luiseno Indians Reservation.jpeg" composite
+  size 188 250
+  chunk_size 254 254
+  tile 0 570 756
+
+"Rincon Band of Luiseno Indians Reservation.jpeg" composite
+  size 253 250
+  chunk_size 254 254
+  tile 0 256 504
+
+"San Pasqual Band of Indians Reservation.jpeg" composite
+  size 333 250
+  chunk_size 254 254
+  tile 0 512 252
+  tile 1 81 0
+
+"Sycuan Band of the Kumeyaay Nation Reservation.jpeg" composite
+  size 333 250
+  chunk_size 254 254
+  tile 0 768 252
+  tile 1 162 0
+
+"Viejas Band of Kumeyaay Indians Reservation.jpeg" composite
+  size 333 250
+  chunk_size 254 254
+  tile 0 0 504
+  tile 1 243 0
+
+[category spanishmissions]
+"Mission Basilica San Diego de Alcala (Mission San Diego).jpeg" composite
+  size 188 250
+  chunk_size 254 254
+  tile 0 768 0
+
+"Mission San Antonio de Pala Asistencia (Mission Pala).jpeg" composite
+  size 377 250
+  chunk_size 254 254
+  tile 0 0 0
+  tile 0 0 252
+
+"Mission San Luis Rey de Francia.jpeg" composite
+  size 333 250
+  chunk_size 254 254
+  tile 0 256 0
+  tile 0 125 252
+
+"Santa Ysabel Asistencia.jpeg" composite
+  size 333 250
+  chunk_size 254 254
+  tile 0 512 0
+  tile 0 206 252
+
+[category publicmuseums]
+"San Diego Natural History Museum.jpeg" composite
+  size 188 250
+  chunk_size 254 254
+  tile 0 512 252
+
+"San Diego History Center.jpeg" composite
+  size 333 250
+  chunk_size 254 254
+  tile 0 0 0
+  tile 0 892 252
+
+"Warner-Carrillo Ranch House Museum (SOHO).jpeg" composite
+  size 333 250
+  chunk_size 254 254
+  tile 0 256 0
+  tile 0 380 756
+
+"Chicano Park.jpeg" composite
+  size 188 250
+  chunk_size 254 254
+  tile 0 702 252
+
+"Kumeyaay-Ipai Interpretive Center of Pauwai .jpeg" composite
+  size 333 250
+  chunk_size 254 254
+  tile 0 512 0
+  tile 0 461 756
+
+"Bonita Museum and Cultural Center.jpeg" composite
+  size 188 250
+  chunk_size 254 254
+  tile 0 0 504
+
+"Centro Cultural de la Raza.jpeg" composite
+  size 333 250
+  chunk_size 254 254
+  tile 0 768 0
+  tile 0 190 756
+
+"Heritage of the Americas Museum at Cuyamaca College.jpeg" composite
+  size 333 250
+  chunk_size 254 254
+  tile 0 0 252
+  tile 0 271 756
+
+"San Diego Archaeological Center.jpeg" composite
+  size 333 250
+  chunk_size 254 254
+  tile 0 256 252
+  tile 0 0 756
+
+"San Diego Children's Discovery Museum.jpeg" composite
+  size 188 250
+  chunk_size 254 254
+  tile 0 190 504
+
+"Women's Museum of California.jpeg" composite
+  size 188 250
+  chunk_size 254 254
+  tile 0 380 504
+
+"San Diego Museum of Art.jpeg" composite
+  size 188 250
+  chunk_size 254 254
+  tile 0 570 504
+
+"San Diego Museum of Man.jpeg" composite
+  size 188 250
+  chunk_size 254 254
+  tile 0 760 504
+
+"The Junipero Serra Museum.jpeg" composite
+  size 188 250
+  chunk_size 254 254
+  tile 0 760 756
+
+"The Water Conservation Garden.jpeg" composite
+  size 188 250
+  chunk_size 254 254
+  tile 0 570 756
+
+[category otherbusinesses]
+"Native Dreams.jpeg" composite
+  size 188 250
+  chunk_size 254 254
+  tile 0 0 252
+
+"Pala Store.jpeg" composite
+  size 390 250
+  chunk_size 254 254
+  tile 0 0 0
+  tile 0 545 252
+
+"Pala Tub.jpeg" composite
+  size 377 250
+  chunk_size 254 254
+  tile 0 256 0
+  tile 0 683 252
+
+"Rik Mazzetti & Son Garage .jpeg" composite
+  size 333 250
+  chunk_size 254 254
+  tile 0 512 0
+  tile 0 808 252
+
+"Tafoya & Son.jpeg" composite
+  size 163 250
+  chunk_size 254 254
+  tile 0 380 252
+
+"The San Diego House.jpeg" composite
+  size 188 250
+  chunk_size 254 254
+  tile 0 190 252
+
+"Weeping Buffalo Native Arts.jpeg" composite
+  size 333 250
+  chunk_size 254 254
+  tile 0 768 0
+  tile 0 889 252
+
+[category landmarks]
+"Anza-Borrego Desert State Park.jpeg" composite
+  size 168 250
+  chunk_size 254 254
+  tile 0 380 252
+
+"Cabrillo National Monument.jpeg" composite
+  size 188 250
+  chunk_size 254 254
+  tile 0 768 0
+
+"Chokla (Gregory Mountain) .jpeg" composite
+  size 333 250
+  chunk_size 254 254
+  tile 0 0 0
+  tile 0 890 252
+
+"Cuyamaca Rancho State Park.jpeg" composite
+  size 188 250
+  chunk_size 254 254
+  tile 0 0 252
+
+"Felicita County Park.jpeg" composite
+  size 168 250
+  chunk_size 254 254
+  tile 0 550 252
+
+"Kuuchamaa Mountain.jpeg" composite
+  size 168 250
+  chunk_size 254 254
+  tile 0 720 252
+
+"Piedras Pintadas Trail.jpeg" composite
+  size 333 250
+  chunk_size 254 254
+  tile 0 256 0
+  tile 0 890 504
+
+"Trails of the Kumeyaay (Mission Trails).jpeg" composite
+  size 188 250
+  chunk_size 254 254
+  tile 0 190 252
+
+"San Diego Botanic Garden.jpeg" composite
+  size 168 250
+  chunk_size 254 254
+  tile 0 720 504
+
+"Sloan Canyon (Portion of) .jpeg" composite
+  size 333 250
+  chunk_size 254 254
+  tile 0 512 0
+  tile 0 890 756
+
+"Tecolote Canyon Natural Park & Tecolote Nature Center.jpeg" composite
+  size 168 250
+  chunk_size 254 254
+  tile 0 720 756
+
+[category highered]
+"American Indian Studies at SDSU.jpeg" composite
+  size 333 250
+  chunk_size 254 254
+  tile 0 0 0
+  tile 0 816 252
+
+"CA Indian Culture and Sovereignty Center at CSUSM.jpeg" composite
+  size 375 250
+  chunk_size 254 254
+  tile 0 256 0
+  tile 0 570 252
+
+"Ethnic Studies at UCSD.jpeg" composite
+  size 188 250
+  chunk_size 254 254
+  tile 0 0 252
+
+"California Indian Culture and Sovereignty Center at CSUSM.jpeg" composite
+  size 375 250
+  chunk_size 254 254
+  tile 0 512 0
+  tile 0 693 252
+
+"Kumeyaay Community College.jpeg" composite
+  size 333 250
+  chunk_size 254 254
+  tile 0 768 0
+  tile 0 897 252
+
+"Palomar Community College.jpeg" composite
+  size 188 250
+  chunk_size 254 254
+  tile 0 190 252
+
+"Sycuan Institute on Tribal Gaming.jpeg" composite
+  size 188 250
+  chunk_size 254 254
+  tile 0 380 252
+

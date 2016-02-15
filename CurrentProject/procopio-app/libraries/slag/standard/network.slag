@@ -1,0 +1,322 @@
+#=====================================================================
+# network.slag
+#
+# Slag Standard Library
+# v3.5.0 (2011.06.18)
+#
+# TCP/IP support (no SSL as yet).
+#
+# Primary classes:
+#   ServerSocket
+#   Socket
+#
+# --------------------------------------------------------------------
+#
+# Copyright 2010 Plasmaworks LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); 
+# you may not use this file except in compliance with the License. 
+# You may obtain a copy of the License at 
+#
+#   http://www.apache.org/licenses/LICENSE-2.0 
+#
+# Unless required by applicable law or agreed to in writing, 
+# software distributed under the License is distributed on an 
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, 
+# either express or implied. See the License for the specific 
+# language governing permissions and limitations under the License.
+#
+#=====================================================================
+
+class ServerSocket : RequiresCleanup
+  # Represents a non-blocking, poll-driven server socket that binds to a given port 
+  # and accepts incoming socket connections.
+  #
+  # Example:
+  #   # Accept socket connections on port 8192.  Echo back the first characters
+  #   # received on each socket.
+  #   class EchoServer
+  #     PROPERTIES
+  #       server_socket    : ServerSocket
+  #       sockets() : Socket[]
+  #                                                                                        
+  #     METHODS
+  #       method init:
+  #         try
+  #           server_socket = ServerSocket( 8192 )
+  #           println( "Listening for connections on port $..." (server_socket.port) )
+  #           loop
+  #             if (server_socket.has_pending_connection)
+  #               sockets.add( server_socket.accept )
+  #               println( "Accepted new connection from $." (sockets.last.remote_ip) )
+  #             endIf
+  #                                                                                          
+  #             forEach (socket in sockets)
+  #               try
+  #                 if (socket.reader.has_another) 
+  #                   local var line = socket.reader.read_line
+  #                   println( //Echoing "$" back to client.// (line) )
+  #                   socket.writer.println(line)
+  #                   socket.close
+  #                   println( "finished" )
+  #                 endIf
+  #               catch (SocketError err)
+  #                 println( "Socket unexpectedly closed!" )
+  #               endTry
+  #               if (not socket.is_connected)
+  #                 println( "Closing connection to $." (socket.remote_ip) )
+  #                 socket.close
+  #                 removeCurrent socket
+  #               endIf
+  #   
+  #             endForEach
+  #                                                                                          
+  #             sleep(50)
+  #           endLoop
+  #         catch (SocketError err)
+  #           println( "Error binding to port 8192." );
+  #         endTry
+  #   endClass
+
+  PROPERTIES
+    native_data : NativeData
+      # Internal use.
+
+    pending_info : NativeData
+      # Internal use.
+
+    port : readOnly Int32
+      # The port number this server is listening to (read-only!).
+
+  METHODS
+[if not defined(WP7)]
+    method init( Int32 port ):
+      # Creates a SeverSocket that listens for connections on the specified system port.
+      # Use has_pending_connection and accept() to establish connections with clients.
+      native_data = native_init(port)
+
+    private method native_init( Int32 _port ).NativeData: native
+
+    method is_connected.Logical: native
+      # Returns true if this ServerSocket is still listening for connections.
+
+    method has_pending_connection.Logical:
+      # Returns true if this ServerSocket has a pending connection.  Use accept()
+      # to obtain a Socket object representing the connection.
+      if (pending_info is null) pending_info = get_pending_info
+      return pending_info?
+
+    private method get_pending_info.NativeData: native
+
+    method accept.Socket:
+      # Returns a Socket object representing the connection or "null" if no
+      # connection was pending.  Does not block.
+      if (not has_pending_connection) return null
+      local var id = pending_info
+      pending_info = null
+      return Socket(id,port)
+
+    method close: native
+      # Closes this ServerSocket.  No more connections may be made to it.
+
+    requisite method clean_up: 
+      # Internal use.
+      close
+
+[endIf]
+endClass
+
+
+
+class Socket : Readable<<Char>>, Writable<<Char>>, RequiresCleanup
+  # Implements a non-blocking, poll-driven socket connection.
+  #
+  # Example:
+  #   class Client
+  #     METHODS
+  #       method init:
+  #         println( "Connecting to plasmaworks.com..." )
+  #         local Socket socket( "plasmaworks.com", 80 )
+  #         socket.wait_for_connection()
+  #         println( "Connected to $.\n" (socket.remote_ip) )
+  #   
+  #         local String request = "GET / HTTP/1.0" 
+  #         println( "REQUEST:\n$\n" (request) )
+  #         socket.writer.println( request )
+  #         socket.writer.println
+  #   
+  #         println( "RESPONSE:" )
+  #         while (socket.is_connected)
+  #           if (socket.reader.has_another)
+  #             forEach (line in LineReader(socket.reader))
+  #               println( line )
+  #             endForEach
+  #           endIf
+  #         endWhile
+  #   
+  #         socket.close
+  #   endClass
+  #
+  # Example:
+  #   class EchoClient
+  #     method init:
+  #       println( "> Connecting to 127.0.0.1:8192" )
+  #       local Socket socket( "127.0.0.1", 8192 )
+  #       socket.wait_for_connection
+  #       if (socket.is_connected)
+  #         println( "> Sending message!" )
+  #         socket.writer.println( "The quick brown fox jumps over the lazy dogs." )
+  #   
+  #         println( "> Waiting for reply..." )
+  #         while (socket.is_connected)
+  #           if (socket.reader.has_another) println( socket.reader.read_line )
+  #           else sleep(50)
+  #         endWhile
+  #   
+  #         socket.close
+  #         println( "> Finished!" )
+  #       else
+  #         println( "> Could not connect." )
+  #       endIf
+  #   endClass
+
+
+  PROPERTIES
+    native_data : NativeData
+      # Internal use.
+
+    address : readOnly String
+      # The original host name or address that this socket is connected to.  Read-only.
+
+    port : readOnly Int32
+      # For Sockets that initiate a connection:
+      # - The port number this client is connect(ing) to.
+      #
+      # For Sockets that are created by a ServerSocket:
+      # - The port number the ServerSocket is listening to.
+      #
+      # Read-only.
+
+    reader : SocketReader
+      # An extended Reader<<Char>> object that may be used in the same way as 
+      # a StdInReader or FileReader object.
+
+    writer : SocketWriter
+      # An extended TextWriter object that may be used in the same way as a 
+      # StdOutWriter or FileWriter object.
+
+    remote_ip : String
+      # The IP address of the remote machine, e.g. "207.210.218.218".
+
+  METHODS
+[if not defined(WP7)]
+    method init( address, port )
+      # Creates a Socket object that attempts to connect to the given
+      # address:port combination.  'address' maybe be given as a name ("plasmaworks.com")
+      # or a number ("207.210.218.218").  'port' should be the same port that
+      # the server on the remote machine is listening to.
+      #
+      # This call is non-blocking.  Use is_connected() or wait_for_connection() to
+      # determine when the connection is complete.
+      native_data = native_init( address, port )
+      reader = create_reader
+      writer = create_writer
+
+    private method native_init( String _address, Int32 _port ).NativeData: native
+      # Internal use.
+
+    method init( native_data, port ):
+      # Internal use - used by ServerSocket.
+      reader = create_reader
+      writer = create_writer
+      address = remote_ip
+
+    method connection_pending.Logical: native
+
+    method is_connected.Logical: native
+
+    method remote_ip.String:
+      # The IP address of the remote machine, e.g. "207.210.218.218".
+      if (&remote_ip is null)
+        remote_ip = native_remote_ip
+      endIf
+      return &remote_ip
+
+    method native_remote_ip.String: native
+
+    method wait_for_connection( Int32 sleep_ms = 50 ):
+      # Sleeps until this socket is fully connected.  Throws a SocketError if 
+      # the connection could not be established.
+      #
+      # 'sleep_ms' controls how long to sleep between checks.  The default is
+      # 50 ms.
+      while (connection_pending) sleep(sleep_ms)
+      if (not is_connected) throw SocketError( "Unable to connect to $." (address) )
+
+    requisite method create_reader.SocketReader:
+      # Creates a SocketReader that can read from this socket.  In most cases
+      # you should instead use the 'reader' property that is automatically 
+      # created with this Socket.
+      return SocketReader( native_data )
+
+    requisite method create_writer.SocketWriter:
+      # Creates a SocketWriter that can write to this socket.  In most cases
+      # you should instead use the 'writer' property that is automatically 
+      # created with this Socket.
+      return SocketWriter( native_data )
+
+    method close: native
+      # Closes the connection maintained by this socket.  No further data
+      # may be written to or read from this socket.
+
+    method clean_up:
+      # Internal use.
+      close
+[endIf]
+endClass
+
+
+class SocketReader : Reader<<Char>>
+  # Subclass of Reader<<Char>> that reads one character at a time from a socket.
+
+  PROPERTIES
+    native_data : NativeData
+      # Internal use.
+
+  METHODS
+    method init( native_data ):
+      # Internal use.
+
+    method has_another.Logical:
+      # Returns true if there is at least one Char waiting to be read.
+      return (available > 0)
+
+    method peek.Char: native
+      # Returns the next Char waiting to be read.
+
+    method read.Char: native
+      # Reads and returns the next Char.
+
+    method available.Int32: native
+      # Returns the minimum number of characters waiting to be read.  The
+      # maximum number could be higher!
+endClass
+
+
+class SocketWriter : TextWriter
+  # Subclass of TextWriter that prints to a socket.  Created
+  # by a call to Socket::create_writer.
+  PROPERTIES
+    native_data : NativeData
+      # Internal use.
+
+  METHODS
+    method init( native_data ):
+      # Internal use.
+
+    method write( Char value ): native
+      # Writes 'value' in 8 bits. 
+
+endClass
+
+

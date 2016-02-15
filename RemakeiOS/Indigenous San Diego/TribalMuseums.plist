@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<array>
+	<dict>
+		<key>Category</key>
+		<string>Tribally Sponsored Museum</string>
+		<key>Site</key>
+		<string>Barona Cultural Center &amp; Museum</string>
+		<key>Latitude</key>
+		<string>32.9421047</string>
+		<key>Longitude</key>
+		<string>-116.85593940000001</string>
+		<key>General Info</key>
+		<string>As San Diego County&apos;s first museum on an Indian reservation dedicated to the perpetuation and presentation of the local Kumeyaay-Diegueno Native culture, the Barona Museum offers a unique educational journey for visitors of all ages. The museum&apos;s collection represents thousands of years history, some objects dating as far back as 10,000 years, and it demonstrates the artistry and skill of the hemisphere&apos;s first inhabitants. The Museum also features contemporary history of the Barona Band of Mission Indians, including a photographic timeline and stories told through the People&apos;s own words. Entrance is Free!</string>
+		<key>Fees</key>
+		<string>None</string>
+		<key>Hours</key>
+		<string>T-F 12-5; Sa 10- 4</string>
+		<key>Website</key>
+		<string>www.baronamuseum.org</string>
+	</dict>
+	<dict>
+		<key>Category</key>
+		<string>Tribally Sponsored Museum</string>
+		<key>Site</key>
+		<string>Cupa Cultural Center</string>
+		<key>Latitude</key>
+		<string>33.3661491</string>
+		<key>Longitude</key>
+		<string>-117.0755858</string>
+		<key>General Info</key>
+		<string>The Cupa Cultural Center was founded in 1974 through the efforts of Pala community members who were dedicated to preserving, perpetuating, and enhancing traditional cultural practices.The mission of the Cupa Cultural Center includes continuing research and documentation of Pala&apos;s past and present. Classes and activities that focus on such practices as basket making, beading and traditional arts and crafts are offered to Pala community members. The Cupa Cultural Center is also involved in projects to help preserve and teach the Cupeno language.</string>
+		<key>Fees</key>
+		<string>None</string>
+		<key>Hours</key>
+		<string>M-F 9-4:30</string>
+		<key>Website</key>
+		<string>www.palatribe.com/cupa-cultural-center</string>
+	</dict>
+	<dict>
+		<key>Category</key>
+		<string>Tribally Sponsored Museum</string>
+		<key>Site</key>
+		<string>Southern Indian Health Council</string>
+		<key>Latitude</key>
+		<string>32.835816548051746</string>
+		<key>Longitude</key>
+		<string>-116.72548856720823</string>
+		<key>General Info</key>
+		<string>Within the Southern Indian Health Council reception area sits a room dedicated to the preservation of the Kumeyaay history and culture. Among the artifacts on display are Kumeyaay baskets and pottery. This exhibit is open to the public and is located on the Ewiiaapaayp reservation.</string>
+		<key>Fees</key>
+		<string>None</string>
+		<key>Hours</key>
+		<string>M-F 8-4:30</string>
+		<key>Website</key>
+		<string>www.sihc.org</string>
+	</dict>
+	<dict>
+		<key>Category</key>
+		<string>Tribally Sponsored Museum</string>
+		<key>Site</key>
+		<string>Wasxayam Pomki Museum</string>
+		<key>Latitude</key>
+		<string>33.2738725</string>
+		<key>Longitude</key>
+		<string>-116.95757700000001</string>
+		<key>General Info</key>
+		<string>Located on the Rincon Reservation, Wasxayam Pomki Museum features a wide array of newly remodeled exhibits including Luiseno basketry, comprehensive historical timelines of the diversion of the San Luis Rey River, the legacy of Luiseno language preservation projects by tribal elders, digital exhibits addressing the history of the Indian boarding schools, and exhibits honoring Rincon&apos;s military veterans.</string>
+		<key>Fees</key>
+		<string>None</string>
+		<key>Hours</key>
+		<string>M-F 1-4</string>
+		<key>Website</key>
+		<string>http://www.rincontribe.org/#!culture-history/c1a4e</string>
+	</dict>
+</array>
+</plist>

@@ -1,0 +1,55 @@
+<project name="Plasmacore" default="default" basedir=".">
+  <condition property="gogo" value="./gogo"><os family="mac"/></condition>
+  <condition property="gogo" value=".\\gogo.bat"><os family="windows"/></condition>
+  <condition property="gogo" value="./gogo">
+    <and>
+      <os family="unix"/>
+      <not><os family="mac"/></not>
+    </and>
+  </condition>
+
+  <target name="default">
+    <exec executable="${gogo}" failonerror="true"><arg line="default"/></exec>
+  </target>
+
+  <target name="menu">
+    <exec executable="${gogo}" failonerror="true"><arg line="menu"/></exec>
+  </target>
+
+  <target name="build">
+    <exec executable="${gogo}" failonerror="true"><arg line="build"/></exec>
+  </target>
+
+  <target name="ios-vm">
+    <exec executable="${gogo}" failonerror="true"><arg line="ios-vm"/></exec>
+  </target>
+
+  <target name="ios-xcom">
+    <exec executable="${gogo}" failonerror="true"><arg line="ios-xcom"/></exec>
+  </target>
+
+  <target name="android-vm">
+    <exec executable="${gogo}" failonerror="true"><arg line="android-vm"/></exec>
+  </target>
+
+  <target name="android-xcom">
+    <exec executable="${gogo}" failonerror="true"><arg line="android-xcom"/></exec>
+  </target>
+
+  <target name="log">
+    <exec executable="${gogo}" failonerror="true"><arg line="log"/></exec>
+  </target>
+
+  <target name="pngout">
+    <exec executable="${gogo}" failonerror="true"><arg line="pngout"/></exec>
+  </target>
+
+  <target name="clean">
+    <exec executable="${gogo}" failonerror="true"><arg line="clean"/></exec>
+  </target>
+
+  <target name="upgrade">
+    <exec executable="${gogo}" failonerror="true"><arg line="upgrade"/></exec>
+  </target>
+</project>
+

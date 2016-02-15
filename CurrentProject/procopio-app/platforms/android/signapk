@@ -1,0 +1,5 @@
+cd /Users/Kenny/Procopio/procopio-app/platforms/android/bin
+jarsigner -verbose -keystore procopio_release.keystore -storepass hot5izzle Procopio-release-unsigned.apk ProcopioApp
+rm -f Procopio.apk
+zipalign -v 4 Procopio-release-unsigned.apk Procopio.apk
+cd ..

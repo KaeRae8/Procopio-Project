@@ -1,0 +1,459 @@
+### Swift dependencies file v0 ###
+provides-top-level:
+- "Alertable"
+- "CulturalSite"
+provides-nominal:
+- "P20Indigenous_San_Diego9Alertable"
+- "C20Indigenous_San_Diego12CulturalSite"
+provides-member:
+- ["P20Indigenous_San_Diego9Alertable", ""]
+- ["C20Indigenous_San_Diego12CulturalSite", ""]
+provides-dynamic-lookup:
+- "pinColor"
+- "cost"
+- "hours"
+- "alert"
+- "alert"
+- "title"
+- "coordinate"
+- "generalInfo"
+- "url"
+- "name"
+- "category"
+depends-top-level:
+- "UIAlertController"
+- "CLLocationCoordinate2D"
+- "CulturalSite"
+- "String"
+- "GeoLocation"
+- "MKPinAnnotationColor"
+- !private "StringLiteralType"
+- "NSObject"
+- "MKAnnotation"
+- !private "~="
+- "Alertable"
+- "Int"
+- "Double"
+depends-member:
+- !private ["P20Indigenous_San_Diego9Alertable", "GeoLocation"]
+- !private ["P20Indigenous_San_Diego9Alertable", "MKPinAnnotationColor"]
+- ["P20Indigenous_San_Diego9Alertable", "UIAlertController"]
+- ["P20Indigenous_San_Diego9Alertable", "alert"]
+- !private ["P20Indigenous_San_Diego9Alertable", "category"]
+- ["P20Indigenous_San_Diego9Alertable", "coordinate"]
+- !private ["P20Indigenous_San_Diego9Alertable", "cost"]
+- !private ["P20Indigenous_San_Diego9Alertable", "generalInfo"]
+- !private ["P20Indigenous_San_Diego9Alertable", "hours"]
+- !private ["P20Indigenous_San_Diego9Alertable", "init"]
+- !private ["P20Indigenous_San_Diego9Alertable", "location"]
+- !private ["P20Indigenous_San_Diego9Alertable", "name"]
+- ["P20Indigenous_San_Diego9Alertable", "subtitle"]
+- ["P20Indigenous_San_Diego9Alertable", "title"]
+- !private ["P20Indigenous_San_Diego9Alertable", "url"]
+- ["P20Indigenous_San_Diego9Alertable", ""]
+- !private ["PSs9AnyObject", "GeoLocation"]
+- !private ["PSs9AnyObject", "MKPinAnnotationColor"]
+- !private ["PSs9AnyObject", "UIAlertController"]
+- ["PSs9AnyObject", "alert"]
+- ["PSs9AnyObject", "category"]
+- ["PSs9AnyObject", "coordinate"]
+- ["PSs9AnyObject", "cost"]
+- ["PSs9AnyObject", "generalInfo"]
+- ["PSs9AnyObject", "hours"]
+- ["PSs9AnyObject", "init"]
+- ["PSs9AnyObject", "location"]
+- ["PSs9AnyObject", "name"]
+- ["PSs9AnyObject", "pinColor"]
+- ["PSs9AnyObject", "subtitle"]
+- ["PSs9AnyObject", "title"]
+- ["PSs9AnyObject", "url"]
+- ["PSs9AnyObject", ""]
+- !private ["PSs22BidirectionalIndexType", "Distance"]
+- !private ["PSs22BidirectionalIndexType", "IntegerLiteralType"]
+- !private ["PSs21BitwiseOperationsType", "Distance"]
+- !private ["PSs21BitwiseOperationsType", "IntegerLiteralType"]
+- !private ["Sb", "_getBuiltinLogicValue"]
+- !private ["Sb", "deinit"]
+- !private ["PSs25BooleanLiteralConvertible", "_getBuiltinLogicValue"]
+- !private ["PSs11BooleanType", "_getBuiltinLogicValue"]
+- !private ["PSs11CVarArgType", "Distance"]
+- !private ["PSs11CVarArgType", "GeoLocation"]
+- !private ["PSs11CVarArgType", "IntegerLiteralType"]
+- !private ["PSs11CVarArgType", "MKPinAnnotationColor"]
+- !private ["PSs11CVarArgType", "UIAlertController"]
+- ["PSs11CVarArgType", "alert"]
+- ["PSs11CVarArgType", "category"]
+- ["PSs11CVarArgType", "coordinate"]
+- ["PSs11CVarArgType", "cost"]
+- ["PSs11CVarArgType", "generalInfo"]
+- ["PSs11CVarArgType", "hours"]
+- ["PSs11CVarArgType", "init"]
+- ["PSs11CVarArgType", "location"]
+- ["PSs11CVarArgType", "name"]
+- ["PSs11CVarArgType", "pinColor"]
+- ["PSs11CVarArgType", "subtitle"]
+- ["PSs11CVarArgType", "title"]
+- ["PSs11CVarArgType", "url"]
+- ["PSs11CVarArgType", ""]
+- !private ["VSs9Character", "deinit"]
+- !private ["PSs10Comparable", "Distance"]
+- !private ["PSs10Comparable", "IntegerLiteralType"]
+- !private ["PSs10Comparable", "init"]
+- ["C20Indigenous_San_Diego12CulturalSite", "CLLocationCoordinate2D"]
+- ["C20Indigenous_San_Diego12CulturalSite", "Double"]
+- ["C20Indigenous_San_Diego12CulturalSite", "GeoLocation"]
+- ["C20Indigenous_San_Diego12CulturalSite", "Int"]
+- ["C20Indigenous_San_Diego12CulturalSite", "MKPinAnnotationColor"]
+- ["C20Indigenous_San_Diego12CulturalSite", "String"]
+- ["C20Indigenous_San_Diego12CulturalSite", "UIAlertController"]
+- ["C20Indigenous_San_Diego12CulturalSite", "alert"]
+- ["C20Indigenous_San_Diego12CulturalSite", "category"]
+- ["C20Indigenous_San_Diego12CulturalSite", "coordinate"]
+- ["C20Indigenous_San_Diego12CulturalSite", "cost"]
+- ["C20Indigenous_San_Diego12CulturalSite", "deinit"]
+- ["C20Indigenous_San_Diego12CulturalSite", "generalInfo"]
+- ["C20Indigenous_San_Diego12CulturalSite", "hours"]
+- ["C20Indigenous_San_Diego12CulturalSite", "init"]
+- ["C20Indigenous_San_Diego12CulturalSite", "location"]
+- ["C20Indigenous_San_Diego12CulturalSite", "name"]
+- ["C20Indigenous_San_Diego12CulturalSite", "pinColor"]
+- ["C20Indigenous_San_Diego12CulturalSite", "subtitle"]
+- ["C20Indigenous_San_Diego12CulturalSite", "title"]
+- ["C20Indigenous_San_Diego12CulturalSite", "url"]
+- !private ["PSs28CustomDebugStringConvertible", "init"]
+- !private ["PSs23CustomStringConvertible", "Distance"]
+- !private ["PSs23CustomStringConvertible", "GeoLocation"]
+- !private ["PSs23CustomStringConvertible", "IntegerLiteralType"]
+- !private ["PSs23CustomStringConvertible", "MKPinAnnotationColor"]
+- !private ["PSs23CustomStringConvertible", "UIAlertController"]
+- !private ["PSs23CustomStringConvertible", "_getBuiltinLogicValue"]
+- ["PSs23CustomStringConvertible", "alert"]
+- ["PSs23CustomStringConvertible", "category"]
+- ["PSs23CustomStringConvertible", "coordinate"]
+- ["PSs23CustomStringConvertible", "cost"]
+- ["PSs23CustomStringConvertible", "generalInfo"]
+- ["PSs23CustomStringConvertible", "hours"]
+- ["PSs23CustomStringConvertible", "init"]
+- ["PSs23CustomStringConvertible", "location"]
+- ["PSs23CustomStringConvertible", "name"]
+- ["PSs23CustomStringConvertible", "pinColor"]
+- ["PSs23CustomStringConvertible", "subtitle"]
+- ["PSs23CustomStringConvertible", "title"]
+- ["PSs23CustomStringConvertible", "url"]
+- ["PSs23CustomStringConvertible", ""]
+- !private ["Sd", "deinit"]
+- !private ["PSs9Equatable", "Alert"]
+- !private ["PSs9Equatable", "Distance"]
+- !private ["PSs9Equatable", "GeoLocation"]
+- !private ["PSs9Equatable", "Green"]
+- !private ["PSs9Equatable", "IntegerLiteralType"]
+- !private ["PSs9Equatable", "MKPinAnnotationColor"]
+- !private ["PSs9Equatable", "Purple"]
+- !private ["PSs9Equatable", "Red"]
+- !private ["PSs9Equatable", "UIAlertController"]
+- !private ["PSs9Equatable", "_getBuiltinLogicValue"]
+- ["PSs9Equatable", "alert"]
+- ["PSs9Equatable", "category"]
+- ["PSs9Equatable", "coordinate"]
+- ["PSs9Equatable", "cost"]
+- ["PSs9Equatable", "generalInfo"]
+- ["PSs9Equatable", "hours"]
+- ["PSs9Equatable", "init"]
+- ["PSs9Equatable", "location"]
+- ["PSs9Equatable", "name"]
+- ["PSs9Equatable", "pinColor"]
+- ["PSs9Equatable", "subtitle"]
+- ["PSs9Equatable", "title"]
+- ["PSs9Equatable", "url"]
+- ["PSs9Equatable", ""]
+- !private ["PSs41ExtendedGraphemeClusterLiteralConvertible", "init"]
+- !private ["Sf", "deinit"]
+- !private ["PSs16ForwardIndexType", "Distance"]
+- !private ["PSs16ForwardIndexType", "IntegerLiteralType"]
+- !private ["V20Indigenous_San_Diego11GeoLocation", "coordinate"]
+- !private ["V20Indigenous_San_Diego11GeoLocation", "init"]
+- !private ["PSs8Hashable", "Alert"]
+- !private ["PSs8Hashable", "Distance"]
+- !private ["PSs8Hashable", "GeoLocation"]
+- !private ["PSs8Hashable", "Green"]
+- !private ["PSs8Hashable", "IntegerLiteralType"]
+- !private ["PSs8Hashable", "MKPinAnnotationColor"]
+- !private ["PSs8Hashable", "Purple"]
+- !private ["PSs8Hashable", "Red"]
+- !private ["PSs8Hashable", "UIAlertController"]
+- !private ["PSs8Hashable", "_getBuiltinLogicValue"]
+- ["PSs8Hashable", "alert"]
+- ["PSs8Hashable", "category"]
+- ["PSs8Hashable", "coordinate"]
+- ["PSs8Hashable", "cost"]
+- ["PSs8Hashable", "generalInfo"]
+- ["PSs8Hashable", "hours"]
+- ["PSs8Hashable", "init"]
+- ["PSs8Hashable", "location"]
+- ["PSs8Hashable", "name"]
+- ["PSs8Hashable", "pinColor"]
+- ["PSs8Hashable", "subtitle"]
+- ["PSs8Hashable", "title"]
+- ["PSs8Hashable", "url"]
+- ["PSs8Hashable", ""]
+- !private ["Si", "Distance"]
+- !private ["Si", "IntegerLiteralType"]
+- !private ["Si", "deinit"]
+- !private ["VSs5Int16", "deinit"]
+- !private ["VSs5Int32", "deinit"]
+- !private ["VSs5Int64", "deinit"]
+- !private ["VSs4Int8", "deinit"]
+- !private ["PSs21IntegerArithmeticType", "Distance"]
+- !private ["PSs21IntegerArithmeticType", "IntegerLiteralType"]
+- !private ["PSs25IntegerLiteralConvertible", "Distance"]
+- !private ["PSs25IntegerLiteralConvertible", "IntegerLiteralType"]
+- !private ["PSs11IntegerType", "Distance"]
+- !private ["PSs11IntegerType", "IntegerLiteralType"]
+- !private ["PSo12MKAnnotation", "GeoLocation"]
+- !private ["PSo12MKAnnotation", "MKPinAnnotationColor"]
+- !private ["PSo12MKAnnotation", "UIAlertController"]
+- ["PSo12MKAnnotation", "alert"]
+- !private ["PSo12MKAnnotation", "category"]
+- ["PSo12MKAnnotation", "coordinate"]
+- !private ["PSo12MKAnnotation", "cost"]
+- !private ["PSo12MKAnnotation", "generalInfo"]
+- !private ["PSo12MKAnnotation", "hours"]
+- !private ["PSo12MKAnnotation", "init"]
+- !private ["PSo12MKAnnotation", "location"]
+- !private ["PSo12MKAnnotation", "name"]
+- ["PSo12MKAnnotation", "subtitle"]
+- ["PSo12MKAnnotation", "title"]
+- !private ["PSo12MKAnnotation", "url"]
+- ["PSo12MKAnnotation", ""]
+- !private ["OSC20MKPinAnnotationColor", "Green"]
+- !private ["OSC20MKPinAnnotationColor", "Purple"]
+- !private ["OSC20MKPinAnnotationColor", "Red"]
+- !private ["PSs14MirrorPathType", "Distance"]
+- !private ["PSs14MirrorPathType", "IntegerLiteralType"]
+- !private ["PSs14MirrorPathType", "init"]
+- !private ["PSo8NSCoding", "init"]
+- !private ["PSo9NSCopying", "init"]
+- !private ["PSo26NSExtensionRequestHandling", "init"]
+- !private ["PSo16NSMutableCopying", "init"]
+- !private ["CSo8NSNumber", "deinit"]
+- ["CSo8NSObject", "CLLocationCoordinate2D"]
+- ["CSo8NSObject", "Double"]
+- ["CSo8NSObject", "GeoLocation"]
+- ["CSo8NSObject", "Int"]
+- ["CSo8NSObject", "MKPinAnnotationColor"]
+- ["CSo8NSObject", "String"]
+- ["CSo8NSObject", "UIAlertController"]
+- ["CSo8NSObject", "alert"]
+- ["CSo8NSObject", "category"]
+- ["CSo8NSObject", "coordinate"]
+- ["CSo8NSObject", "cost"]
+- !private ["CSo8NSObject", "deinit"]
+- ["CSo8NSObject", "generalInfo"]
+- ["CSo8NSObject", "hours"]
+- ["CSo8NSObject", "init"]
+- ["CSo8NSObject", "location"]
+- ["CSo8NSObject", "name"]
+- ["CSo8NSObject", "pinColor"]
+- ["CSo8NSObject", "subtitle"]
+- ["CSo8NSObject", "title"]
+- ["CSo8NSObject", "url"]
+- ["CSo8NSObject", ""]
+- !private ["PSo16NSObjectProtocol", "GeoLocation"]
+- !private ["PSo16NSObjectProtocol", "MKPinAnnotationColor"]
+- !private ["PSo16NSObjectProtocol", "UIAlertController"]
+- ["PSo16NSObjectProtocol", "alert"]
+- ["PSo16NSObjectProtocol", "category"]
+- ["PSo16NSObjectProtocol", "coordinate"]
+- ["PSo16NSObjectProtocol", "cost"]
+- ["PSo16NSObjectProtocol", "generalInfo"]
+- ["PSo16NSObjectProtocol", "hours"]
+- ["PSo16NSObjectProtocol", "init"]
+- ["PSo16NSObjectProtocol", "location"]
+- ["PSo16NSObjectProtocol", "name"]
+- ["PSo16NSObjectProtocol", "pinColor"]
+- ["PSo16NSObjectProtocol", "subtitle"]
+- ["PSo16NSObjectProtocol", "title"]
+- ["PSo16NSObjectProtocol", "url"]
+- ["PSo16NSObjectProtocol", ""]
+- !private ["PSo14NSSecureCoding", "init"]
+- !private ["CSo8NSString", "init"]
+- !private ["CSo7NSValue", "deinit"]
+- !private ["Sq", "deinit"]
+- !private ["PSs16OutputStreamType", "init"]
+- !private ["PSs21RandomAccessIndexType", "Distance"]
+- !private ["PSs21RandomAccessIndexType", "IntegerLiteralType"]
+- !private ["VSs5Range", "deinit"]
+- !private ["PSs16RawRepresentable", "Alert"]
+- !private ["PSs16RawRepresentable", "Green"]
+- !private ["PSs16RawRepresentable", "Purple"]
+- !private ["PSs16RawRepresentable", "Red"]
+- !private ["PSs17SignedIntegerType", "Distance"]
+- !private ["PSs17SignedIntegerType", "IntegerLiteralType"]
+- !private ["PSs16SignedNumberType", "Distance"]
+- !private ["PSs16SignedNumberType", "IntegerLiteralType"]
+- !private ["VSs12StaticString", "deinit"]
+- !private ["PSs10Streamable", "init"]
+- !private ["PSs10Strideable", "Distance"]
+- !private ["PSs10Strideable", "IntegerLiteralType"]
+- !private ["SS", "init"]
+- !private ["PSs30StringInterpolationConvertible", "init"]
+- !private ["PSs24StringLiteralConvertible", "init"]
+- !private ["CSo17UIAlertController", "init"]
+- !private ["OSC22UIAlertControllerStyle", "Alert"]
+- !private ["PSo21UIAppearanceContainer", "init"]
+- !private ["PSo18UIContentContainer", "init"]
+- !private ["PSo18UIFocusEnvironment", "init"]
+- !private ["CSo11UIResponder", "init"]
+- !private ["PSo16UIStateRestoring", "init"]
+- !private ["PSo18UITraitEnvironment", "init"]
+- !private ["CSo16UIViewController", "init"]
+- !private ["Su", "deinit"]
+- !private ["VSs6UInt16", "deinit"]
+- !private ["VSs6UInt32", "deinit"]
+- !private ["VSs6UInt64", "deinit"]
+- !private ["VSs5UInt8", "deinit"]
+- !private ["Sc", "deinit"]
+- !private ["PSs31UnicodeScalarLiteralConvertible", "init"]
+- !private ["PSs33_BuiltinBooleanLiteralConvertible", "_getBuiltinLogicValue"]
+- !private ["PSs49_BuiltinExtendedGraphemeClusterLiteralConvertible", "init"]
+- !private ["PSs33_BuiltinIntegerLiteralConvertible", "Distance"]
+- !private ["PSs33_BuiltinIntegerLiteralConvertible", "IntegerLiteralType"]
+- !private ["PSs32_BuiltinStringLiteralConvertible", "init"]
+- !private ["PSs37_BuiltinUTF16StringLiteralConvertible", "init"]
+- !private ["PSs39_BuiltinUnicodeScalarLiteralConvertible", "init"]
+- !private ["PSs16_CocoaStringType", "init"]
+- !private ["PSs14_Incrementable", "Distance"]
+- !private ["PSs14_Incrementable", "IntegerLiteralType"]
+- !private ["PSs22_IntegerArithmeticType", "Distance"]
+- !private ["PSs22_IntegerArithmeticType", "IntegerLiteralType"]
+- !private ["PSs12_IntegerType", "Distance"]
+- !private ["PSs12_IntegerType", "IntegerLiteralType"]
+- !private ["PSs21_ObjectiveCBridgeable", "Distance"]
+- !private ["PSs21_ObjectiveCBridgeable", "IntegerLiteralType"]
+- !private ["PSs21_ObjectiveCBridgeable", "_getBuiltinLogicValue"]
+- !private ["PSs21_ObjectiveCBridgeable", "init"]
+- !private ["VSs26_OptionalNilComparisonType", "deinit"]
+- !private ["PSs22_RandomAccessAmbiguity", "Distance"]
+- !private ["PSs22_RandomAccessAmbiguity", "IntegerLiteralType"]
+- !private ["PSs12_Reflectable", "Distance"]
+- !private ["PSs12_Reflectable", "IntegerLiteralType"]
+- !private ["PSs12_Reflectable", "_getBuiltinLogicValue"]
+- !private ["PSs12_Reflectable", "init"]
+- !private ["PSs18_SignedIntegerType", "Distance"]
+- !private ["PSs18_SignedIntegerType", "IntegerLiteralType"]
+- !private ["PSs11_Strideable", "Distance"]
+- !private ["PSs11_Strideable", "IntegerLiteralType"]
+depends-nominal:
+- "P20Indigenous_San_Diego9Alertable"
+- "PSs9AnyObject"
+- !private "PSs22BidirectionalIndexType"
+- !private "PSs21BitwiseOperationsType"
+- !private "Sb"
+- !private "PSs25BooleanLiteralConvertible"
+- !private "PSs11BooleanType"
+- "PSs11CVarArgType"
+- !private "VSs9Character"
+- !private "PSs10Comparable"
+- "C20Indigenous_San_Diego12CulturalSite"
+- !private "PSs28CustomDebugStringConvertible"
+- "PSs23CustomStringConvertible"
+- !private "Sd"
+- "PSs9Equatable"
+- !private "PSs41ExtendedGraphemeClusterLiteralConvertible"
+- !private "Sf"
+- !private "PSs16ForwardIndexType"
+- !private "V20Indigenous_San_Diego11GeoLocation"
+- "PSs8Hashable"
+- !private "Si"
+- !private "VSs5Int16"
+- !private "VSs5Int32"
+- !private "VSs5Int64"
+- !private "VSs4Int8"
+- !private "PSs21IntegerArithmeticType"
+- !private "PSs25IntegerLiteralConvertible"
+- !private "PSs11IntegerType"
+- "PSo12MKAnnotation"
+- !private "OSC20MKPinAnnotationColor"
+- !private "PSs14MirrorPathType"
+- !private "PSo8NSCoding"
+- !private "PSo9NSCopying"
+- !private "PSo26NSExtensionRequestHandling"
+- !private "PSo16NSMutableCopying"
+- !private "CSo8NSNumber"
+- "CSo8NSObject"
+- "PSo16NSObjectProtocol"
+- !private "PSo14NSSecureCoding"
+- !private "CSo8NSString"
+- !private "CSo7NSValue"
+- !private "Sq"
+- !private "PSs16OutputStreamType"
+- !private "PSs21RandomAccessIndexType"
+- !private "VSs5Range"
+- !private "PSs16RawRepresentable"
+- !private "PSs17SignedIntegerType"
+- !private "PSs16SignedNumberType"
+- !private "VSs12StaticString"
+- !private "PSs10Streamable"
+- !private "PSs10Strideable"
+- !private "SS"
+- !private "PSs30StringInterpolationConvertible"
+- !private "PSs24StringLiteralConvertible"
+- !private "CSo17UIAlertController"
+- !private "OSC22UIAlertControllerStyle"
+- !private "PSo21UIAppearanceContainer"
+- !private "PSo18UIContentContainer"
+- !private "PSo18UIFocusEnvironment"
+- !private "CSo11UIResponder"
+- !private "PSo16UIStateRestoring"
+- !private "PSo18UITraitEnvironment"
+- !private "CSo16UIViewController"
+- !private "Su"
+- !private "VSs6UInt16"
+- !private "VSs6UInt32"
+- !private "VSs6UInt64"
+- !private "VSs5UInt8"
+- !private "Sc"
+- !private "PSs31UnicodeScalarLiteralConvertible"
+- !private "PSs33_BuiltinBooleanLiteralConvertible"
+- !private "PSs49_BuiltinExtendedGraphemeClusterLiteralConvertible"
+- !private "PSs33_BuiltinIntegerLiteralConvertible"
+- !private "PSs32_BuiltinStringLiteralConvertible"
+- !private "PSs37_BuiltinUTF16StringLiteralConvertible"
+- !private "PSs39_BuiltinUnicodeScalarLiteralConvertible"
+- !private "PSs16_CocoaStringType"
+- !private "PSs14_Incrementable"
+- !private "PSs22_IntegerArithmeticType"
+- !private "PSs12_IntegerType"
+- !private "PSs21_ObjectiveCBridgeable"
+- !private "VSs26_OptionalNilComparisonType"
+- !private "PSs22_RandomAccessAmbiguity"
+- !private "PSs12_Reflectable"
+- !private "PSs18_SignedIntegerType"
+- !private "PSs11_Strideable"
+depends-dynamic-lookup:
+depends-external:
+- "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/x86_64/Swift.swiftmodule"
+- "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/Indigenous San Diego-Bridging-Header.h"
+- "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/FXBlurView.h"
+- "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/x86_64/UIKit.swiftmodule"
+- "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/x86_64/Foundation.swiftmodule"
+- "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/x86_64/Darwin.swiftmodule"
+- "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/x86_64/Dispatch.swiftmodule"
+- "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/x86_64/ObjectiveC.swiftmodule"
+- "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/x86_64/CoreGraphics.swiftmodule"
+- "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/x86_64/CoreImage.swiftmodule"
+- "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/GAI.h"
+- "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/GAILogger.h"
+- "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/GAITrackedViewController.h"
+- "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/GAITracker.h"
+- "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/GAIDictionaryBuilder.h"
+- "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/GAIEcommerceProduct.h"
+- "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/GAIEcommerceProductAction.h"
+- "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/GAIEcommercePromotion.h"
+- "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/GAIFields.h"
+- "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/x86_64/CoreLocation.swiftmodule"
+- "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/x86_64/AVFoundation.swiftmodule"
+- "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/x86_64/CoreMedia.swiftmodule"
+- "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/x86_64/CoreAudio.swiftmodule"
+- "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/x86_64/CoreData.swiftmodule"
+interface-hash: "9cb060ad914a47fdd573b8688d882a61"

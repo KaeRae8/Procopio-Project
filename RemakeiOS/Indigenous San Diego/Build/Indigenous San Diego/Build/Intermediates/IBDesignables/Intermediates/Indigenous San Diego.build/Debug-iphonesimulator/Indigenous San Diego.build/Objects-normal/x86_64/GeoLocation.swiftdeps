@@ -1,0 +1,57 @@
+### Swift dependencies file v0 ###
+provides-top-level:
+- "GeoLocation"
+provides-nominal:
+- "V20Indigenous_San_Diego11GeoLocation"
+provides-member:
+- ["V20Indigenous_San_Diego11GeoLocation", ""]
+- ["V20Indigenous_San_Diego11GeoLocation", "coordinate"]
+- ["V20Indigenous_San_Diego11GeoLocation", "mapPoint"]
+provides-dynamic-lookup:
+depends-top-level:
+- "MKMapPoint"
+- "Double"
+- "GeoLocation"
+- !private "MKMapPointForCoordinate"
+- "CLLocationCoordinate2D"
+- !private "CLLocationCoordinate2DMake"
+depends-member:
+- ["V20Indigenous_San_Diego11GeoLocation", "CLLocationCoordinate2D"]
+- !private ["V20Indigenous_San_Diego11GeoLocation", "CLLocationCoordinate2DMake"]
+- ["V20Indigenous_San_Diego11GeoLocation", "Double"]
+- ["V20Indigenous_San_Diego11GeoLocation", "MKMapPoint"]
+- !private ["V20Indigenous_San_Diego11GeoLocation", "MKMapPointForCoordinate"]
+- ["V20Indigenous_San_Diego11GeoLocation", "coordinate"]
+- ["V20Indigenous_San_Diego11GeoLocation", "init"]
+- ["V20Indigenous_San_Diego11GeoLocation", "latitude"]
+- ["V20Indigenous_San_Diego11GeoLocation", "longitude"]
+- ["V20Indigenous_San_Diego11GeoLocation", "mapPoint"]
+depends-nominal:
+- "V20Indigenous_San_Diego11GeoLocation"
+depends-dynamic-lookup:
+depends-external:
+- "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/x86_64/Swift.swiftmodule"
+- "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/Indigenous San Diego-Bridging-Header.h"
+- "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/FXBlurView.h"
+- "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/x86_64/UIKit.swiftmodule"
+- "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/x86_64/Foundation.swiftmodule"
+- "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/x86_64/Darwin.swiftmodule"
+- "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/x86_64/Dispatch.swiftmodule"
+- "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/x86_64/ObjectiveC.swiftmodule"
+- "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/x86_64/CoreGraphics.swiftmodule"
+- "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/x86_64/CoreImage.swiftmodule"
+- "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/GAI.h"
+- "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/GAILogger.h"
+- "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/GAITrackedViewController.h"
+- "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/GAITracker.h"
+- "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/GAIDictionaryBuilder.h"
+- "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/GAIEcommerceProduct.h"
+- "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/GAIEcommerceProductAction.h"
+- "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/GAIEcommercePromotion.h"
+- "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/GAIFields.h"
+- "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/x86_64/CoreLocation.swiftmodule"
+- "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/x86_64/AVFoundation.swiftmodule"
+- "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/x86_64/CoreMedia.swiftmodule"
+- "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/x86_64/CoreAudio.swiftmodule"
+- "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/x86_64/CoreData.swiftmodule"
+interface-hash: "e6d669b5208a20f1a5354c1759c9868b"

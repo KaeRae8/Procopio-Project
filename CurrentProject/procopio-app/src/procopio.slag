@@ -1,0 +1,3673 @@
+[include "native_methods.slag"]
+[include "web.slag"]
+
+#OLD BLUE COLOR: Color(76,194,210,255)
+#NEW BLUE COLOR: Color(34,255,159,255)
+#NEW RED COLOR: Color(255,13,1,255)
+
+singleton class SplashScreen : Screen
+  PROPERTIES
+    background : CompositeImage
+    logo       : CompositeImage
+    t,dt       : Real64
+    frame      : Int32
+    rotate     : Int32
+    fadeText   : Logical
+    animateOut : Logical
+    transition : Logical
+    animateIn  : Logical
+    fullyGrown : Logical
+    showingSpinner : Logical
+    logoIndex  : Int32
+    logoSpace  : Real64
+    font       : Font
+    font2      : Font
+    fontColor  : Color
+
+  METHODS
+    method init
+      background = CompositeImage("BG.png")
+      Display.background_color = Color.black
+      local var modY = 1.0
+      local var modX = 1.0
+      [if defined(ANDROID)]
+        if(Display.true_size.y > background.size.y) modY = background.size.y/Display.true_size.y
+        if(Display.true_size.x > background.size.x) modX = background.size.x/Display.true_size.x
+        local var minMod = Math.min(modX,modY)
+        local Vector2 screenSize = Display.true_size * minMod
+        Display.scale_to_fit(screenSize)
+      [else]
+        if(Display.true_size.y == 2048)
+          Display.scale_to_fit(Vector2(768,1024))
+        else
+          Display.scale_to_fit(Display.true_size)
+        endIf
+      [endIf]
+      t = 0.0
+      dt = 1.0/90.0 
+      modY = 1.0
+      modX = 1.0
+      if(background.size.y < Display.size.y) modY = Display.size.y/background.size.y
+      if(background.size.x < Display.size.x) modX = Display.size.x/background.size.x
+
+      local var mod = Math.max(modX,modY)
+      background.scale = (background.size * mod)/background.size
+      background.handle = Handle.center
+      background.position = Display.center
+
+      font = Font(AppData.getPapyrusString())
+      font.scale = AppData.findFontScale(font,1.0,0.090,Display.size.y)
+      font.handle = Handle.center
+      font2 = Font(AppData.getPapyrusString())
+      font2.scale = AppData.findFontScale(font2,0.75,0.034,Display.size.y)
+      font2.handle = Handle.center
+
+      fontColor = Color(0,0,0,0)
+      animateIn = true
+
+      loadLogo()
+
+      AppData.music.play
+
+    method loadLogo
+      if(logoIndex == 0)
+        logo = CompositeImage("SCTCALogo.png")
+      elseIf(logoIndex == 1)
+        logo = CompositeImage("ProcopioLogoWhite.jpg")
+      endIf
+      local var desiredWidth = Display.size.x*0.7
+      local var mod = logo.size.x/desiredWidth
+      logo.scale /= mod
+      logo.handle = Handle.center
+      logo.position = Display.center
+      if(logoIndex == 0) logoSpace = logo.size.y/2
+
+    method update
+      if(animateIn)
+        if(t < 1.0)
+          t += dt
+          t = Math.min(1,t) 
+          local var newFade = 0.0 + Easing.easeOut(t) * (255.0 - 0.0)
+          if(logo?) logo.alpha(newFade)
+          fontColor = Color(255,255,255,newFade)
+        else
+          animateIn = false
+          animateOut = true
+          t = 0.0
+          frame = 0 
+        endIf
+      endIf
+      if(animateOut and frame >= 120)
+        if(t < 1.0)
+          t += dt
+          t = Math.min(1,t)
+          local var newFade = 255.0 + Easing.easeIn(t) * (0.0 - 255.0)
+          if(logo?) logo.alpha(newFade)
+          fontColor = Color(255,255,255,newFade)
+          if(logoIndex == 3 and t >= 0.90 and !showingSpinner) 
+            showingSpinner = true
+            #ObjC.showSpinner()
+          endIf
+        else
+          animateOut = false
+          transition = true
+          t = 0.0
+          frame = 0 
+        endIf
+      endIf
+      if(transition)
+        if(logoIndex == 2) 
+          loadData()
+          #AppData.music.play
+          #ObjC.removeSpinner()
+          #[if defined(ANDROID)]
+          #push(AndroidDownloaderScreen,fade_between)
+          #[else]
+            push(HomeScreen,fade_between)
+            #[endIf]
+        elseIf(frame == 60)
+          fontColor = Color(255,255,255,0)
+          animateIn = true
+          transition = false
+          t = 0.0
+          dt = 1.0/90.0
+          logoIndex++
+          loadLogo()
+          if(logo?) logo.alpha(0)
+        endIf
+      endIf
+      frame++
+      font.color = fontColor
+      font2.color = fontColor
+
+    method loadData()
+      try
+        local DataFile file = DataFile("FinalData.csv")
+        local Scanner file_scanner = Scanner(file)
+        while(file_scanner.has_another)
+          local String[] entries = file_scanner.scan_line.split(",")
+          local PropertyTable table = PropertyTable()
+          local String category = entries[0]
+          table.name = entries[1]
+          local String[] location = entries[2].split(" ")
+          table.lat = location[0]
+          table.lon = location[1]
+          table.desc = entries[3].replace("^",",")
+          table.cost = entries[4].replace("^",",")
+          table.hours = entries[5].replace("^",",")
+          table.url = entries[6].replace("^",",")
+          #ObjC.addSiteForCategory("Museums",table.name.as_String,table.lat.as_Real64,table.lon.as_Real64,table.url.as_String)
+
+          local var fileName = table.name.as_String + ".jpeg"
+          local var noPhoto = false
+          which(fileName)
+            case "Capitan Grande Reservation.jpeg":
+              noPhoto = true
+            case "Inaja Band of Diegueno Mission Indians Reservation.jpeg":
+              noPhoto = true
+            case "Mosler Property.jpeg":
+              noPhoto = true
+          endWhich
+          local var rand = RandomNumberGenerator()
+          local var num = 0
+          if(noPhoto)
+            num = rand.random_Int32(3,5)
+            if(num == 3) num++
+            fileName = "Misc" + num + ".jpeg"
+          endIf
+          local var img = fileName#CompositeImage(fileName)
+          which(category)
+            case "Higher Education":
+              ObjC.addSiteForCategory("Education",table.name.as_String,table.lat.as_Real64,table.lon.as_Real64,table.url.as_String)
+              AppData.higherEd.add(table)
+              AppData.higherImg.add(img)
+            case "Cultural Trails and Landmarks":
+              ObjC.addSiteForCategory("Preserves",table.name.as_String,table.lat.as_Real64,table.lon.as_Real64,table.url.as_String)
+              AppData.preserves.add(table)
+              AppData.preImg.add(img)
+            case "Public Museums":
+              ObjC.addSiteForCategory("Museums",table.name.as_String,table.lat.as_Real64,table.lon.as_Real64,table.url.as_String)
+              AppData.museums.add(table)
+              AppData.musImg.add(img)
+            case "Spanish Missions":
+              ObjC.addSiteForCategory("Missions",table.name.as_String,table.lat.as_Real64,table.lon.as_Real64,table.url.as_String)
+              AppData.missions.add(table)
+              AppData.missImg.add(img)
+            case "Tribal Lands":
+              ObjC.addSiteForCategory("Lands",table.name.as_String,table.lat.as_Real64,table.lon.as_Real64,table.url.as_String)
+              AppData.tLands.add(table)
+              AppData.tLandImg.add(img)
+            case "Tribal Owned Businesses":
+              ObjC.addSiteForCategory("Businesses",table.name.as_String,table.lat.as_Real64,table.lon.as_Real64,table.url.as_String)
+              AppData.tBus.add(table)
+              AppData.tBusImg.add(img)
+            case "Tribally Sponsored Museum":
+              ObjC.addSiteForCategory("TribalMuseums",table.name.as_String,table.lat.as_Real64,table.lon.as_Real64,table.url.as_String)
+              AppData.tMuseums.add(table)
+              AppData.tMusImg.add(img)
+            case "Other Native Businesses":
+              ObjC.addSiteForCategory("NBusinesses",table.name.as_String,table.lat.as_Real64,table.lon.as_Real64,table.url.as_String)
+              AppData.nBus.add(table)
+              AppData.nBusImg.add(img)
+          endWhich
+        endWhile
+      catch(Error err)
+        println("" + err)
+      endTry
+
+    method draw
+      #background.draw 
+      font.color = Color.white
+      font.scale = AppData.findFontScale(font,1.0,0.080,Display.size.y)
+      font2.scale = AppData.findFontScale(font2,0.65,0.042,Display.size.y)   
+      font.draw("Indigenous", Vector2(Display.center.x,Display.size.y*0.20))
+      font.draw("San Diego", Vector2(Display.center.x,Display.size.y*0.25))
+      if(logoIndex == 0)
+        font2.draw("Presented By:", Vector2(Display.center.x,Display.center.y))
+        font2.scale = AppData.findFontScale(font2,0.75,0.045,Display.size.y)
+        font2.draw("Southern California", Vector2(Display.center.x,Display.center.y + font.height*0.5))
+        font2.draw("Tribal Chairman's Association", Vector2(Display.center.x,Display.center.y + font.height))
+        font2.draw("&", Vector2(Display.center.x,Display.center.y+ font.height*1.5))
+        font2.draw("Maataam Naka Shin", Vector2(Display.center.x,Display.center.y+ font.height*2))
+        if(logo?) logo.draw(Vector2(Display.center.x,Display.size.y*0.40))
+      elseIf(logoIndex == 1)
+        font2.draw("In Association With:", Vector2(Display.center.x,Display.center.y))
+        font2.scale = AppData.findFontScale(font2,0.75,0.045,Display.size.y)
+        font2.draw("Procopio Law Firm", Vector2(Display.center.x,Display.center.y + font.height*0.5))
+        if(logo?) logo.draw(Vector2(Display.center.x,Display.size.y*0.40))
+      elseIf(logoIndex == 2)
+        font.color = fontColor
+        font.scale = AppData.findFontScale(font,1.0,0.055,Display.size.y)
+        font.draw("Music Provided By:", Vector2(Display.center.x,Display.size.y*0.48))
+        font.scale = AppData.findFontScale(font,1.0,0.050,Display.size.y)
+        font.draw("Kumeyaay Bird Singers", Vector2(Display.center.x,Display.size.y*0.52))
+      endIf
+      #{font2.scale = AppData.findFontScale(font2,0.55,0.02185157421289,Display.size.y)
+      font2.draw("In Association With:", Vector2(Display.center.x,Display.center.y + logo.size.y/2 + font.height*2.7))
+      font2.scale = AppData.findFontScale(font2,0.65,0.02582458770615,Display.size.y)
+      font2.draw("Procopio Law Firm", Vector2(Display.center.x,Display.center.y + logo.size.y/2 + font.height*3.2))}#
+
+endClass
+
+singleton class AndroidDownloaderScreen : Screen
+  PROPERTIES
+    urls()  : String[]
+    names() : String[]
+    index   : Int32
+    pdl     : PicDownloader
+
+  METHODS
+    method on_activate
+      loadAllURLS()
+
+    method loadAllURLS()
+      try
+        local DataFile file = DataFile("AndroidImages.txt")
+        local Scanner file_scanner = Scanner(file)
+        while(file_scanner.has_another)
+          urls.add(file_scanner.scan_line)
+        endWhile
+        loadFileNames()
+      catch(Error err)
+        println("Error loading URLS")
+      endTry
+
+    method loadFileNames()
+      try
+        local DataFile file = DataFile("AndroidNames.txt")
+        local Scanner file_scanner = Scanner(file)
+        while(file_scanner.has_another)
+          names.add(file_scanner.scan_line)
+        endWhile
+        loadAllImageAtIndex(index)
+      catch(Error err)
+        println("Error loading File Names")
+      endTry
+
+    method loadAllImageAtIndex(Int32 idx)
+      if(idx < urls.count-1)
+        local DataFile outfile = DataFile(names[idx])
+        if(!outfile.exists)
+          pdl = PicDownloader()
+          pdl.downloadImage(urls[idx],names[idx]) 
+        else
+          index++
+          loadAllImageAtIndex(index)
+        endIf
+      else
+        push(HomeScreen,fade_between)
+      endIf
+
+    method on_finish
+      index++
+      loadAllImageAtIndex(index)
+
+
+endClass
+
+singleton class HomeScreen : Screen
+
+  PROPERTIES
+    buttons() : MenuButton[]
+    currentB  : MenuButton
+    selectedB : MenuButton
+    navBar    : Box
+    leftBox   : Box
+    rightBox  : Box
+    tutBox    : Box
+    onMain      : Logical
+    onExplore   : Logical
+    onMap       : Logical
+    onAbout     : Logical
+    onNBusiness : Logical
+    onHighEd    : Logical
+    onPreserves : Logical
+    onPubMuseums: Logical
+    onSMissions : Logical
+    onTLands    : Logical
+    onTBusiness : Logical
+    onTMuseum   : Logical
+    onExSub     : Logical
+    goingBack   : Logical
+    movingCell  : Logical
+    movingCell2 : Logical
+    canDrawCells: Logical
+    buttonTap   : Logical
+    animCellText: Logical
+    showingTut  : Logical
+    drawDim     : Logical
+    waitingToLoad       : Logical
+    animCellTextReverse : Logical
+    allowTouchMenu      : Logical
+    buttonLast: Vector2
+    initialPress: Vector2
+    textLast    : Vector2
+    scrollRegion : Box
+    dimView      : Box
+    font      : MovingFont
+    font2     : MovingFont
+    loadFont  : Font
+    tutFont   : Font
+    titleTop  : String
+    loadText  : String
+    cellText  : String[]
+    cells()   : CustomCell[]
+    focusCell : CustomCell
+    cellToPass: CustomCell
+    tableView : ScrollTable
+    background: CompositeImage
+    logo      : Image
+    backButton: Image
+    backCurve : Image
+    homeCurve : Image
+    menuCurve : Image
+    close     : Image
+    sound     : Image
+    test      : CompositeImage
+    count     : Int32
+    rotate    : Int32
+    loadCount : Int32
+    selectedCat : Int32
+    tutFade   : Real64
+    titleScale: Real64
+
+  METHODS
+    method on_activate
+
+      Display.background_color = Color(76,194,210,178)
+
+      setUpLayoutElements() 
+      
+      onMain = true 
+
+      setTitles() 
+
+      animateToScreenOut()
+
+      try
+        local DataFile file = DataFile("save.txt")
+        local Scanner file_scanner = Scanner(file)
+        local var choice = file_scanner.scan_line
+        if(choice.contains("true"))
+          tutFade = 0
+          allowTouchMenu = true
+          showingTut = false
+        else
+        
+        endIf
+
+        while(file_scanner.has_another)
+          local String[] entries = file_scanner.scan_line.split(",")
+          local PropertyTable table = PropertyTable()
+          table.name = entries[0]
+          local String[] location = entries[1].split(" ")
+          table.lat = location[0]
+          table.lon = location[1]
+          table.desc = entries[2].replace(";",",")
+          table.address = entries[3].replace(";",",")
+          table.cost = entries[4]
+          table.hours = entries[5]
+          table.url = entries[6]
+          ObjC.addSiteForCategory("Museums",table.name.as_String,table.lat.as_Real64,table.lon.as_Real64,table.url.as_String)
+          AppData.siteData.add(table)
+        endWhile
+      catch(Error err)
+        println("" + err)
+      endTry
+
+      [if defined(ANDROID)]
+        SignalHandler( "go_main" ) with
+          method on( Signal s )
+            local String st = s.argument.(SignalObjectArg).object.(String)
+            local Real64 x = s.argument.(SignalObjectArg).x
+            if(st.equals_ignore_case("success"))
+              TriggeredMethods.backFromMaps()
+            endIf
+        endWith
+        SignalHandler( "go_site" ) with
+          method on( Signal s )
+            local String st = s.argument.(SignalObjectArg).object.(String)
+            local Real64 x = s.argument.(SignalObjectArg).x
+            local Int32 y = Int32(x)
+            TriggeredMethods.goToSitePage(st,y)
+        endWith
+        SignalHandler( "loader_done" ) with
+          method on( Signal s )
+            local String st = s.argument.(SignalObjectArg).object.(String)
+            local Real64 x = s.argument.(SignalObjectArg).x
+            if(st.equals_ignore_case("success"))
+              TriggeredMethods.loaderDone()
+            endIf
+        endWith
+      [endIf]
+
+      loadText = "LOADING SITES"
+ 
+      #{local Array<<Int32>> data = ObjC.loadExpansionBitmapData("Campo Band of Kumeyaay Indians Reservation.jpeg")
+      local var bitmap = Bitmap( 1, 1 )
+      bitmap.data = data
+      bitmap.width = data[ data.count - 2 ]
+      bitmap.height = data[ data.count - 1 ]
+      forEach (i of bitmap.data)
+        local var c = bitmap.data[i]
+        bitmap.data[i] = (c & 0xff00ff00) | (c.right_shifted(16) & 0xff) | (c.left_shifted(16) & 0xff0000)
+      endForEach
+      test = CompositeImage(bitmap)
+      local var modY = 1.0
+      local var modX = 1.0
+      if(test.size.y < Display.size.y) modY = Display.size.y/test.size.y
+      if(test.size.x < Display.size.x) modX = Display.size.x/test.size.x
+      local var mod = Math.max(modX,modY)
+      test.scale = (test.size * mod)/test.size
+      test.handle = Handle.center}#
+      
+
+    method on_resume
+
+    method setUpLayoutElements
+      local Real64 width,height
+      width = Display.size.x*0.58266666666667
+      height = Display.size.y*0.07796101949025
+      local var space = height*0.6
+      local var bottom_position = Display.size.y - space - height/2
+      space = height*1.21904761904762 
+      navBar = Box(Vector2(0,0),Vector2(Display.size.x,Display.size.y*0.11619190404798))
+      logo = Image("Logo.png")
+      logo.size = Vector2(height,height)
+      logo.handle = Handle.center
+      logo.position = Vector2(Display.size.x-logo.size.x/2-30,navBar.center.y)
+      AppData.fontWidth = Display.size.x - 2*(logo.size.x+60)
+      local var f = Font(AppData.getFuturaString())
+      f.handle = Handle.center
+      f.scale = AppData.findFontScale(f,0.75,0.35806451612903,navBar.size.y)
+      local Real64 tutFontScale = f.scale.x*1.4
+      while(f.text_width_of("Indigenous San Diego") + 5 > AppData.fontWidth)
+        f.scale -= 0.01
+      endWhile
+      titleScale = f.scale.x
+      forEach(i in 0..7)
+        local var title = "empty"
+        local var title2 = "empty"
+        buttons.add(MenuButton(title,title2,Vector2(-(width+height),bottom_position - space*i),width,height))
+      endForEach 
+ 
+      leftBox = Box(Vector2(0,0),Vector2(logo.size.x+30,navBar.size.y))
+      rightBox = Box(Vector2(Display.size.x-30-logo.size.x,0),Vector2(logo.size.x+30,navBar.size.y))
+  
+      ##f.scale = 0.85
+      font = MovingFont(f,navBar.center)
+      font.font.scale = titleScale
+      local var f2 = Font(AppData.getFuturaString()) 
+      f2.handle = Handle.center
+      f2.scale = titleScale
+      f2.scale = AppData.findFontScale(f2,0.75,0.35806451612903,navBar.size.y)
+      font2 = MovingFont(f2,Display.center)
+      font2.font.scale = titleScale
+      tutFont = Font(AppData.getHanziString())
+      tutFont.scale = tutFontScale
+      loadFont = Font(AppData.getFuturaString())
+      loadFont.handle = Handle.center
+      loadFont.scale = AppData.findFontScale(f,0.75,0.35806451612903,navBar.size.y)
+      [if defined(ANDROID)]
+      titleTop = "Indigenous San Diego"
+      [else]
+        titleTop = "Indigenous San Diego"
+      [endIf]
+      local var topY = navBar.y2
+      local var cellHeight = (Display.size.y - topY)/5
+      scrollRegion = Box(Vector2(0,topY),Vector2(Display.size.x,(Display.size.y - topY)))
+      background = CompositeImage("BG.png")
+      local var modY = 1.0
+      local var modX = 1.0
+      if(background.size.y < Display.size.y) modY = Display.size.y/background.size.y
+      if(background.size.x < Display.size.x) modX = Display.size.x/background.size.x
+      local var mod = Math.max(modX,modY)
+      background.scale = (background.size * mod)/background.size
+      background.handle = Handle.center
+      background.position = Display.center 
+      backButton = Image("BackArrow.png")
+      backButton.size = Vector2(navBar.size.x/15,navBar.size.y/6)
+      backButton.handle = Handle.center
+      backButton.position = Vector2(backButton.size.x*1.2,navBar.center.y)
+
+      backCurve = Image("curvedArrow.png")
+      backCurve.size = Vector2(tutFont.height*2,tutFont.height*2)
+      backCurve.handle = Handle.center
+
+      homeCurve = Image("curvedArrow.png")
+      homeCurve.size = Vector2(tutFont.height*2,tutFont.height*2)
+      homeCurve.handle = Handle.center
+      homeCurve.hflip = true
+
+      menuCurve = Image("curvedArrow.png")
+      menuCurve.size = Vector2(tutFont.height*2,tutFont.height*2)
+      menuCurve.handle = Handle.center
+      menuCurve.vflip = true
+
+      close = Image("Close.png")
+      close.size = Vector2(tutFont.height*1.5,tutFont.height*1.5*1.06912442396313)
+      close.handle = Handle.center
+
+      sound = Image("Sound.png")
+      sound.size = Vector2(logo.size.x*0.8,logo.size.x*0.8)
+      sound.handle = Handle.center
+      sound.position = Display.size - sound.size*0.60
+
+
+      tutBox = Box(Vector2(navBar.x1,navBar.y2),Vector2(navBar.size.x,(buttons[0].button.top_left.y - navBar.y2)))
+
+    method update
+      if(AppData.returnFromSite)
+        AppData.returnFromSite = false
+        reverseAnimateTitleForSitePage()
+      elseIf(AppData.returnFromAbout)
+        AppData.returnFromAbout = false
+        animateBack()
+      elseIf(AppData.fromMaps)
+        AppData.fromMaps = false
+        ObjC.showDialog
+      endIf
+      Animator.update
+      forEach(b in buttons)
+        b.update
+      endForEach
+      if(tableView?) tableView.update
+      if(focusCell != null)
+        if(focusCell.remove)
+          focusCell.remove = false
+          focusCell = null
+          animCellText = false
+          animCellTextReverse = false
+          forEach(c in tableView.cells)
+            c.dontUpdate = false
+          endForEach
+        endIf
+      endIf
+      count++
+      if(count%3 == 0)
+        count = 0
+        rotate++
+      endIf
+      if(rotate == 360) rotate = 0
+      #logo.angle(Degrees(rotate))
+      if(tutFade < 200 and !allowTouchMenu)
+        if(tutFade > 100) showingTut = true
+        if(tutFade + 3 > 200)
+          tutFade = 200
+        else
+          tutFade += 3
+        endIf
+      endIf
+      if(AppData.loaderDone and loadCount >= 30)
+        AppData.loaderDone = false
+        loadCount = 0
+        showSpinnerForCat(selectedCat)
+      elseIf(AppData.loaderDone)
+        loadCount++
+      endIf
+      font.font.scale = titleScale
+      font2.font.scale = titleScale
+
+    method setTitles
+      if(onExplore and !goingBack)
+        titleTop = "Explore"
+        local var title = "empty"
+        local var title2 = "empty"
+        forEach(i in 0..buttons.count-1)
+          which(i)
+            case 7:
+              title  = "TRIBAL MUSEUMS"
+              title2 = "empty"
+            case 6:
+              title  = "TRIBAL OWNED"
+              title2 = "BUSINESSES"
+            case 5:
+              title  = "TRIBAL LANDS"
+              title2 = "empty"
+            case 4:
+              title  = "PUBLIC MUSEUMS"
+              title2 = "empty"
+            case 3:
+              title = "OTHER NATIVE"
+              title2 = "BUSINESSES" 
+            case 2:
+              title  = "CULTURAL TRAILS"
+              title2 = "& LANDMARKS"
+            case 1:
+              title  = "HIGHER EDUCATION"
+              title2 = "empty" 
+            case 0:
+              title  = "SPANISH MISSIONS"
+              title2 = "empty"
+            others:
+          endWhich
+          buttons[i].title = title
+          buttons[i].title2 = title2
+        endForEach
+      elseIf(onMap and !goingBack)
+        titleTop = "Map"
+        local var title = "empty"
+        local var title2 = "empty"
+        forEach(i in 0..buttons.count-1)
+          which(i)
+            case 7:
+              
+            case 6:
+               
+            case 5:
+              
+            case 4:
+              
+            case 3:
+              
+            case 2:
+              
+            case 1:
+              title = "Map" 
+            case 0:
+              
+            others:
+          endWhich
+          buttons[i].title = title
+          buttons[i].title2 = title2
+        endForEach
+      elseIf(onAbout and !goingBack)
+        titleTop = "About"
+        local var title = "empty"
+        local var title2 = "empty"
+        forEach(i in 0..buttons.count-1)
+          which(i)
+            case 7:
+              
+            case 6:
+               
+            case 5:
+              
+            case 4:
+              
+            case 3:
+              
+            case 2:
+              
+            case 1:
+              
+            case 0:
+              title = "About"
+            others:
+          endWhich
+          buttons[i].title = title
+          buttons[i].title2 = title2
+        endForEach
+      elseIf(onExSub)
+        titleTop = "Explore"
+      elseIf(onMain)
+        [if defined(ANDROID)]
+        titleTop = "Indigenous San Diego"
+        [else]
+          titleTop = "Indigenous San Diego"
+        [endIf]
+        local var title = "empty"
+        local var title2 = "empty"
+        forEach(i in 0..buttons.count-1)
+          which(i)
+            case 7:
+            case 6: 
+            case 5:
+            case 4:
+            case 3:
+            case 2:
+              title  = "EXPLORE"
+              title2 = "empty"
+            case 1:
+              title  = "MAP"
+              title2 = "empty"
+            case 0:
+              title  = "ABOUT"
+              title2 = "empty"
+            others:
+          endWhich
+          buttons[i].title = title
+          buttons[i].title2 = title2
+        endForEach
+      endIf
+
+    method setHomeTitles
+      [if defined(ANDROID)]
+      titleTop = "Indigenous San Diego"
+      [else]
+        titleTop = "Indigenous San Diego"
+      [endIf]
+      local var title = "empty"
+      local var title2 = "empty"
+      forEach(i in 0..buttons.count-1)
+        which(i)
+          case 7:
+          case 6: 
+          case 5:
+          case 4:
+          case 3:
+          case 2:
+            title  = "EXPLORE"
+            title2 = "empty"
+          case 1:
+            title  = "MAP"
+            title2 = "empty"
+          case 0:
+            title  = "ABOUT"
+            title2 = "empty"
+          others:
+        endWhich
+        buttons[i].title = title
+        buttons[i].title2 = title2
+      endForEach
+
+    method animateToScreenOut
+      if(onExplore)
+        forEach(i in 0..buttons.count-1)
+          local MenuButton b = buttons[i]
+          which(i)
+            case 7,6,5,4,3:
+              Animator.animate(b, 0.0, 1.0/50.0, b.pos, b.pos, b.pos, Vector2(0,b.pos.y),"easeOut")
+            case 2:
+              Animator.animate(b, 0.0, 1.0/50.0, b.pos, Vector2(Display.size.x,b.pos.y), Vector2(Display.size.x,b.pos.y), b.pos,"easeOut")
+            case 1,0:
+              Animator.animate(b, 0.0, 1.0/50.0, b.pos, Vector2(-b.size.x,b.pos.y), Vector2(-b.size.x,b.pos.y), b.pos,"easeOut")
+            others:
+          endWhich
+        endForEach
+        Animator.animateFont(font, 0.0, 1.0/50.0, font.pos, Vector2(Display.size.x+font.font.text_width_of(titleTop)/2,font.pos.y), Vector2(Display.size.x+font.font.text_width_of(titleTop)/2,font.pos.y), font.pos,"easeOut")
+      elseIf(onMap)
+        forEach(i in 0..buttons.count-1)
+          local MenuButton b = buttons[i]
+          which(i)
+            case 7,6,5,4,3:
+              Animator.animate(b, 0.0, 1.0/50.0, b.pos, b.pos, b.pos, b.pos,"easeOut")
+            case 2,0:
+              Animator.animate(b, 0.0, 1.0/50.0, b.pos, Vector2(-b.size.x,b.pos.y), Vector2(-b.size.x,b.pos.y), Vector2(-b.size.x,b.pos.y),"easeOut")
+            case 1:
+              Animator.animate(b, 0.0, 1.0/50.0, b.pos, Vector2(Display.size.x,b.pos.y), Vector2(Display.size.x,b.pos.y), Vector2(Display.size.x,navBar.center.y),"easeOut")
+            others:
+          endWhich
+        endForEach
+        Animator.animateFont(font, 0.0, 1.0/50.0, font.pos, Vector2(font.pos.x,-(font.font.height/2)), Vector2(font.pos.x,-(font.font.height/2)), Vector2(font.pos.x,-(font.font.height/2)),"easeOut")
+      elseIf(onAbout)
+        Animator.itemsAnimating = 8
+        forEach(i in 0..buttons.count-1)
+          local MenuButton b = buttons[i]
+          which(i)
+            case 7,6,5,4,3:
+              Animator.animate(b, 0.0, 1.0/50.0, b.pos, b.pos, b.pos, b.pos,"easeOut")
+            case 2,1:
+              Animator.animate(b, 0.0, 1.0/50.0, b.pos, Vector2(-b.size.x,b.pos.y), Vector2(-b.size.x,b.pos.y), Vector2(-b.size.x,b.pos.y),"easeOut")
+            case 0:
+              Animator.animate(b, 0.0, 1.0/50.0, b.pos, Vector2(Display.size.x,b.pos.y), Vector2(Display.size.x,b.pos.y), Vector2(Display.size.x,navBar.center.y),"easeOut")
+            others:
+          endWhich
+        endForEach
+        Animator.animateFont(font, 0.0, 1.0/50.0, font.pos, Vector2(font.pos.x,-(font.font.height/2)), Vector2(font.pos.x,-(font.font.height/2)), Vector2(font.pos.x,-(font.font.height/2)),"easeOut")
+      elseIf(onExSub)
+        local var b2a = 0
+        if(onNBusiness)
+          b2a = 3
+        elseIf(onHighEd)
+          b2a = 1
+        elseIf(onPreserves)
+          b2a = 2
+        elseIf(onPubMuseums)
+          b2a = 4
+        elseIf(onSMissions)
+          b2a = 0
+        elseIf(onTLands)
+          b2a= 5
+        elseIf(onTBusiness)
+          b2a = 6
+        elseIf(onTMuseum)
+          b2a = 7
+        endIf
+        local var topY = navBar.y2
+        forEach(i in 0..buttons.count-1)
+          local MenuButton b = buttons[i]
+          which(i)
+            case b2a:
+              Animator.animate(b, 0.0, 1.0/50.0, b.pos, Vector2(Display.size.x,b.pos.y), Vector2(Display.size.x,b.pos.y), Vector2(Display.size.x,navBar.center.y),"easeOut")
+            others:
+              Animator.animate(b, 0.0, 1.0/50.0, b.pos, Vector2(-b.size.x,b.pos.y), Vector2(-b.size.x,b.pos.y), Vector2(-b.size.x,b.pos.y),"easeOut")
+          endWhich
+        endForEach
+        Animator.animateFont(font, 0.0, 1.0/50.0, font.pos, Vector2(font.pos.x,-(font.font.height/2)), Vector2(font.pos.x,-(font.font.height/2)), Vector2(font.pos.x,-(font.font.height/2)),"easeOut")
+      elseIf(onMain)
+        forEach(i in 0..buttons.count-1)
+          local MenuButton b = buttons[i]
+          which(i)
+            case 2,1,0:
+              Animator.animate2(b, 0.0, 1.0/50.0, b.pos, Vector2(0,b.pos.y),"easeOut")
+            others:
+          endWhich
+        endForEach 
+      endIf
+
+    method animateFromScreenOut
+      if(onExplore)
+        forEach(i in 0..buttons.count-1)
+          local MenuButton b = buttons[i]
+          which(i)
+            case 7,6,5,4,3:
+              Animator.animate(b, 0.0, 1.0/50.0, b.pos, Vector2(-b.size.x,b.pos.y), Vector2(-b.size.x,b.pos.y), Vector2(-b.size.x,b.pos.y),"easeOut")            
+            case 2:
+              Animator.animate(b, 0.0, 1.0/50.0, b.pos, Vector2(Display.size.x,b.pos.y), Vector2(Display.size.x,b.pos.y), b.pos,"easeOut")
+            case 1,0:
+              Animator.animate(b, 0.0, 1.0/50.0, b.pos, Vector2(-b.size.x,b.pos.y), Vector2(-b.size.x,b.pos.y), b.pos,"easeOut")
+            others:
+          endWhich
+        endForEach
+        Animator.animateFont(font, 0.0, 1.0/50.0, font.pos, Vector2(Display.size.x+font.font.text_width_of(titleTop)/2,font.pos.y), Vector2(Display.size.x+font.font.text_width_of(titleTop)/2,font.pos.y), font.pos,"easeOut")
+      elseIf(onMap)
+        forEach(i in 0..buttons.count-1)
+          local MenuButton b = buttons[i]
+          which(i)
+            case 7,6,5,4,3:            
+              Animator.animate(b, 0.0, 1.0/50.0, b.pos, b.pos, b.pos, b.pos,"easeOut")
+            case 2,0:
+              Animator.animate(b, 0.0, 1.0/50.0, b.pos, b.pos, b.pos, Vector2(0,b.pos.y),"easeOut")
+            case 1:
+              Animator.animate(b, 0.0, 1.0/50.0, b.pos, buttonLast, buttonLast, Vector2(0,buttonLast.y),"easeOut")
+            others:
+          endWhich
+        endForEach
+        Animator.animateFont(font, 0.0, 1.0/50.0, font.pos, font.pos, font.pos, navBar.center,"easeOut")
+      elseIf(onAbout)
+        forEach(i in 0..buttons.count-1)
+          local MenuButton b = buttons[i]
+          which(i)
+            case 7,6,5,4,3:            
+              Animator.animate(b, 0.0, 1.0/50.0, b.pos, b.pos, b.pos, b.pos,"easeOut")
+            case 2,1:
+              Animator.animate(b, 0.0, 1.0/50.0, b.pos, b.pos, b.pos, Vector2(0,b.pos.y),"easeOut")
+            case 0:
+              Animator.animate(b, 0.0, 1.0/50.0, b.pos, buttonLast, buttonLast, Vector2(0,buttonLast.y),"easeOut")
+            others:
+          endWhich
+        endForEach
+        Animator.animateFont(font, 0.0, 1.0/50.0, font.pos, font.pos, font.pos, navBar.center,"easeOut")
+      elseIf(onExSub)
+        if(AppData.goHome)
+          local var b2a = 0
+          Animator.itemsAnimating = 8
+          if(onNBusiness)
+            b2a = 3
+          elseIf(onHighEd)
+            b2a = 1 
+          elseIf(onPreserves)
+            b2a = 2
+          elseIf(onPubMuseums)
+            b2a = 4
+          elseIf(onSMissions)
+            b2a = 0
+          elseIf(onTLands)
+            b2a= 5
+          elseIf(onTBusiness)
+            b2a = 6
+          elseIf(onTMuseum)
+            b2a = 7
+          endIf
+          local var topY = navBar.y2
+          forEach(i in 0..buttons.count-1)
+            local MenuButton b = buttons[i]
+            which(i)
+              case b2a:
+                if(b2a < 3)
+                  Animator.animate(b, 0.0, 1.0/50.0, b.pos, buttonLast, buttonLast, Vector2(0,buttonLast.y),"easeOut")
+                else
+                  Animator.animate(b, 0.0, 1.0/50.0, b.pos, buttonLast, buttonLast, Vector2(-b.size.x,buttonLast.y),"easeOut")
+                endIf
+              others:
+                if(i < 3)
+                  Animator.animate(b, 0.0, 1.0/50.0, b.pos, b.pos, b.pos, Vector2(0,b.pos.y),"easeOut")
+                else
+                  Animator.animate(b, 0.0, 1.0/50.0, b.pos, b.pos, b.pos, Vector2(-b.size.x,b.pos.y),"easeOut")
+                endIf
+            endWhich
+          endForEach
+          Animator.animateFont(font, 0.0, 1.0/50.0, font.pos, font.pos, font.pos, navBar.center,"easeOut")
+        else
+          local var b2a = 0
+          Animator.itemsAnimating = 8
+          if(onNBusiness)
+            b2a = 3
+          elseIf(onHighEd)
+            b2a = 1 
+          elseIf(onPreserves)
+            b2a = 2
+          elseIf(onPubMuseums)
+            b2a = 4
+          elseIf(onSMissions)
+            b2a = 0
+          elseIf(onTLands)
+            b2a= 5
+          elseIf(onTBusiness)
+            b2a = 6
+          elseIf(onTMuseum)
+            b2a = 7
+          endIf
+          local var topY = navBar.y2
+          forEach(i in 0..buttons.count-1)
+            local MenuButton b = buttons[i]
+            which(i)
+              case b2a:
+                Animator.animate(b, 0.0, 1.0/50.0, b.pos, buttonLast, buttonLast, Vector2(0,buttonLast.y),"easeOut")
+              others:
+                Animator.animate(b, 0.0, 1.0/50.0, b.pos, b.pos, b.pos, Vector2(0,b.pos.y),"easeOut")
+            endWhich
+          endForEach
+          Animator.animateFont(font, 0.0, 1.0/50.0, font.pos, font.pos, font.pos, navBar.center,"easeOut")
+        endIf
+      endIf
+
+    method animateTitleForSitePage(Vector2 position, String[] description)
+      forEach(b in buttons) 
+        if(b.centerTitle)
+          b.hideText = true
+          currentB = b
+        endIf
+      endForEach
+      forEach(c in tableView.cells)
+        if(c != focusCell)
+          c.dontUpdate = true
+        else 
+        endIf
+      endForEach
+      Animator.animateFont(font2, 0.0, 1.0/50.0, font2.pos, Vector2(font2.pos.x,navBar.center.y), Vector2(font2.pos.x,navBar.center.y), Vector2(font2.pos.x,navBar.center.y),"easeOut")
+      textLast = position
+      cellText = description
+      animCellText = true
+
+    method reverseAnimateTitleForSitePage()
+      forEach(b in buttons) 
+        if(b.centerTitle)
+          b.hideText = true
+          currentB = b 
+        endIf
+      endForEach
+      Animator.animateFont(font2, 0.0, 1.0/50.0, font2.pos, textLast, textLast, textLast,"easeOut")
+      cellToPass.setShrink
+      animCellText = true
+      animCellTextReverse = true
+
+    method transitionToAbout
+      push(AboutPage)
+
+    method transitionToSitePage
+      SitePage.cell = cellToPass
+      SitePage.pageName = cellText
+      push(SitePage)
+
+    method pushSitePage
+      SitePage.fromMaps = true
+      push(SitePage)
+
+    method animateBack
+      goingBack = true
+      forEach(b in buttons)
+        b.centerTitle = false
+        b.centerTitle2 = false
+      endForEach
+      animateFromScreenOut()
+
+    method draw
+      background.draw(Display.center)
+      if(canDrawCells)
+        tableView.draw
+      endIf
+      if(focusCell != null) focusCell.draw
+      navBar.fill(Color(76,194,210,255))
+      #font.font.scale = buttons[0].font2.scale + 0.15
+      font.draw(titleTop)
+      #println("Nav Bar Height " + navBar.size.y + " and Font Height " + font.font.height)
+      rightBox.fill(Color(76,194,210,255))
+      forEach(b in buttons)
+        b.draw
+      endForEach
+      #font2.font.scale = buttons[0].font2.scale + 0.15
+      if(animCellText and !AppData.fromMaps) font2.draw(cellText)
+      #leftBox.fill(Color.black)
+      #rightBox.fill(Color.black)
+      logo.draw
+      if(onExplore or onExSub or showingTut) backButton.draw
+      tutBox.fill(Color(0,0,0,tutFade))
+      backCurve.alpha(tutFade/200.0*255.0)
+      backCurve.draw(Vector2(tutBox.x1 + backCurve.size.x*1.25,tutBox.y1 + backCurve.size.y/2))
+      homeCurve.alpha(tutFade/200.0*255.0)
+      homeCurve.draw(Vector2(Display.size.x - homeCurve.size.x*1.25,tutBox.y1 + homeCurve.size.y/2))
+      menuCurve.alpha(tutFade/200.0*255.0)
+      menuCurve.draw(Vector2(tutBox.x1 + menuCurve.size.x*1.25,tutBox.y2 - menuCurve.size.y/2))
+      close.alpha(tutFade/200.0*255.0)
+      close.draw(Vector2(tutBox.x2-close.size.x*0.65,tutBox.y2 - close.size.y/2 - close.size.x*0.15 - tutFont.height))
+      sound.draw
+      tutFont.handle = Vector2(0,tutFont.height/2)
+      tutFont.color = Color(255,255,255,tutFade)
+      tutFont.draw("Back Arrow",Vector2(tutBox.x1 + 20,tutBox.y1 + 20 + backCurve.size.y))
+      tutFont.draw("Navigates you back",Vector2(tutBox.x1 + 20,tutBox.y1 + 20 + backCurve.size.y + tutFont.height))
+      tutFont.draw("Home Button",Vector2(Display.size.x - tutFont.text_width_of("Home button") - 20,tutBox.y1 + 20 + backCurve.size.y))
+      tutFont.draw("Takes you home",Vector2(Display.size.x - tutFont.text_width_of("Takes you home") - 20,tutBox.y1 + 20 + backCurve.size.y + tutFont.height))
+      tutFont.draw("Menu Buttons",Vector2(tutBox.x1 + 20,tutBox.y2 - tutFont.height/2 - 20 - menuCurve.size.y - tutFont.height))
+      tutFont.draw("Take you through the app",Vector2(tutBox.x1 + 20,tutBox.y2 - tutFont.height/2 - 20 - menuCurve.size.y))
+      tutFont.handle = Handle.center
+      tutFont.draw("Close",Vector2(close.position.x,tutBox.y2 - tutFont.height/2 - 20))
+      if(drawDim)
+        [if defined(ANDROID)]
+          AppData.loaderDone = true
+        [else]
+          dimView.fill(Color(0,0,0,180))
+          loadFont.draw(loadText, Display.center + Vector2(0,Display.size.y*0.05))
+        [endIf]
+      endIf
+      if(test != null) test.draw(Display.center)
+
+    method setUpLoadText
+      if(loadText.count == 13)
+        loadText = "LOADING SITES."
+      elseIf(loadText.count == 14)
+        loadText = "LOADING SITES.."
+      elseIf(loadText.count == 14)
+        loadText = "LOADING SITES..."
+      elseIf(loadText.count == 14)
+        loadText = "LOADING SITES"
+      endIf
+
+    method canMakePress.Logical
+      return (Animator.images.count == 0 and Animator.fonts.count == 0 and ((focusCell != null and !focusCell.expand and !focusCell.shrink) or (focusCell == null)))
+
+    method setUpTableViewForCategory(Int32 category)
+      local var topY = navBar.y2
+      local var cellHeight = (Display.size.y - topY)/5
+      local CustomCell[] tableCells = CustomCell[]()
+      if(tableView?)
+        tableView.cells.clear()
+        tableView = null 
+      endIf
+      System.force_garbage_collection
+      which(category)
+        case 0:
+          forEach(i in 0..AppData.museums.count-1)
+            local var fileName = AppData.museums[i].name.as_String + ".jpeg" 
+            tableCells.add(CustomCell(Display.size.x,cellHeight,0,topY+(i*cellHeight), AppData.musImg[i],AppData.museums[i].name.as_String,0))
+          endForEach
+        case 1:
+          forEach(i in 0..AppData.tMuseums.count-1)
+            local var fileName = AppData.tMuseums[i].name.as_String + ".jpeg"
+            tableCells.add(CustomCell(Display.size.x,cellHeight,0,topY+(i*cellHeight), AppData.tMusImg[i],AppData.tMuseums[i].name.as_String,1))
+          endForEach
+        case 2:
+          forEach(i in 0..AppData.tLands.count-1)
+            local var fileName = AppData.tLands[i].name.as_String + ".jpeg"
+            tableCells.add(CustomCell(Display.size.x,cellHeight,0,topY+(i*cellHeight), AppData.tLandImg[i],AppData.tLands[i].name.as_String,2))
+          endForEach 
+        case 3:
+          forEach(i in 0..AppData.higherEd.count-1)
+            local var fileName = AppData.higherEd[i].name.as_String + ".jpeg"
+            tableCells.add(CustomCell(Display.size.x,cellHeight,0,topY+(i*cellHeight), AppData.higherImg[i],AppData.higherEd[i].name.as_String,3))
+          endForEach
+        case 4:
+          forEach(i in 0..AppData.preserves.count-1)
+            local var fileName = AppData.preserves[i].name.as_String + ".jpeg"
+            tableCells.add(CustomCell(Display.size.x,cellHeight,0,topY+(i*cellHeight), AppData.preImg[i],AppData.preserves[i].name.as_String,4))
+          endForEach
+        case 5:
+          forEach(i in 0..AppData.tBus.count-1)
+            local var fileName = AppData.tBus[i].name.as_String + ".jpeg"
+            tableCells.add(CustomCell(Display.size.x,cellHeight,0,topY+(i*cellHeight), AppData.tBusImg[i],AppData.tBus[i].name.as_String,5))
+          endForEach
+        case 6:
+          forEach(i in 0..AppData.missions.count-1)
+            local var fileName = AppData.missions[i].name.as_String + ".jpeg"
+            tableCells.add(CustomCell(Display.size.x,cellHeight,0,topY+(i*cellHeight), AppData.missImg[i],AppData.missions[i].name.as_String,6))
+          endForEach
+        case 7:
+          forEach(i in 0..AppData.nBus.count-1)
+            local var fileName = AppData.nBus[i].name.as_String + ".jpeg"
+            tableCells.add(CustomCell(Display.size.x,cellHeight,0,topY+(i*cellHeight), AppData.nBusImg[i],AppData.nBus[i].name.as_String,7))
+          endForEach
+      endWhich
+      System.force_garbage_collection
+      tableView = ScrollTable(scrollRegion,tableCells)
+
+    method on( MouseEvent e)
+      if(!drawDim)
+        if((focusCell!=null and !focusCell.expand and !focusCell.shrink) or (focusCell == null))
+          which(e.type)
+            case MouseEvent.button_press:
+              if(allowTouchMenu)
+                if(canDrawCells) 
+                  tableView.on(e)
+                  if(tableView.bounds.contains(e.position)) movingCell = true
+                endIf
+              endIf
+
+            case MouseEvent.movement
+              if(allowTouchMenu)
+                if(canDrawCells) 
+                  tableView.on(e)
+                endIf
+              endIf
+
+            case MouseEvent.button_release
+              if(allowTouchMenu)
+                if(sound.bounding_box.contains(e.position))
+                  if(AppData.music.is_playing)
+                    AppData.music.stop()
+                    return
+                  else
+                    AppData.music.play()
+                    return
+                  endIf
+                endIf
+                local var tapped = false
+                if(canDrawCells) tableView.on(e)
+                if(movingCell)
+                  movingCell = false
+                  return
+                elseIf(Animator.images.count == 0 and Animator.fonts.count == 0)
+                  forEach(b in buttons) 
+                    if(b.button.contains(e.position))
+                      which(b.title)
+                        case "EXPLORE":
+                          tapped = true
+                          onExplore = true
+                          [if defined(PLATFORM_IOS)]
+                            ObjC.subMenuView("Explore Menu")
+                          [endIf]
+                          escapeForEach
+                        case "MAP":
+                          tapped = true
+                          onMap = true
+                          b.centerTitle = true
+                          escapeForEach
+                        case "ABOUT":
+                          tapped = true
+                          onAbout = true
+                          b.centerTitle = true
+                          [if defined(PLATFORM_IOS)]
+                            ObjC.subMenuView("About Menu")
+                          [endIf]
+                          escapeForEach
+                        case "OTHER NATIVE":
+                          selectedCat = 7
+                          selectedB = b
+                          showDimView()
+                          [if defined(PLATFORM_IOS)]
+                            ObjC.subMenuView("Other Native Businesses")
+                          [endIf]
+                          ObjC.showSpinner()
+                        case "HIGHER EDUCATION":
+                          selectedCat = 3
+                          selectedB = b
+                          showDimView()
+                          [if defined(PLATFORM_IOS)]
+                            ObjC.subMenuView("Higher Education")
+                          [endIf]
+                          ObjC.showSpinner()
+                        case "CULTURAL TRAILS":
+                          selectedCat = 4
+                          selectedB = b
+                          showDimView()
+                          [if defined(PLATFORM_IOS)]
+                            ObjC.subMenuView("Cultural Trails")
+                          [endIf]
+                          ObjC.showSpinner()
+                        case "PUBLIC MUSEUMS":
+                          selectedCat = 0
+                          selectedB = b
+                          showDimView()
+                          [if defined(PLATFORM_IOS)]
+                            ObjC.subMenuView("Public Museums")
+                          [endIf]
+                          ObjC.showSpinner()
+                        case "SPANISH MISSIONS":
+                          selectedCat = 6
+                          selectedB = b
+                          showDimView()
+                          [if defined(PLATFORM_IOS)]
+                            ObjC.subMenuView("Spanish Missions")
+                          [endIf]
+                          ObjC.showSpinner()
+                        case "TRIBAL LANDS":
+                          selectedCat = 2
+                          selectedB = b
+                          showDimView()
+                          [if defined(PLATFORM_IOS)]
+                            ObjC.subMenuView("Tribal Lands")
+                          [endIf]
+                          ObjC.showSpinner()
+                        case "TRIBAL OWNED":
+                          selectedCat = 5
+                          selectedB = b
+                          showDimView()
+                          [if defined(PLATFORM_IOS)]
+                            ObjC.subMenuView("Tribally Owned Businesses")
+                          [endIf]
+                          ObjC.showSpinner()
+                        case "TRIBAL MUSEUMS":
+                          selectedCat = 1
+                          selectedB = b
+                          showDimView()
+                          [if defined(PLATFORM_IOS)]
+                            ObjC.subMenuView("Tribal Museums")
+                          [endIf]
+                          ObjC.showSpinner()
+                      endWhich
+                    endIf
+                  endForEach 
+                  if(Box(Vector2(navBar.x1,navBar.y1),Vector2(backButton.bounding_box.x2,navBar.size.y)).contains(e.position))
+                    [if defined(ANDROID)]
+                      if(onMap)
+                        ObjC.showDialog()
+                      else
+                        animateBack
+                      endIf
+                    [else]              
+                      animateBack()
+                    [endIf]
+                  elseIf(logo.bounding_box.contains(e.position))
+                    if(onExSub) AppData.goHome = true
+                    [if defined(ANDROID)]
+                      if(onMap)
+                        ObjC.showDialog()
+                      else
+                        animateBack
+                      endIf
+                    [else]              
+                      animateBack()
+                    [endIf]
+                  elseIf(tapped)
+                    goingBack = false 
+                    animateToScreenOut()
+                  endIf
+                endIf
+              else
+                if(close.bounding_box.contains(e.position) and tutFade == 200)
+                  allowTouchMenu = true
+                  showingTut = false
+                  tutFade = 0
+                  try
+                    local DataFile outfile = DataFile("save.txt")
+                    local var writer = outfile.create_writer
+                    writer.println("true")
+                    writer.flush
+                    writer.close
+                  catch(Error err)
+                    println("" + err)
+                  endTry
+                endIf
+              endIf
+          endWhich
+        endIf
+      endIf
+
+    method on( KeyEvent e )
+      if (e.is_press(Key.keycode_escape) and !drawDim and Animator.images.count == 0 and Animator.fonts.count == 0)
+        [if defined(ANDROID)]
+          if(onMap)
+            ObjC.showDialog()
+          else
+            animateBack
+          endIf
+        [else]              
+          animateBack()
+        [endIf]
+      endIf
+
+    method showDimView
+      dimView = Box(Vector2(0,0),Display.size)
+      drawDim = true
+
+
+    method showSpinnerForCat(Int32 cat)
+      which(cat)
+        case 0:
+          selectedB.centerTitle = true
+          onExplore = false
+          onPubMuseums = true
+          onExSub = true
+          setUpTableViewForCategory(0)
+        case 1:
+          selectedB.centerTitle = true
+          onExplore = false
+          onTMuseum = true
+          onExSub = true
+          setUpTableViewForCategory(1)
+        case 2:
+          selectedB.centerTitle = true
+          onExplore = false
+          onTLands = true
+          onExSub = true
+          setUpTableViewForCategory(2)
+        case 3:
+          selectedB.centerTitle = true
+          onExplore = false
+          onHighEd = true
+          onExSub = true
+          setUpTableViewForCategory(3)
+        case 4:
+          selectedB.centerTitle = true
+          onExplore = false
+          onPreserves = true
+          onExSub = true
+          setUpTableViewForCategory(4)
+        case 5:
+          selectedB.centerTitle = true
+          onExplore = false
+          onTBusiness = true
+          onExSub = true
+          setUpTableViewForCategory(5)
+        case 6:
+          selectedB.centerTitle = true
+          onExplore = false
+          onSMissions = true
+          onExSub = true
+          setUpTableViewForCategory(6)
+        case 7:
+          selectedB.centerTitle = true
+          onExplore = false
+          onNBusiness = true
+          onExSub = true
+          setUpTableViewForCategory(7)
+      endWhich
+      selectedB = null
+      goingBack = false 
+      animateToScreenOut()
+      drawDim = false
+      ObjC.removeSpinner()
+
+endClass
+
+singleton class AboutPage : Screen
+  PROPERTIES
+    aboutBox  : Box
+    aboutBoxIn: Box
+    navBar    : Box
+    accentBar : Box
+    background: CompositeImage
+    t,dt       : Real64
+    startY     : Real64
+    topSpace   : Real64
+    animateIn  : Logical
+    animateOut : Logical
+    logo      : Image
+    backButton: Image
+    sound     : Image
+    down_arrow: Image
+    count     : Int32
+    rotate    : Int32
+    font      : Font
+    font2     : Font
+    font3     : Font
+    pageText  : String[]
+    procopioText : String[]
+    sctcaText    : String[]
+    nakashinText : String[]
+    kennyText    : String[]
+    scrollTable : ScrollTextTable
+
+  METHODS
+    method on_activate
+      t = 0.0
+      dt = 1.0/50.0
+      navBar = Box(Vector2(0,0),Vector2(Display.size.x,Display.size.y*0.11619190404798))
+      local var height = Display.size.y*0.07796101949025
+      accentBar = Box(Vector2(0,navBar.center.y-height/2),Vector2(Display.size.x,height))
+
+      aboutBox = Box(Vector2(Display.size.x*0.1,Display.size.y),Vector2(Display.size.x*0.8,Display.size.y*0.60))
+      aboutBoxIn = Box(Vector2(Display.size.x*0.1+15,Display.size.y+15),Vector2(Display.size.x*0.8-30,Display.size.y*0.60-30))
+      startY = Display.size.y
+
+      background = CompositeImage("BG.png")
+      local var modY = 1.0
+      local var modX = 1.0
+      if(background.size.y < Display.size.y) modY = Display.size.y/background.size.y
+      if(background.size.x < Display.size.x) modX = Display.size.x/background.size.x
+
+      local var mod = Math.max(modX,modY)
+      background.scale = (background.size * mod)/background.size
+      background.handle = Handle.center
+      background.position = Display.center
+
+      logo = Image("Logo.png")
+      logo.size = Vector2(height,height)
+      logo.handle = Handle.center
+      logo.position = Vector2(Display.size.x-logo.size.x/2-30,navBar.center.y)
+
+      backButton = Image("BackArrow.png")
+      backButton.size = Vector2(navBar.size.x/15,navBar.size.y/6)
+      backButton.handle = Handle.center
+      backButton.position = Vector2(backButton.size.x*1.2,navBar.center.y)
+
+      animateIn = true
+
+      font3 = Font(AppData.getFuturaString())
+      font3.handle = Handle.center
+      font3.scale = AppData.findFontScale(font3,0.75,0.30806451612903,navBar.size.y)
+
+      font2 = Font(AppData.getFuturaString())
+      font2.handle = Handle.center
+      font2.scale = HomeScreen.titleScale#AppData.findFontScale(font2,0.75,0.35806451612903,navBar.size.y)
+
+      font = Font(AppData.getWebdingsString()) 
+      font.scale = AppData.findFontScale(font,0.65,0.04225,aboutBoxIn.size.y)
+      font.color = Color.white
+      font.handle = Vector2(0,font.height/2)
+
+      local Font f = Font(AppData.getWebdingsString()) 
+      f.scale = AppData.findFontScale(f,0.70,0.048,aboutBox.size.y)
+      f.color = Color.white
+      f.handle = Handle.center
+
+      local var aboutText = "Indigenous San Diego highlights the Indigenous presence around San Diego.Indigenous San Diego was designed to raise public interest and awareness about San Diego's Indigenous museums, exhibits, businesses, lands and public sites of interest. Indigenous peoples are a significant part of Southern California's history and present day."
+      pageText = f.word_wrap(aboutText,aboutBoxIn.size.x*0.90)
+      
+      local var aboutSCTCA = "The Southern California Tribal Chairman's Association (SCTCA) is a consortium of 19 federally-recognized tribal governments in Southern California which serves the needs of its tribal members and descendants.  SCTCA's Board is comprised of tribal chairpersons from each of its member Tribes.  For more information: www.sctca.net"
+      sctcaText = f.word_wrap(aboutSCTCA,aboutBoxIn.size.x*0.90)
+
+      local var aboutNaka = "Maataam Naka Shin was created by SCTCA to advance knowledge and understanding of area Indigenous cultures through history, art, traditions, and native science.  www.nakashin.org"
+      nakashinText = f.word_wrap(aboutNaka,aboutBoxIn.size.x*0.90)
+
+
+      local var aboutProcopio = "Procopio's Native American Law Practice represents tribal governments and businesses, intertribal organizations and tribal-affiliated clients throughout the West. www.procopio.com"
+      procopioText = f.word_wrap(aboutProcopio,aboutBoxIn.size.x*0.90)
+
+      topSpace = predictBoxSize() 
+
+      local String[] allText = String[]()
+      local Int32[] indices = Int32[]()
+      indices.add(allText.count)
+      forEach(s in pageText) allText.add(s)
+      allText.add("       ")
+      indices.add(allText.count)
+      indices.add(allText.count+1)
+      indices.add(allText.count+2)
+      forEach(s in sctcaText) allText.add(s)
+      indices.add(allText.count)
+      allText.add("       ")
+      indices.add(allText.count)
+      forEach(s in nakashinText) allText.add(s)
+      indices.add(allText.count)
+      allText.add("       ")
+      indices.add(allText.count)
+      forEach(s in procopioText) allText.add(s)
+      indices.add(allText.count)
+      allText.add("       ")
+      #indices.add(allText.count)
+      allText.add("Developed by Kenny Shaw")
+
+      sound = Image("Sound.png")
+      sound.size = Vector2(logo.size.x*0.8,logo.size.x*0.8)
+      sound.handle = Handle.center
+      sound.position = Display.size - sound.size*0.60
+ 
+      scrollTable = ScrollTextTable(aboutBox,allText,f)
+      scrollTable.boldIndices = indices
+      font3.scale += 0.10
+      scrollTable.font2 = font3
+      scrollTable.boxSet = true
+
+      down_arrow = Image("Down_Arrow.png")
+      down_arrow.handle = Vector2(down_arrow.size.x/2,down_arrow.size.y)
+
+    method update
+      if(animateIn)
+        if(t < 1.0)
+          t += dt
+          t = Math.min(1,t)
+          local var newY = startY + Easing.easeOut(t) * (Display.size.y*0.25 - startY)
+          aboutBox = Box(Vector2(Display.size.x*0.1,newY),Vector2(Display.size.x*0.8,Display.size.y*0.60))
+          aboutBoxIn = Box(Vector2(Display.size.x*0.1+15,newY+15),Vector2(Display.size.x*0.8-30,Display.size.y*0.60-30))
+        else
+          t = 0.0
+          animateIn = false
+          startY = Display.size.y*0.25
+          aboutBox = Box(Vector2(Display.size.x*0.1,startY),Vector2(Display.size.x*0.8,Display.size.y*0.60))
+          aboutBoxIn = Box(Vector2(Display.size.x*0.1+15,startY+15),Vector2(Display.size.x*0.8-30,Display.size.y*0.60-30)) 
+        endIf
+      elseIf(animateOut)
+        if(t < 1.0)
+          t += dt
+          t = Math.min(1,t)
+          local var newY = startY + Easing.easeOut(t) * (Display.size.y - startY)
+          aboutBox = Box(Vector2(Display.size.x*0.1,newY),Vector2(Display.size.x*0.8,Display.size.y*0.60))
+          aboutBoxIn = Box(Vector2(Display.size.x*0.1+15,newY+15),Vector2(Display.size.x*0.8-30,Display.size.y*0.60-30))
+        else
+          t = 0.0
+          animateOut = false
+          startY = Display.size.y
+          aboutBox = Box(Vector2(Display.size.x*0.1,startY),Vector2(Display.size.x*0.8,Display.size.y*0.60))
+          aboutBoxIn = Box(Vector2(Display.size.x*0.1+15,startY+15),Vector2(Display.size.x*0.8-30,Display.size.y*0.60-30))
+          AppData.returnFromAbout = true
+          pop()
+        endIf
+      endIf
+      count++
+      if(count%3 == 0)
+        count = 0
+        rotate++
+      endIf
+      if(rotate == 360) rotate = 0
+      if(scrollTable?)
+        scrollTable.bounds = aboutBox
+        scrollTable.update
+      endIf
+      #logo.angle(Degrees(rotate))
+
+    method predictBoxSize.Real64
+      local Vector2 pos
+      forEach(i in 0..pageText.count-1)
+        pos = Vector2(Display.center.x,aboutBoxIn.position.y + font.height/2 + i*font.height*1.5)
+      endForEach
+      local var offset = aboutBoxIn.y2 - pos.y
+      offset += font.height/2
+      if(offset < 0) offset = 0
+      return offset
+
+    method draw
+      background.draw(Display.center)
+      navBar.fill(Color(76,194,210,255))
+      accentBar.fill(Color(76,194,210,178))
+      aboutBox.fill(Color(76,194,210,178))
+      down_arrow.draw(Vector2(aboutBoxIn.x2,aboutBox.y2))
+      logo.draw
+      font2.draw("About",navBar.center)
+
+      #{forEach(i in 0..pageText.count-1)
+        local var pos = Vector2(Display.center.x,aboutBoxIn.position.y + 20 + font.height/2 + i*font.height*1.5)
+        font.handle = Handle.center
+        font.draw(pageText[i],pos)
+      endForEach}#
+      if(scrollTable?) scrollTable.draw
+
+      backButton.draw
+      sound.draw
+
+    method on( MouseEvent e)
+      if(animateIn) return
+      if(animateOut) return
+
+      which (e.type)
+        case MouseEvent.button_press
+          if(scrollTable?) scrollTable.on(e)
+          #shouldnt happen
+
+        case MouseEvent.movement:
+          if(scrollTable?) scrollTable.on(e)
+          #shouldnt happen
+
+        case MouseEvent.button_release:
+          if(sound.bounding_box.contains(e.position))
+            if(AppData.music.is_playing)
+              AppData.music.stop()
+              return
+            else
+              AppData.music.play()
+              return
+            endIf
+          endIf
+          if(scrollTable?) scrollTable.on(e)
+          if(Box(Vector2(navBar.x1,navBar.y1),Vector2(backButton.bounding_box.x2,navBar.size.y)).contains(e.position) or logo.bounding_box.contains(e.position))
+            animateOut = true
+          endIf
+      endWhich
+
+    method on( KeyEvent e )
+      if (e.is_press(Key.keycode_escape) and !animateOut)
+        animateOut = true
+      endIf
+
+
+endClass
+
+singleton class SitePage : Screen
+  PROPERTIES
+    background : CompositeImage
+    cell       : CustomCell
+    font       : Font
+    font2      : Font
+    navBar     : Box
+    blurBox    : Box
+    blurBoxIn  : Box
+    detailsBox : Box
+    accentBar  : Box
+    actionBar  : Box
+    waitTime   : Int32
+    t,dt       : Real64
+    startY     : Real64
+    startY2    : Real64
+    dragY2     : Real64
+    startH     : Real64
+    fade       : Real64
+    initBlurY  : Real64
+    scrollerY  : Real64
+    maxScroll  : Real64
+    scrollerX(): Real64[]
+    dragStart  : Vector2
+    startDrag  : Vector2
+    animateIn  : Logical
+    expand     : Logical
+    expanded   : Logical
+    shrink     : Logical
+    shrunk     : Logical
+    animateOut : Logical
+    returnMain : Logical
+    tiny       : Logical
+    resetDesc  : Logical
+    dragInfo   : Logical
+    fromMaps   : Logical
+    dragged    : Logical
+    actionSelected  : Logical
+    detailsExpanded : Logical
+    pageText   : String[]
+    pageName   : String[]
+    address    : String
+    street     : String
+    city       : String
+    state      : String
+    cost       : String
+    hours      : String
+    scrollTable: ScrollTextTable
+    down_arrow : Image
+    up_arrow  : Image
+    logo      : Image
+    backButton: Image
+    sound     : Image
+    count     : Int32
+    rotate    : Int32
+    index     : Int32
+
+  METHODS
+    method init
+      t = 0.0
+      dt = 1.0/50.0
+      fade = 180.0
+
+    method on_activate
+      font = Font(AppData.getFuturaString()) 
+      font.scale = 0.75
+      font.color = Color.white
+      font.handle = Handle.center
+      font2 = Font(AppData.getWebdingsString()) 
+      font2.scale = 0.65
+      font2.color = Color.white
+      font2.handle = Vector2(0,font2.height/2) 
+      navBar = Box(Vector2(0,0),Vector2(Display.size.x,Display.size.y*0.11619190404798))
+      backButton = Image("BackArrow.png")
+      backButton.size = Vector2(navBar.size.x/15,navBar.size.y/6)
+      backButton.handle = Handle.center
+      backButton.position = Vector2(backButton.size.x*1.2,navBar.center.y)
+      #ObjC.showBlurBox(navBar.size.y)
+      startY = navBar.size.y-Display.size.y*0.31
+      startY2 = Display.size.y
+      blurBox = Box(Vector2(0,startY),Vector2(Display.size.x,Display.size.y*0.51))
+      blurBoxIn = Box(Vector2(blurBox.x1+15,blurBox.y1+15),Vector2(blurBox.x2-30,blurBox.y2-30))
+      initBlurY = blurBox.size.y-30
+      detailsBox = Box(Vector2(0,startY2),Vector2(Display.size.x,Display.size.y*0.19))
+      local var space = detailsBox.size.y*0.15
+      actionBar = Box(Vector2(0,detailsBox.y1 + detailsBox.size.y*0.75),Vector2(Display.size.x,detailsBox.size.y*0.25))
+      startH = blurBox.size.y
+      animateIn = true
+      local var text = ""
+      index = 0
+      local String fileName = ""
+
+      local Font f = Font(AppData.getWebdingsString())
+      f.handle = Vector2(0,f.height/2)
+      f.scale = 0.65
+      f.scale = AppData.findFontScale(f,0.65,0.04813559322034,initBlurY)
+
+      local var sy = navBar.size.y
+      local Box bb = Box(Vector2(0,sy),Vector2(Display.size.x,startH))
+      local Box bbi = Box(Vector2(bb.x1+15,bb.y1+15),Vector2(bb.size.x-30,bb.size.y-30))
+
+      which(cell.cellType)
+        case 0:
+          forEach(pt in AppData.museums)
+            if(pt.name.as_String.contains(pageName[0]))
+              if(pageName.count == 1 or (pageName.count > 1 and pt.name.as_String.contains(pageName[1])))
+                text = pt.desc.as_String
+                pageText = f.word_wrap(text,bbi.size.x*0.95)
+                cost = pt.cost.as_String
+                hours = pt.hours.as_String
+                fileName = pt.name.as_String + ".jpeg"
+                [if defined(ANDROID)]
+                  if(ObjC.fileExisted(fileName) == -1)
+                    background = CompositeImage(fileName)
+                    escapeForEach
+                  endIf
+                  local Array<<Int32>> data = ObjC.loadExpansionBitmapData(AppData.musImg[index])
+                  local var bitmap = Bitmap( 1, 1 )
+                  bitmap.data = data
+                  bitmap.width = data[ data.count - 2 ]
+                  bitmap.height = data[ data.count - 1 ]
+                  forEach (i of bitmap.data)
+                    local var c = bitmap.data[i]
+                    bitmap.data[i] = (c & 0xff00ff00) | (c.right_shifted(16) & 0xff) | (c.left_shifted(16) & 0xff0000)
+                  endForEach
+                  background = CompositeImage(bitmap)
+                [else]
+                  background = CompositeImage(AppData.musImg[index])
+                [endIf]
+                escapeForEach
+              endIf
+            endIf
+            index++
+          endForEach
+        case 1:
+          forEach(pt in AppData.tMuseums)
+            if(pt.name.as_String.contains(pageName[0]))
+              if(pageName.count == 1 or (pageName.count > 1 and pt.name.as_String.contains(pageName[1])))
+                text = pt.desc.as_String
+                pageText = f.word_wrap(text,bbi.size.x*0.95)
+                cost = pt.cost.as_String
+                hours = pt.hours.as_String
+                fileName = pt.name.as_String + ".jpeg"
+                [if defined(ANDROID)]
+                  if(ObjC.fileExisted(fileName) == -1)
+                    background = CompositeImage(fileName)
+                    escapeForEach
+                  endIf
+                  local Array<<Int32>> data = ObjC.loadExpansionBitmapData(AppData.tMusImg[index])
+                  local var bitmap = Bitmap( 1, 1 )
+                  bitmap.data = data
+                  bitmap.width = data[ data.count - 2 ]
+                  bitmap.height = data[ data.count - 1 ]
+                  forEach (i of bitmap.data)
+                    local var c = bitmap.data[i]
+                    bitmap.data[i] = (c & 0xff00ff00) | (c.right_shifted(16) & 0xff) | (c.left_shifted(16) & 0xff0000)
+                  endForEach
+                  background = CompositeImage(bitmap)
+                [else]
+                  background = CompositeImage(AppData.tMusImg[index])
+                [endIf]
+                escapeForEach
+              endIf
+            endIf
+            index++
+          endForEach
+        case 2:
+          forEach(pt in AppData.tLands)
+            if(pt.name.as_String.contains(pageName[0]))
+              if(pageName.count == 1 or (pageName.count > 1 and pt.name.as_String.contains(pageName[1])))
+                text = pt.desc.as_String
+                pageText = f.word_wrap(text,bbi.size.x*0.95)
+                cost = pt.cost.as_String
+                hours = pt.hours.as_String
+                fileName = pt.name.as_String + ".jpeg"
+                [if defined(ANDROID)]
+                  if(ObjC.fileExisted(fileName) == -1)
+                    background = CompositeImage(fileName)
+                    escapeForEach
+                  endIf
+                  local Array<<Int32>> data = ObjC.loadExpansionBitmapData(AppData.tLandImg[index])
+                  local var bitmap = Bitmap( 1, 1 )
+                  bitmap.data = data
+                  bitmap.width = data[ data.count - 2 ]
+                  bitmap.height = data[ data.count - 1 ]
+                  forEach (i of bitmap.data)
+                    local var c = bitmap.data[i]
+                    bitmap.data[i] = (c & 0xff00ff00) | (c.right_shifted(16) & 0xff) | (c.left_shifted(16) & 0xff0000)
+                  endForEach
+                  background = CompositeImage(bitmap)
+                [else]
+                  background = CompositeImage(AppData.tLandImg[index])
+                [endIf]
+                escapeForEach
+              endIf
+            endIf
+            index++
+          endForEach
+        case 3:
+          forEach(pt in AppData.higherEd)
+            if(pt.name.as_String.contains(pageName[0]))
+              if(pageName.count == 1 or (pageName.count > 1 and pt.name.as_String.contains(pageName[1])))
+                text = pt.desc.as_String
+                pageText = f.word_wrap(text,bbi.size.x*0.95)
+                cost = pt.cost.as_String
+                hours = pt.hours.as_String
+                fileName = pt.name.as_String + ".jpeg"
+                [if defined(ANDROID)]
+                  if(ObjC.fileExisted(fileName) == -1)
+                    background = CompositeImage(fileName)
+                    escapeForEach
+                  endIf
+                  local Array<<Int32>> data = ObjC.loadExpansionBitmapData(AppData.higherImg[index])
+                  local var bitmap = Bitmap( 1, 1 )
+                  bitmap.data = data
+                  bitmap.width = data[ data.count - 2 ]
+                  bitmap.height = data[ data.count - 1 ]
+                  forEach (i of bitmap.data)
+                    local var c = bitmap.data[i]
+                    bitmap.data[i] = (c & 0xff00ff00) | (c.right_shifted(16) & 0xff) | (c.left_shifted(16) & 0xff0000)
+                  endForEach
+                  background = CompositeImage(bitmap)
+                [else]
+                  background = CompositeImage(AppData.higherImg[index])
+                [endIf]
+                escapeForEach
+              endIf
+            endIf
+            index++
+          endForEach
+        case 4:
+          forEach(pt in AppData.preserves)
+            if(pt.name.as_String.contains(pageName[0]))
+              if(pageName.count == 1 or (pageName.count > 1 and pt.name.as_String.contains(pageName[1])))
+                text = pt.desc.as_String
+                pageText = f.word_wrap(text,bbi.size.x*0.95)
+                cost = pt.cost.as_String
+                hours = pt.hours.as_String
+                fileName = pt.name.as_String + ".jpeg"
+                [if defined(ANDROID)]
+                  if(ObjC.fileExisted(fileName) == -1)
+                    background = CompositeImage(fileName)
+                    escapeForEach
+                  endIf
+                  local Array<<Int32>> data = ObjC.loadExpansionBitmapData(AppData.preImg[index])
+                  local var bitmap = Bitmap( 1, 1 )
+                  bitmap.data = data
+                  bitmap.width = data[ data.count - 2 ]
+                  bitmap.height = data[ data.count - 1 ]
+                  forEach (i of bitmap.data)
+                    local var c = bitmap.data[i]
+                    bitmap.data[i] = (c & 0xff00ff00) | (c.right_shifted(16) & 0xff) | (c.left_shifted(16) & 0xff0000)
+                  endForEach
+                  background = CompositeImage(bitmap)
+                [else]
+                  background = CompositeImage(AppData.preImg[index])
+                [endIf]
+                escapeForEach
+              endIf
+            endIf
+            index++
+          endForEach
+        case 5:
+          forEach(pt in AppData.tBus)
+            if(pt.name.as_String.contains(pageName[0]))
+              if(pageName.count == 1 or (pageName.count > 1 and pt.name.as_String.contains(pageName[1])))
+                text = pt.desc.as_String
+                pageText = f.word_wrap(text,bbi.size.x*0.95)
+                cost = pt.cost.as_String
+                hours = pt.hours.as_String
+                fileName = pt.name.as_String + ".jpeg"
+                [if defined(ANDROID)]
+                  if(ObjC.fileExisted(fileName) == -1)
+                    background = CompositeImage(fileName)
+                    escapeForEach
+                  endIf
+                  local Array<<Int32>> data = ObjC.loadExpansionBitmapData(AppData.tBusImg[index])
+                  local var bitmap = Bitmap( 1, 1 )
+                  bitmap.data = data
+                  bitmap.width = data[ data.count - 2 ]
+                  bitmap.height = data[ data.count - 1 ]
+                  forEach (i of bitmap.data)
+                    local var c = bitmap.data[i]
+                    bitmap.data[i] = (c & 0xff00ff00) | (c.right_shifted(16) & 0xff) | (c.left_shifted(16) & 0xff0000)
+                  endForEach
+                  background = CompositeImage(bitmap)
+                [else]
+                  background = CompositeImage(AppData.tBusImg[index])
+                [endIf]
+                escapeForEach
+              endIf
+            endIf
+            index++
+          endForEach
+        case 6:
+          forEach(pt in AppData.missions)
+            if(pt.name.as_String.contains(pageName[0]))
+              if(pageName.count == 1 or (pageName.count > 1 and pt.name.as_String.contains(pageName[1])))
+                text = pt.desc.as_String
+                pageText = f.word_wrap(text,bbi.size.x*0.95)
+                cost = pt.cost.as_String
+                hours = pt.hours.as_String
+                fileName = pt.name.as_String + ".jpeg"
+                [if defined(ANDROID)]
+                  if(ObjC.fileExisted(fileName) == -1)
+                    background = CompositeImage(fileName)
+                    escapeForEach
+                  endIf
+                  local Array<<Int32>> data = ObjC.loadExpansionBitmapData(AppData.missImg[index])
+                  local var bitmap = Bitmap( 1, 1 )
+                  bitmap.data = data
+                  bitmap.width = data[ data.count - 2 ]
+                  bitmap.height = data[ data.count - 1 ]
+                  forEach (i of bitmap.data)
+                    local var c = bitmap.data[i]
+                    bitmap.data[i] = (c & 0xff00ff00) | (c.right_shifted(16) & 0xff) | (c.left_shifted(16) & 0xff0000)
+                  endForEach
+                  background = CompositeImage(bitmap)
+                [else]
+                  background = CompositeImage(AppData.missImg[index])
+                [endIf]
+                escapeForEach
+              endIf
+            endIf
+            index++
+          endForEach
+        case 7:
+          forEach(pt in AppData.nBus)
+            if(pt.name.as_String.contains(pageName[0]))
+              if(pageName.count == 1 or (pageName.count > 1 and pt.name.as_String.contains(pageName[1])))
+                text = pt.desc.as_String
+                pageText = f.word_wrap(text,bbi.size.x*0.95)
+                cost = pt.cost.as_String
+                hours = pt.hours.as_String
+                fileName = pt.name.as_String + ".jpeg"
+                [if defined(ANDROID)]
+                  if(ObjC.fileExisted(fileName) == -1)
+                    background = CompositeImage(fileName)
+                    escapeForEach
+                  endIf
+                  local Array<<Int32>> data = ObjC.loadExpansionBitmapData(AppData.nBusImg[index])
+                  local var bitmap = Bitmap( 1, 1 )
+                  bitmap.data = data
+                  bitmap.width = data[ data.count - 2 ]
+                  bitmap.height = data[ data.count - 1 ]
+                  forEach (i of bitmap.data)
+                    local var c = bitmap.data[i]
+                    bitmap.data[i] = (c & 0xff00ff00) | (c.right_shifted(16) & 0xff) | (c.left_shifted(16) & 0xff0000)
+                  endForEach
+                  background = CompositeImage(bitmap)
+                [else]
+                  background = CompositeImage(AppData.nBusImg[index])
+                [endIf]
+                escapeForEach
+              endIf
+            endIf
+            index++
+          endForEach
+        others:
+      endWhich
+
+      local var modY = 1.0
+      local var modX = 1.0
+      if(background.size.y < Display.size.y) modY = Display.size.y/background.size.y
+      if(background.size.x < Display.size.x) modX = Display.size.x/background.size.x
+
+      local var mod = Math.max(modX,modY)
+      [if defined(PLATFORM_IOS)]
+        background.scale *= mod
+        background.handle = Handle.center
+        background.position = Display.center
+      [else]
+        if(modX < 1.0 or modY < 1.0)
+          background.scale *= mod
+          background.handle = Handle.center
+          background.position = Display.center
+        else
+          background.scale = (background.size * mod)/background.size
+          background.handle = Handle.center
+          background.position = Display.center
+        endIf
+      [endIf]
+
+      if(cost.count == 0) cost = "Unknown"
+      if(hours.count == 0) hours = "Unknown"
+
+      down_arrow = Image("Down_Arrow.png")
+      up_arrow = Image("Up_Arrow.png")
+      down_arrow.handle = Vector2(down_arrow.size.x/2,down_arrow.size.y)
+      up_arrow.handle = Vector2(down_arrow.size.x/2,0)
+
+      local var height = Display.size.y*0.07796101949025
+
+      accentBar = Box(Vector2(0,navBar.center.y-height/2),Vector2(Display.size.x,height))
+
+      logo = Image("Logo.png")
+      logo.size = Vector2(height,height)
+      logo.handle = Handle.center
+      logo.position = Vector2(Display.size.x-logo.size.x/2-30,navBar.center.y)
+
+      maxScroll = (navBar.size.y + 15 + font2.height/2 + pageText.count*font2.height*1.5) - (Display.size.y - Display.size.y*0.19 - navBar.size.y)
+
+
+      local String[] newPT = String[]()
+      newPT.add("  ")
+      newPT.add("  ")
+      forEach(p in pageText) newPT.add(p)
+      newPT.add("  ")
+      newPT.add("  ")
+      scrollTable = ScrollTextTable(bbi,newPT,f)
+      scrollTable.centerFont = false
+
+      sound = Image("Sound.png")
+      sound.size = Vector2(logo.size.x*0.8,logo.size.x*0.8)
+      sound.handle = Handle.center
+      sound.position = Display.size - sound.size*0.60
+
+
+    method expandBlurBox
+      expand = true
+
+    method shrinkBlurBox
+      shrink = true
+
+    method setCell(CustomCell c)
+      cell = c
+
+    method update
+      if(animateIn)
+        if(t < 1.0)
+          t += dt
+          t = Math.min(1,t)
+          local var newY = startY + Easing.easeOut(t) * (navBar.size.y - startY)
+          local var newY2 = startY2 + Easing.easeOut(t) * (Display.size.y*0.81 - startY2)
+          blurBox = Box(Vector2(0,newY),Vector2(Display.size.x,startH))
+          detailsBox = Box(Vector2(0,newY2),Vector2(Display.size.x,Display.size.y*0.19))
+          #scrollTable.top_y = blurBox.y1
+        else
+          t = 0.0
+          animateIn = false
+          shrunk = true
+          startY = navBar.size.y
+          startY2 = Display.size.y*0.81
+          blurBox = Box(Vector2(0,startY),Vector2(Display.size.x,startH))
+          detailsBox = Box(Vector2(0,startY2),Vector2(Display.size.x,Display.size.y*0.19)) 
+          #scrollTable.top_y = blurBox.y1
+          scrollTable.boxSet = true
+        endIf
+      elseIf(animateOut)
+        if(t < 1.0)
+          t += dt
+          t = Math.min(1,t)
+          local var endPoint = 0
+          if(returnMain)
+            endPoint = -Display.size.y*0.31+navBar.size.y
+          else
+            endPoint = (-Display.size.y*0.31+navBar.size.y) + 45
+          endIf
+          local var newY = startY + Easing.easeOut(t) * (endPoint - startY)
+          local var newY2 = startY2 + Easing.easeOut(t) * (Display.size.y - startY2)
+          blurBox = Box(Vector2(0,newY),Vector2(Display.size.x,startH))
+          detailsBox = Box(Vector2(0,newY2),Vector2(Display.size.x,Display.size.y*0.19))
+        else
+          t = 0.0
+          animateOut = false
+          local var endPoint = 0
+          if(returnMain)
+            endPoint = -Display.size.y*0.31+navBar.size.y
+          else
+            endPoint = (-Display.size.y*0.31+navBar.size.y) + 45
+          endIf
+          shrunk = true
+          startY = endPoint
+          startY2 = Display.size.y
+          blurBox = Box(Vector2(0,startY),Vector2(Display.size.x,startH))
+          detailsBox = Box(Vector2(0,startY2),Vector2(Display.size.x,Display.size.y*0.19))
+          if(returnMain)
+            if(!AppData.fromMaps)
+              AppData.returnFromSite = true
+            else
+            endIf
+            fromMaps = false
+            pop()
+          else
+            tiny = true
+          endIf
+        endIf
+      elseIf(expand)
+        if(t < 1.0)
+          t += dt
+          t = Math.min(1,t)
+          local var newH = startH + Easing.easeOut(t) * (detailsBox.y1 - startH)
+          local var newF = 180.0 + Easing.easeOut(t) * (230.0 - 180.0)
+          blurBox = Box(Vector2(0,startY),Vector2(Display.size.x,newH))
+          fade = newF
+          #scrollTable.top_y = blurBox.y1
+        else
+          t = 0.0
+          expand = false
+          expanded = true
+          shrunk = false
+          fade = 230.0
+          startH = detailsBox.y1-navBar.y2
+          blurBox = Box(Vector2(0,startY),Vector2(Display.size.x,startH))
+          #scrollTable.top_y = blurBox.y1
+        endIf
+      elseIf(shrink)
+        if(t < 1.0)
+          t += dt
+          t = Math.min(1,t)
+          local var newH = startH + Easing.easeOut(t) * (Display.size.y*0.31 - startH)
+          local var newF = 230.0 + Easing.easeOut(t) * (180.0 - 230.0)
+          blurBox = Box(Vector2(0,startY),Vector2(Display.size.x,newH))
+          fade = newF
+          #scrollTable.top_y = blurBox.y1
+        else
+          t = 0.0
+          shrink = false
+          shrunk = true
+          expanded = false
+          fade = 180.0
+          startH = Display.size.y*0.51
+          blurBox = Box(Vector2(0,startY),Vector2(Display.size.x,startH))
+          #scrollTable.top_y = blurBox.y1
+        endIf
+      else
+        if(detailsExpanded)
+          startY2 = Display.size.y*0.62
+        else
+          startY2 = Display.size.y*0.81
+        endIf
+        blurBox = Box(Vector2(0,startY),Vector2(Display.size.x,startH))
+        detailsBox = Box(Vector2(0,startY2),Vector2(Display.size.x,Display.size.y-startY2))
+      endIf
+      if(expanded) 
+        if(dragged)
+          
+        else
+          if((waitTime < 180 and !resetDesc) or (waitTime < 600 and resetDesc))
+            waitTime++
+          else
+            if(resetDesc)
+              resetDesc = false
+              waitTime = 0
+              scrollerY = 0.0
+            else
+              scrollerY += 0.125
+            endIf
+          endIf
+          #scrollTable.top_y = -scrollerY
+        endIf
+      else
+        waitTime = 0
+        scrollerY = 0
+        dragged = false
+      endIf
+      blurBoxIn = Box(Vector2(blurBox.x1+15,blurBox.y1+15),Vector2(blurBox.size.x-30,blurBox.size.y-30))
+      local var space = detailsBox.size.y*0.15
+      actionBar = Box(Vector2(0,detailsBox.y1 + detailsBox.size.y*0.75),Vector2(Display.size.x,detailsBox.size.y*0.25))
+      count++
+      if(count%3 == 0)
+        count = 0
+        rotate++
+      endIf
+      if(rotate == 360) rotate = 0
+      scrollTable.bounds = blurBoxIn
+      scrollTable.update
+      #logo.angle(Degrees(rotate))
+
+    method draw
+      background.draw(Display.center)
+      blurBox.fill(Color(70,74,79,fade)) 
+      Display.clipping_region = blurBoxIn
+      if(!tiny)
+        scrollTable.draw() 
+      endIf
+      Display.clear_clipping_region
+      down_arrow.draw(Vector2(blurBoxIn.x2,blurBox.y2))
+      if(!animateOut and !tiny) up_arrow.draw(Vector2(blurBoxIn.x2,blurBox.y1))
+      navBar.fill(Color(76,194,210,255))
+      accentBar.fill(Color(76,194,210,178))
+      #253
+      font.scale = HomeScreen.titleScale#AppData.findFontScale(font,0.75,0.35322580645161,navBar.size.y)
+      font.handle = Handle.center
+      if(pageName.count == 1)
+        font.draw(pageName[0].to_uppercase,navBar.center + Vector2(0,0))
+      elseIf(pageName.count == 2)
+        font.draw(pageName[0].to_uppercase,navBar.center + Vector2(0,-font.height*0.52))
+        font.draw(pageName[1].to_uppercase,navBar.center + Vector2(0,font.height*0.52))
+      else
+        font.draw(pageName[0].to_uppercase,navBar.center + Vector2(0,-font.height*0.75))
+        font.draw(pageName[1].to_uppercase,navBar.center)
+        font.draw(pageName[2].to_uppercase,navBar.center + Vector2(0,font.height*0.75))
+      endIf
+      detailsBox.fill(Color(76,194,210,230))
+
+      if(detailsExpanded)
+        font2.handle = Handle.center
+        font2.scale = AppData.findFontScale(font2,0.55,0.11283831768326,Display.size.y*0.19)
+        local var space = detailsBox.size.y*0.10
+        font2.draw("Location",Vector2(detailsBox.center.x,detailsBox.y1+space))
+        font2.draw("" + street,Vector2(detailsBox.center.x,detailsBox.y1+space + detailsBox.size.y*0.12))
+        font2.draw("" + city + " " + state,Vector2(detailsBox.center.x,detailsBox.y1+space + detailsBox.size.y*0.24))
+        font2.scale = AppData.findFontScale(font2,0.55,0.11283831768326,Display.size.y*0.19)
+        font2.draw("Cost",Vector2(detailsBox.center.x,detailsBox.y1+space + detailsBox.size.y*0.39))
+        font2.draw("" + cost,Vector2(detailsBox.center.x,detailsBox.y1+space + detailsBox.size.y*0.51))
+        font2.scale = AppData.findFontScale(font2,0.55,0.11283831768326,Display.size.y*0.19)
+        font2.draw("Hours: " + hours,Vector2(detailsBox.center.x,detailsBox.y1+space + detailsBox.size.y*0.66))
+        font.scale = AppData.findFontScale(font,0.55,0.15623767063837,Display.size.y*0.19)
+        font.draw("Click Here For Directions & Website".to_uppercase,Vector2(detailsBox.center.x,detailsBox.y1+space + detailsBox.size.y*0.81))
+      else
+        font2.handle = Vector2(0,0)
+        font2.scale = AppData.findFontScale(font2,0.55,0.11283831768326,Display.size.y*0.19)
+        local var space = detailsBox.size.y*0.15
+        local String costStr = "Cost: " + cost
+        local String hoursStr = "Hours: " + hours
+        if(font2.text_width_of(costStr) > Display.size.x * 0.95)
+          local String[] costList = font2.word_wrap(costStr,Display.size.x*0.90)
+          font2.draw("" + costList[0],Vector2(detailsBox.x1+20,detailsBox.y1+space))
+          font2.draw("      " + costList[1],Vector2(detailsBox.x1+20,detailsBox.y1+space + detailsBox.size.y*0.175))
+          font2.draw("Hours: " + hours,Vector2(detailsBox.x1+20,detailsBox.y1+space + detailsBox.size.y*0.35))
+        elseIf(font2.text_width_of(hoursStr) > Display.size.x * 0.95)
+          local String[] hourList = font2.word_wrap(hoursStr,Display.size.x*0.90)
+          font2.draw("Cost: " + cost,Vector2(detailsBox.x1+20,detailsBox.y1+space))
+          font2.draw("" + hourList[0],Vector2(detailsBox.x1+20,detailsBox.y1+space + detailsBox.size.y*0.175))
+          font2.draw("           " + hourList[1],Vector2(detailsBox.x1+20,detailsBox.y1+space + detailsBox.size.y*0.35))
+        else
+          font2.draw("Cost: " + cost,Vector2(detailsBox.x1+20,detailsBox.y1+space + detailsBox.size.y*0.175))
+          font2.draw("Hours: " + hours,Vector2(detailsBox.x1+20,detailsBox.y1+space + detailsBox.size.y*0.35))
+        endIf
+        font.scale = AppData.findFontScale(font,0.55,0.15623767063837,Display.size.y*0.19)
+        font.handle = Vector2(0,0)
+        font.draw("Click Here For Directions & Website".to_uppercase,Vector2(detailsBox.x1+20,detailsBox.y1+space + detailsBox.size.y*0.525))
+      endIf
+      logo.draw
+      backButton.draw
+      sound.draw
+
+    method on( MouseEvent e )
+      if(animateIn) return
+      if(animateOut) return
+      if(expand) return
+      if(shrink) return
+
+      which (e.type)
+        case MouseEvent.button_press
+          #shouldnt happen
+          if(actionBar.contains(e.position))
+            actionSelected = true
+            #elseIf(detailsBox.contains(e.position)) 
+            #dragInfo = true
+            #dragStart = e.position
+          elseIf(blurBoxIn.contains(e.position))
+            scrollTable.on(e)
+            startDrag = e.position
+            dragged = true
+          endIf
+
+        case MouseEvent.movement:
+          #shouldnt happen
+          #{if(dragInfo)
+            local var delta = dragStart.y - e.position.y
+            if(delta > 30)
+              detailsExpanded = true
+            elseIf(delta < -30)
+              detailsExpanded = false
+            endIf
+          elseI}#
+          if(blurBoxIn.contains(e.position) and startDrag != Vector2(0,0))
+            local var delta = e.position - startDrag
+            startDrag = e.position
+            scrollerY += delta.y
+            if(scrollerY < 0) scrollerY = 0
+            if(scrollerY > maxScroll) scrollerY = maxScroll
+            scrollTable.on(e)
+          endIf
+
+        case MouseEvent.button_release:
+          startDrag = Vector2(0,0)
+          #{if(dragInfo)
+            dragInfo = false
+            if(!detailsExpanded) 
+              detailsExpanded = true
+            else
+              detailsExpanded = false
+            endIf
+            return
+          elseIf(detailsExpanded)
+            detailsExpanded = false
+          endIf}#
+          if(sound.bounding_box.contains(e.position))
+            if(AppData.music.is_playing)
+              AppData.music.stop()
+              return
+            else
+              AppData.music.play()
+              return
+            endIf
+          endIf
+          if(Box(Vector2(navBar.x1,navBar.y1),Vector2(backButton.bounding_box.x2,navBar.size.y)).contains(e.position))
+            animateOut = true
+            returnMain = true
+            waitTime = 0
+            scrollerY = 0
+          elseIf(logo.bounding_box.contains(e.position))
+            animateOut = true
+            returnMain = true
+            waitTime = 0
+            scrollerY = 0
+          elseIf(blurBox.contains(e.position))
+            scrollTable.on(e)
+            if(expanded)
+              
+              if((e.position.y < blurBox.center.y - blurBox.size.y*0.4) and (e.position.x > blurBox.center.x + blurBox.size.x*0.4))
+                  shrinkBlurBox()
+                  #scrollTable.top_y = blurBox.y1 + 15
+                elseIf((e.position.y > blurBox.center.y + blurBox.size.y*0.4) and (e.position.x > blurBox.center.x + blurBox.size.x*0.4))
+                endIf
+            elseIf(shrunk)
+              if(tiny)
+                animateIn = true
+                tiny = false
+              else
+                if((e.position.y < blurBox.center.y - blurBox.size.y*0.4) and (e.position.x > blurBox.center.x + blurBox.size.x*0.4))
+                  animateOut = true
+                  returnMain = false
+                  dragged = false
+                elseIf((e.position.y > blurBox.center.y + blurBox.size.y*0.4) and (e.position.x > blurBox.center.x + blurBox.size.x*0.4))
+                  dragged = false
+                  expandBlurBox()
+                endIf
+              endIf
+            endIf
+          elseIf(actionBar.contains(e.position) and actionSelected)
+            actionSelected = false
+            ObjC.exploreAction(cell.cellType,index)
+          endIf
+      endWhich
+
+    method on( KeyEvent e )
+      if (e.is_press(Key.keycode_escape) and !animateOut)
+        animateOut = true
+        returnMain = true
+        waitTime = 0
+        scrollerY = 0
+      endIf
+      
+
+endClass
+
+class MenuButton
+  
+  PROPERTIES
+    bar    : Box
+    button : Quad
+    title  : String
+    title2 : String
+    pos    : Vector2
+    font   : Font
+    font2  : Font
+    width  : Real64
+    height : Real64
+    fade   : Real64
+    size   : Vector2
+    centerTitle : Logical
+    centerTitle2: Logical
+    stayCenter  : Logical
+    hideText    : Logical
+
+  METHODS
+    method init(title,title2,pos,width,height)
+      size = Vector2(width+height,height)
+      button = Quad(Vector2(pos.x,pos.y-height/2),Vector2(pos.x+width,pos.y-height/2),Vector2(pos.x+width+height,pos.y+height/2),Vector2(pos.x,pos.y+height/2))
+      bar = Box(Vector2(-Display.size.x,pos.y-size.y/2),Vector2(Display.size.x,size.y))
+      font = Font(AppData.getFuturaString()) 
+      font.scale = HomeScreen.titleScale#AppData.findFontScale(font,0.75,0.51923076923077,height)
+      #0.51923076923077
+      font.handle = Vector2(0,font.height/2)
+      font2 = Font(AppData.getFuturaString())
+      font2.handle = Handle.center
+      font2.scale = HomeScreen.titleScale#AppData.findFontScale(font2,0.75,0.51923076923077,height)
+      fade = 1.0
+
+    method update
+      bar = Box(Vector2(pos.x-Display.size.x,pos.y-size.y/2),Vector2(Display.size.x,size.y))
+      button = Quad(Vector2(pos.x,pos.y-height/2),Vector2(pos.x+width,pos.y-height/2),Vector2(pos.x+width+height,pos.y+height/2),Vector2(pos.x,pos.y+height/2))
+
+    method draw 
+      if(!title.equals_ignore_case("empty"))
+        button.fill(Color(76,194,210,178))
+        bar.fill(Color(76,194,210,178))
+        if(centerTitle)
+          font2.handle = Handle.center
+          font.handle = Handle.center
+          font.alpha(fade*255)
+          font2.alpha((1.0-(fade/1.0))*255)
+          local var newX = Math.min(pos.x,Display.center.x)
+          if(newX == Display.center.x) stayCenter = true
+          if(stayCenter) newX = Display.center.x
+          if(title2.equals_ignore_case("empty"))
+            if(!hideText) font.draw(title.to_uppercase,Vector2(newX,pos.y))
+            font2.draw(title,Vector2(newX,pos.y))
+          else
+            if(!hideText) font.draw(title.to_uppercase,Vector2(newX,pos.y) + Vector2(0,-size.y/5))
+            if(!hideText) font.draw(title2,Vector2(newX,pos.y) + Vector2(0,size.y/5))
+            font2.draw(title.to_uppercase,Vector2(newX,pos.y) + Vector2(0,-size.y/5))
+            font2.draw(title2,Vector2(newX,pos.y) + Vector2(0,size.y/5))
+          endIf
+        else
+          font.alpha(255)
+          stayCenter = false
+          font.handle = Vector2(0,font.height/2)
+          if(title2.equals_ignore_case("empty"))
+            font.draw(title.to_uppercase,pos + Vector2(size.x*0.04768518518519,0))
+          else
+            font.draw(title.to_uppercase,pos + Vector2(size.x*0.04768518518519,-size.y/5))
+            font.draw(title2.to_uppercase,pos + Vector2(size.x*0.04768518518519,size.y/5))
+          endIf
+        endIf
+      endIf
+
+endClass
+
+
+singleton class Easing
+  METHODS
+    method linear(Real64 p).Real64
+      return p
+
+    method easeOut(Real64 p).Real64
+      local Real64 f = (p - 1)
+      return f * f * f + 1
+
+    method easeIn(Real64 p).Real64
+      return p * p * p
+
+    method sinEaseOut(Real64 p).Real64
+      return Math.sin(Radians(p * pi/2)) 
+
+    method sinEaseIn(Real64 p).Real64
+      return Math.sin(Radians((p - 1) * pi/2)) + 1
+      
+    method sinEaseInOut(Real64 p).Real64
+      return 0.5 * (1 - Math.cos(Radians(p * pi)))
+
+    method backIn(Real64 p).Real64
+      return p * p * p - p * Math.sin(Radians(p * pi))
+
+    method backOut(Real64 p).Real64
+      local Real64 f = (1 - p)
+      return 1 - (f * f * f - f * Math.sin(Radians(f * pi)))
+
+    method expEaseIn(Real64 p).Real64
+      if(p == 0.0)
+        return p
+      else
+        return 2^(10*(p - 1))
+      endIf
+
+    method expEaseOut(Real64 p).Real64
+      if(p == 1.0)
+        return p
+      else
+        return 1 - 2^(-10 * p)
+      endIf
+
+    method elasticEaseInOut(Real64 p).Real64
+      if(p < 0.5)
+        return 0.5 * Math.sin(Radians(13 * (pi/2) * (2 * p))) * 2^(10 * ((2 * p) - 1))
+      else
+        return 0.5 * (Math.sin(Radians(-13 * (pi/2) * ((2 * p - 1) + 1))) * 2^( -10 * (2 * p - 1)) + 2)
+      endIf
+
+    method elasticBounce(Real64 point).Real64
+      return Math.sin( Radians(-13 * (pi/2) * ((point) + 1))) * 2^(-10*point) + 1
+
+    method bounceEaseOut(Real64 p).Real64
+      if(p < 4/11.0)
+        return (121 * p * p)/16.0;
+      elseIf(p < 8/11.0)
+        return (363/40.0 * p * p) - (99/10.0 * p) + 17/5.0;
+      elseIf(p < 9/10.0)
+        return (4356/361.0 * p * p) - (35442/1805.0 * p) + 16061/1805.0;
+      else
+        return (54/5.0 * p * p) - (513/25.0 * p) + 268/25.0;
+      endIf
+
+endClass
+
+singleton class Animator
+  PROPERTIES
+    images()    : AnimationSet[]
+    fonts()     : AnimationSet[]
+    itemsAnimating : Int32
+    
+  METHODS
+    method update
+      forEach(i in images)
+        if(i.t < 1.0)
+          i.t += i.dt
+          i.t = Math.min(1,i.t)
+          local var x = i.start.x + i.func.call(i.t) * (i.end.x - i.start.x)
+          local var y = i.start.y + i.func.call(i.t) * (i.end.y - i.start.y) 
+          i.button.pos = Vector2(x,y)
+          if(i.toggle) 
+            i.button.fade = 1.0 - i.t
+          else
+            i.button.fade = 1.0
+          endIf
+        elseIf(!i.toggle)
+          HomeScreen.setTitles()
+          if(AppData.goHome)
+            HomeScreen.setHomeTitles() 
+          endIf
+          i.t = 0.0
+          i.toggle = true
+          i.start = i.start2
+          if(i.end.x == Display.size.x and (HomeScreen.onMap or HomeScreen.onAbout or HomeScreen.onExSub) and !HomeScreen.goingBack) HomeScreen.buttonLast = i.end
+          if(HomeScreen.onExSub and i.button.pos.x > 0) HomeScreen.canDrawCells = !HomeScreen.canDrawCells
+          i.end = i.end2
+        else
+          local var goAbout = false
+          if(HomeScreen.goingBack)
+            if(HomeScreen.onExSub)
+              if(itemsAnimating == 1)  #Make sure we only make these settings when the last button is finished animating, otherwise we would hit second condition
+                if(AppData.goHome)
+                  AppData.goHome = false
+                  HomeScreen.onExplore = false
+                  HomeScreen.onExSub = false
+                  HomeScreen.onNBusiness = false
+                  HomeScreen.onHighEd = false
+                  HomeScreen.onSMissions = false
+                  HomeScreen.onTLands = false
+                  HomeScreen.onPubMuseums = false
+                  HomeScreen.onPreserves = false
+                  HomeScreen.onTBusiness = false
+                  HomeScreen.onTMuseum = false
+                else
+                  HomeScreen.onExplore = true
+                  HomeScreen.onExSub = false
+                  HomeScreen.onNBusiness = false
+                  HomeScreen.onHighEd = false
+                  HomeScreen.onSMissions = false
+                  HomeScreen.onTLands = false
+                  HomeScreen.onPubMuseums = false
+                  HomeScreen.onPreserves = false
+                  HomeScreen.onTBusiness = false
+                  HomeScreen.onTMuseum = false
+                endIf
+              endIf
+            else
+              HomeScreen.onExplore = false
+              HomeScreen.onMap = false
+              HomeScreen.onAbout = false
+            endIf
+          else
+            if(HomeScreen.onAbout)
+              if(itemsAnimating == 1) goAbout = true
+            endIf
+          endIf
+          if(itemsAnimating > 0) itemsAnimating--  #Decrement items animating with each removal
+          removeCurrent i
+          if(goAbout)
+            HomeScreen.transitionToAbout()
+          endIf
+        endIf 
+      endForEach
+      forEach(i in fonts)
+        if(i.t < 1.0)
+          i.t += i.dt
+          i.t = Math.min(1,i.t)
+          local var x = i.start.x + i.func.call(i.t) * (i.end.x - i.start.x)
+          local var y = i.start.y + i.func.call(i.t) * (i.end.y - i.start.y)
+          if(HomeScreen.currentB != null and HomeScreen.animCellText and !i.toggle)
+            if(HomeScreen.animCellTextReverse)
+              HomeScreen.currentB.fade = 1.0 - i.t
+            else
+              HomeScreen.currentB.fade = i.t
+            endIf 
+          endIf
+          i.font.pos = Vector2(x,y)
+        elseIf(!i.toggle)
+          i.t = 0
+          i.toggle = true
+          i.start = i.start2
+          i.end = i.end2
+        else
+          if(!HomeScreen.goingBack and HomeScreen.onMap) ObjC.showDialog
+          if(HomeScreen.currentB != null and HomeScreen.animCellText)
+            if(HomeScreen.animCellTextReverse)
+              HomeScreen.animCellText = false
+              HomeScreen.animCellTextReverse = false
+            endIf
+          endIf
+          removeCurrent i
+        endIf 
+      endForEach
+
+    method animate(MenuButton button, Real64 t, Real64 dt, Vector2 start, Vector2 end, Vector2 start2, Vector2 end2, String animKey)
+      local AnimationSet anim = AnimationSet()
+      anim.button = button
+      anim.t = t
+      anim.dt = dt
+      anim.start = start
+      anim.end = end
+      anim.start2 = start2
+      anim.end2 = end2
+      local Delegate(Real64).Real64 func 
+      which(animKey)
+        case "easeIn":
+          func = Easing.delegate(easeIn)
+        case "easeOut":
+          func = Easing.delegate(easeOut)
+        case "sinEaseIn":
+          func = Easing.delegate(sinEaseIn)
+        case "sinEaseOut":
+          func = Easing.delegate(sinEaseOut)
+        case "sinEaseInOut":
+          func = Easing.delegate(sinEaseInOut)
+        case "backIn":
+          func = Easing.delegate(backIn)
+        case "backOut":
+          func = Easing.delegate(backOut)
+        case "expEaseIn":
+          func = Easing.delegate(expEaseIn)
+        case "expEaseOut":
+          func = Easing.delegate(expEaseOut)
+        case "bounceEaseOut":
+          func = Easing.delegate(bounceEaseOut)
+          anim.bounce = true
+        case "linearFade":
+          func = Easing.delegate(sinEaseInOut)
+          anim.fade = true
+        case "linFadeShrink":
+          func = Easing.delegate(backOut)
+          anim.shrink = true
+        case "spring":
+          func = Easing.delegate(elasticBounce)
+          anim.spring = true
+        case "spring2":
+          #{if(!Globals.toggle)
+            func = Easing.delegate(sinEaseIn)
+          else
+            func = Easing.delegate(sinEaseOut)
+          endIf
+          Globals.toggle = !Globals.toggle
+          anim.spring2 = true}#
+        case "spring3":
+          #{if(!Globals.toggle)
+            func = Easing.delegate(sinEaseIn)
+          else
+            func = Easing.delegate(sinEaseOut)
+          endIf
+          Globals.toggle = !Globals.toggle
+          anim.spring3 = true}#
+        case "fullFade":
+          func = Easing.delegate(linear)
+          anim.fadeAll = true
+        others: 
+          func = Easing.delegate(linear)
+      endWhich
+      anim.func = func
+      images.add(anim)
+
+    method animate2(MenuButton button, Real64 t, Real64 dt, Vector2 start, Vector2 end, String animKey)
+      local AnimationSet anim = AnimationSet()
+      anim.button = button
+      anim.t = t
+      anim.dt = dt
+      anim.start = start
+      anim.end = end
+      local Delegate(Real64).Real64 func 
+      which(animKey)
+        case "easeIn":
+          func = Easing.delegate(easeIn)
+        case "easeOut":
+          func = Easing.delegate(easeOut)
+        case "sinEaseIn":
+          func = Easing.delegate(sinEaseIn)
+        case "sinEaseOut":
+          func = Easing.delegate(sinEaseOut)
+        case "sinEaseInOut":
+          func = Easing.delegate(sinEaseInOut)
+        case "backIn":
+          func = Easing.delegate(backIn)
+        case "backOut":
+          func = Easing.delegate(backOut)
+        case "expEaseIn":
+          func = Easing.delegate(expEaseIn)
+        case "expEaseOut":
+          func = Easing.delegate(expEaseOut)
+        case "bounceEaseOut":
+          func = Easing.delegate(bounceEaseOut)
+          anim.bounce = true
+        case "linearFade":
+          func = Easing.delegate(sinEaseInOut)
+          anim.fade = true
+        case "linFadeShrink":
+          func = Easing.delegate(backOut)
+          anim.shrink = true
+        case "spring":
+          func = Easing.delegate(elasticBounce)
+          anim.spring = true
+        case "spring2":
+          #{if(!Globals.toggle)
+            func = Easing.delegate(sinEaseIn)
+          else
+            func = Easing.delegate(sinEaseOut)
+          endIf
+          Globals.toggle = !Globals.toggle
+          anim.spring2 = true}#
+        case "spring3":
+          #{if(!Globals.toggle)
+            func = Easing.delegate(sinEaseIn)
+          else
+            func = Easing.delegate(sinEaseOut)
+          endIf
+          Globals.toggle = !Globals.toggle
+          anim.spring3 = true}#
+        case "fullFade":
+          func = Easing.delegate(linear)
+          anim.fadeAll = true
+        others: 
+          func = Easing.delegate(linear)
+      endWhich
+      anim.func = func
+      anim.toggle = true
+      images.add(anim)
+
+    method animateFont(MovingFont font, Real64 t, Real64 dt, Vector2 start, Vector2 end, Vector2 start2, Vector2 end2, String animKey)
+      local AnimationSet anim = AnimationSet()
+      anim.font = font
+      anim.t = t
+      anim.dt = dt
+      anim.start = start
+      anim.end = end
+      anim.start2 = start2
+      anim.end2 = end2
+      local Delegate(Real64).Real64 func 
+      which(animKey)
+        case "easeIn":
+          func = Easing.delegate(easeIn)
+        case "easeOut":
+          func = Easing.delegate(easeOut)
+        case "sinEaseIn":
+          func = Easing.delegate(sinEaseIn)
+        case "sinEaseOut":
+          func = Easing.delegate(sinEaseOut)
+        case "sinEaseInOut":
+          func = Easing.delegate(sinEaseInOut)
+        case "backIn":
+          func = Easing.delegate(backIn)
+        case "backOut":
+          func = Easing.delegate(backOut)
+        case "expEaseIn":
+          func = Easing.delegate(expEaseIn)
+        case "expEaseOut":
+          func = Easing.delegate(expEaseOut)
+        case "bounceEaseOut":
+          func = Easing.delegate(bounceEaseOut)
+          anim.bounce = true
+        case "linearFade":
+          func = Easing.delegate(sinEaseInOut)
+          anim.fade = true
+        case "linFadeShrink":
+          func = Easing.delegate(backOut)
+          anim.shrink = true
+        case "spring":
+          func = Easing.delegate(elasticBounce)
+          anim.spring = true
+        case "spring2":
+          #{if(!Globals.toggle)
+            func = Easing.delegate(sinEaseIn)
+          else
+            func = Easing.delegate(sinEaseOut)
+          endIf
+          Globals.toggle = !Globals.toggle
+          anim.spring2 = true}#
+        case "spring3":
+          #{if(!Globals.toggle)
+            func = Easing.delegate(sinEaseIn)
+          else
+            func = Easing.delegate(sinEaseOut)
+          endIf
+          Globals.toggle = !Globals.toggle
+          anim.spring3 = true}#
+        case "fullFade":
+          func = Easing.delegate(linear)
+          anim.fadeAll = true
+        others: 
+          func = Easing.delegate(linear)
+      endWhich
+      anim.func = func
+      fonts.add(anim)
+
+endClass
+
+class AnimationSet
+  PROPERTIES
+    button     : MenuButton
+    font       : MovingFont
+    t,dt       : Real64
+    start      : Vector2
+    end2       : Vector2
+    start2     : Vector2
+    end        : Vector2
+    fade       : Logical
+    fadeAll    : Logical
+    shrink     : Logical
+    bounce     : Logical
+    spring     : Logical
+    spring2    : Logical
+    spring3    : Logical
+    toggle     : Logical
+    func       : Delegate(Real64).Real64
+endClass
+
+class MovingFont
+  PROPERTIES
+    font : Font
+    pos  : Vector2
+
+  METHODS
+    method init(font,pos)
+
+    method draw(String text)
+      font.draw(text,pos)
+
+    method draw(String[] text)
+      if(text.count > 2)
+        font.draw(text[0].to_uppercase,pos - Vector2(0,font.height*0.75))
+        font.draw(text[1].to_uppercase,pos)
+        font.draw(text[2].to_uppercase,pos + Vector2(0,font.height*0.75))
+      elseIf(text.count > 1)
+        font.draw(text[0].to_uppercase,pos - Vector2(0,font.height*0.52))
+        font.draw(text[1].to_uppercase,pos + Vector2(0,font.height*0.52))
+      else
+        font.draw(text[0].to_uppercase,pos)
+      endIf
+
+endClass
+
+class CustomCell : Cell
+  PROPERTIES
+    background       : CompositeImage
+    foreground       : Box
+    t,dt             : Real64
+    startY,startH    : Real64
+    selfFade         : Real64
+    hide             : Logical
+    expand           : Logical
+    shrink           : Logical
+    remove           : Logical
+    fullyExpanded    : Logical
+    fullyShrank      : Logical
+    dontUpdate       : Logical
+    font             : Font
+    fade             : Real64
+    name             : String
+    cellType         : Int32
+    desc             : String[]
+  
+  METHODS
+    method init(width, height, x, y, name,String description,cellType)
+      prior.init(width, height, x, y)
+      [if defined(ANDROID)]
+        if(ObjC.fileExisted(name) == -1)
+          background = CompositeImage(name)
+        else
+          local Array<<Int32>> data = ObjC.loadExpansionBitmapData(name)
+          local var bitmap = Bitmap( 1, 1 )
+          bitmap.data = data
+          bitmap.width = data[ data.count - 2 ]
+          bitmap.height = data[ data.count - 1 ]
+          forEach (i of bitmap.data)
+            local var c = bitmap.data[i]
+            bitmap.data[i] = (c & 0xff00ff00) | (c.right_shifted(16) & 0xff) | (c.left_shifted(16) & 0xff0000)
+          endForEach
+          background = CompositeImage(bitmap)
+        endIf
+      [else]
+        background = CompositeImage(name)
+      [endIf] 
+      local var modY = 1.0
+      local var modX = 1.0
+      if(background.size.y < Display.size.y) modY = Display.size.y/background.size.y
+      if(background.size.x < Display.size.x) modX = Display.size.x/background.size.x
+
+      local var mod = Math.max(modX,modY)
+      [if defined(PLATFORM_IOS)]
+        background.scale *= mod
+        background.handle = Handle.center
+        background.position = Display.center
+      [else]
+        if(modX < 1.0 or modY < 1.0)
+          background.scale *= mod
+          background.handle = Handle.center
+          background.position = Display.center
+        else
+          background.scale = (background.size * mod)/background.size
+          background.handle = Handle.center
+          background.position = Display.center
+        endIf
+      [endIf]
+
+      font = Font(AppData.getFuturaString()) 
+      font.scale = HomeScreen.buttons[0].font2.scale
+      font.handle = Vector2(0,font.height/2)
+      background.alpha(0)
+      foreground = Box(Vector2(x,y+height*0.375),Vector2(width,height*0.25))
+      t = 0.0
+      dt = 1.0/50.0
+      fullyShrank = true
+      desc = font.word_wrap(description,AppData.fontWidth) 
+      startH = height
+
+    method update
+      if(dontUpdate) return
+      if(expand)
+        if(t < 1.0)
+          t += dt
+          t = Math.min(1,t)
+          local var newY = startY + Easing.easeOut(t) * (0.0 - startY)
+          local var newH = startH + Easing.easeOut(t) * (Display.size.y - startH) 
+          local var newF = 100.0 + Easing.easeOut(t) * (0.0 - 100.0)
+          selfFade = newF
+          y = newY
+          height = newH
+        else
+          t = 0.0
+          y = 0
+          height = Display.size.y
+          fullyExpanded = true
+          expand = false
+          HomeScreen.cellToPass = this
+          HomeScreen.transitionToSitePage()
+        endIf
+      elseIf(shrink)
+        if(t < 1.0)
+          t += dt
+          t = Math.min(1,t)
+          local var newY = 0.0 + Easing.easeOut(t) * (startY - 0.0)
+          local var newH = Display.size.y + Easing.easeOut(t) * (startH - Display.size.y)
+          local var newF = 0.0 + Easing.easeOut(t) * (100.0 - 0.0)
+          selfFade = newF
+          y = newY
+          height = newH
+        else
+          t = 0.0
+          y = startY
+          height = startH
+          shrink = false
+          fullyShrank = true
+          remove = true
+        endIf
+      endIf
+      bounds = Box(Vector2(x+2,y+2),Vector2(width-4,height-4))
+      inset = Box(Vector2(x,y),Vector2(width,height)) 
+      foreground = Box(Vector2(x,y+height*0.375),Vector2(width,height*0.25))
+      if(!Display.bounding_box.contains(bounds) and y > 0 and !expand and !shrink and !fullyExpanded)
+        inset = Box(Vector2(x,y),Vector2(width,Display.size.y-y))
+        if(Display.size.y - y > 4)
+          bounds = Box(Vector2(x+2,y+2),Vector2(width-4,Display.size.y-y-4))
+        else
+          bounds = Box(Vector2(x,y),Vector2(width,Display.size.y-y))
+        endIf
+      elseIf(!HomeScreen.tableView.bounds.contains(bounds) and y < HomeScreen.tableView.bounds.y1 and !expand and !shrink and !fullyExpanded)
+        inset = Box(Vector2(x,HomeScreen.tableView.bounds.y1),Vector2(width,startH-(HomeScreen.tableView.bounds.y1-y)))
+        if(bounds.y2 - HomeScreen.tableView.bounds.y1 > 4)
+          bounds = Box(Vector2(x+2,HomeScreen.tableView.bounds.y1+2),Vector2(width-4,startH-(HomeScreen.tableView.bounds.y1-y)-4))
+        else
+          bounds = Box(Vector2(x,HomeScreen.tableView.bounds.y1),Vector2(width,startH-(HomeScreen.tableView.bounds.y1-y)))
+        endIf
+      endIf
+      if(shrink or expand)
+        background.alpha(255)
+      else
+        background.alpha((1.0 - HomeScreen.buttons[0].fade)*255)
+      endIf
+
+    method setExpand
+      expand = true
+      startY = y
+      startH = height
+      t = 0.0
+      fullyShrank = false
+
+    method setShrink
+      shrink = true
+      t = 0.0
+      fullyExpanded = false
+
+    method draw
+      if(Display.bounding_box.intersects(bounds) and !hide)
+        if(!expand and !shrink) inset.draw(Color(255,255,255,(1.0 - HomeScreen.buttons[0].fade)*255))
+        font.color = Color(255,255,255,(1.0 - HomeScreen.buttons[0].fade)*255)
+        Display.clipping_region = bounds
+        background.draw(Display.center)
+        if(expand)
+          bounds.fill(Color(0,0,0,selfFade))
+        elseIf(shrink)
+          bounds.fill(Color(0,0,0,selfFade))
+        elseIf(fullyExpanded)
+          bounds.fill(Color(0,0,0,0))
+        else
+          bounds.fill(Color(0,0,0,(1.0 - HomeScreen.buttons[0].fade)*80))
+          font.handle = Handle.center
+          if(desc.count > 2)
+            font.draw(desc[0].to_uppercase,bounds.center - Vector2(0,font.height*0.75))
+            font.draw(desc[1].to_uppercase,bounds.center)
+            font.draw(desc[2].to_uppercase,bounds.center + Vector2(0,font.height*0.75))
+          elseIf(desc.count > 1)
+            font.draw(desc[0].to_uppercase,bounds.center - Vector2(0,font.height*0.52))
+            font.draw(desc[1].to_uppercase,bounds.center + Vector2(0,font.height*0.52))
+          else
+            font.draw(desc[0].to_uppercase,bounds.center)
+          endIf
+        endIf 
+        Display.clear_clipping_region 
+        #Vector2(bounds.x1,bounds.y1+height/2) + Vector2(width*0.04768518518519,0))
+      endIf
+
+    method on( MouseEvent e)
+      if (e.mouse_id != 1) return
+      if (!bounds.contains(e.position)) return
+
+      which (e.type)
+        case MouseEvent.button_press
+          #shouldnt happen
+
+        case MouseEvent.movement:
+          #shouldnt happen
+
+        case MouseEvent.button_release:
+          if(fullyShrank)
+            HomeScreen.focusCell = this
+            HomeScreen.animateTitleForSitePage(bounds.center,desc)
+            setExpand
+          elseIf(fullyExpanded)
+            setShrink
+          endIf
+      endWhich
+
+endClass
+
+requisite singleton class TriggeredMethods
+  
+  METHODS
+    requisite method loaderDone
+      AppData.loaderDone = true 
+
+    requisite method backFromMaps
+      HomeScreen.animateBack
+
+    requisite method goToSitePage(String title, Int32 category)
+      which(category)
+        case 0:
+          local var i = 0
+          forEach(c in AppData.museums)
+            if(title.equals_ignore_case(c.name.as_String))
+              SitePage.cell = CustomCell(Display.size.x,Display.size.y/5,0,HomeScreen.navBar.size.y+(i*Display.size.y/5), AppData.musImg[i],c.name.as_String,category)
+              SitePage.pageName = SitePage.cell.desc
+              AppData.fromMaps = true
+              HomeScreen.pushSitePage
+            endIf
+            i++
+          endForEach
+
+        case 1:
+          local var i = 0
+          forEach(c in AppData.tMuseums)
+            if(title.equals_ignore_case(c.name.as_String))
+              SitePage.cell = CustomCell(Display.size.x,Display.size.y/5,0,HomeScreen.navBar.size.y+(i*Display.size.y/5), AppData.tMusImg[i],c.name.as_String,category)
+               SitePage.pageName = SitePage.cell.desc
+               AppData.fromMaps = true
+               HomeScreen.pushSitePage
+            endIf
+            i++
+          endForEach
+
+        case 2:
+          local var i = 0
+          forEach(c in AppData.tLands)
+            if(title.equals_ignore_case(c.name.as_String))
+              SitePage.cell = CustomCell(Display.size.x,Display.size.y/5,0,HomeScreen.navBar.size.y+(i*Display.size.y/5), AppData.tLandImg[i],c.name.as_String,category)
+               SitePage.pageName = SitePage.cell.desc
+               AppData.fromMaps = true
+               HomeScreen.pushSitePage
+            endIf
+            i++
+          endForEach
+
+        case 3:
+          local var i = 0
+          forEach(c in AppData.higherEd)
+            if(title.equals_ignore_case(c.name.as_String))
+              SitePage.cell = CustomCell(Display.size.x,Display.size.y/5,0,HomeScreen.navBar.size.y+(i*Display.size.y/5), AppData.higherImg[i],c.name.as_String,category)
+               SitePage.pageName = SitePage.cell.desc
+               AppData.fromMaps = true
+               HomeScreen.pushSitePage
+            endIf
+            i++
+          endForEach
+
+        case 4:
+          local var i = 0
+          forEach(c in AppData.preserves)
+            if(title.equals_ignore_case(c.name.as_String))
+              SitePage.cell = CustomCell(Display.size.x,Display.size.y/5,0,HomeScreen.navBar.size.y+(i*Display.size.y/5), AppData.preImg[i],c.name.as_String,category)
+               SitePage.pageName = SitePage.cell.desc
+               AppData.fromMaps = true
+               HomeScreen.pushSitePage
+            endIf
+            i++
+          endForEach
+
+        case 5:
+          local var i = 0
+          forEach(c in AppData.tBus)
+            if(title.equals_ignore_case(c.name.as_String))
+              SitePage.cell = CustomCell(Display.size.x,Display.size.y/5,0,HomeScreen.navBar.size.y+(i*Display.size.y/5), AppData.tBusImg[i],c.name.as_String,category)
+               SitePage.pageName = SitePage.cell.desc
+               AppData.fromMaps = true
+               HomeScreen.pushSitePage
+            endIf
+            i++
+          endForEach
+
+        case 6:
+          local var i = 0
+          forEach(c in AppData.missions)
+            if(title.equals_ignore_case(c.name.as_String))
+              SitePage.cell = CustomCell(Display.size.x,Display.size.y/5,0,HomeScreen.navBar.size.y+(i*Display.size.y/5), AppData.missImg[i],c.name.as_String,category)
+               SitePage.pageName = SitePage.cell.desc
+               AppData.fromMaps = true
+               HomeScreen.pushSitePage
+            endIf
+            i++
+          endForEach
+        case 7:
+          local var i = 0
+          forEach(c in AppData.nBus)
+            if(title.equals_ignore_case(c.name.as_String))
+              SitePage.cell = CustomCell(Display.size.x,Display.size.y/5,0,HomeScreen.navBar.size.y+(i*Display.size.y/5), AppData.nBusImg[i],c.name.as_String,category)
+               SitePage.pageName = SitePage.cell.desc
+               AppData.fromMaps = true
+               HomeScreen.pushSitePage
+            endIf
+            i++
+          endForEach
+        others:
+      endWhich
+
+endClass
+
+
+class Cell
+  PROPERTIES
+    width,height,x,y : Real64
+    cellOffset       : Real64
+    bounds           : Box
+    outline          : Box
+    inset            : Box
+    backgroundColor  : Color
+    separatorColor   : Color
+  
+  METHODS
+    method init(width, height, x, y)
+      bounds = Box(Vector2(x,y),Vector2(width,height))
+      outline = Box(Vector2(x,y),Vector2(width,height))
+      inset = Box(Vector2(x,y+2),Vector2(width,height-4))
+      backgroundColor = Color.white
+      separatorColor = Color.black
+
+    method update
+      bounds = Box(Vector2(x,y),Vector2(width,height))
+      outline = Box(Vector2(x,y),Vector2(width,height))
+      inset = Box(Vector2(x+2,y+2),Vector2(width-4,height-4))
+
+    method draw
+      ##Draw random Rect Color
+      outline.fill(separatorColor)
+      inset.fill(backgroundColor)
+
+    method on( MouseEvent e)
+      if (e.mouse_id != 1) return
+      if (!bounds.contains(e.position)) return
+
+      which (e.type)
+        case MouseEvent.button_press
+          #shouldnt happen
+
+        case MouseEvent.movement:
+          #shouldnt happen
+
+        case MouseEvent.button_release:
+      endWhich
+endClass
+
+
+class ScrollTable
+  PROPERTIES
+    velocity         : Real64
+    rubberband=0.85  : Real64
+    t,dt             : Real64
+    drag_start       : Vector2
+    last_drag_pos    : Vector2
+    mouse_down       : Logical
+    dragging         : Logical
+    overflowing      : Logical
+    buttonTap        : Logical
+    ticks_since_drag : Int32
+    content_height   : Int32
+    top_y            : Int32
+    bounds           : Box
+    cells            : CustomCell[]
+
+  METHODS
+    method init( bounds,cells )
+      top_y = bounds.position.y
+      setCellOffset()
+      t = 0.0 
+
+    method setCellOffset
+      forEach(c in cells)
+        c.cellOffset = c.y - top_y
+      endForEach
+      if(cells.count > 0) content_height = cells.count*cells[0].height
+
+    method update
+      if (!dragging)
+        top_y += velocity
+        velocity *= 0.97
+        if (abs(velocity) < 1.0) velocity = 0
+
+        local var y_max = bounds.position.y
+        local var y_min = y_max - (content_height - bounds.size.y)
+        if (top_y < y_min)
+          overflowing = true
+          dt = 1.0/30.0 
+          local var convertedMin = y_min - y_min
+          local var convertedTop = top_y - y_min
+
+          local var offset = convertedTop * (rubberband - t*rubberband)
+          if(offset > convertedMin)
+            top_y = y_min
+          else
+            top_y = offset + y_min
+          endIf
+        endIf
+        if (top_y > y_max) 
+          overflowing = true
+          dt = 1.0/50.0
+          rubberband = 0.95
+          local var offset = top_y * (rubberband - t*rubberband)
+          if(offset < y_max)
+            top_y = y_max
+          else
+            top_y = offset
+          endIf
+        endIf
+
+        if(overflowing)
+          t += dt
+          t = Math.min(t,1.0)
+        endIf
+      endIf
+
+      forEach(c in cells)
+        if(!c.fullyExpanded)
+          c.y = top_y + c.cellOffset
+        endIf
+        c.update
+      endForEach
+      ++ticks_since_drag
+
+    method on( MouseEvent e )
+      if (e.mouse_id != 1)
+        return
+      endIf
+      if (!mouse_down and !bounds.contains(e.position))
+        return
+      endIf
+
+      which (e.type)
+        case MouseEvent.button_press
+          drag_start = e.position
+          last_drag_pos = drag_start
+          dragging = true
+          mouse_down = true
+          ticks_since_drag = 1
+          velocity = 0
+          overflowing = false
+          buttonTap = true
+          t = 0.0
+
+        case MouseEvent.movement:
+          if (mouse_down and content_height > bounds.size.y)
+            if((drag_start - e.position).magnitude > 20) 
+              buttonTap = false
+            endIf
+            local var delta = e.position - last_drag_pos
+
+            local var y_max = bounds.position.y
+            local var y_min = y_max - (content_height - bounds.size.y)
+            if(top_y+delta.y < y_min or top_y+delta.y > y_max) delta /= 2
+
+            top_y += delta.y
+            velocity = (velocity/ticks_since_drag + delta.y) / 3
+            last_drag_pos = e.position
+            ticks_since_drag = 1
+          endIf
+
+        case MouseEvent.button_release:
+          if(buttonTap)
+            mouse_down = false
+            dragging = false
+            buttonTap = false 
+            forEach(c in cells) c.on(e)
+          else
+            mouse_down = false
+            dragging = false
+          endIf
+      endWhich
+
+    method draw
+      Display.clipping_region = bounds
+      forEach(c in cells) c.draw
+      Display.clear_clipping_region
+
+endClass
+
+class ScrollTextTable
+  PROPERTIES
+    velocity         : Real64
+    rubberband=0.85  : Real64
+    t,dt             : Real64
+    drag_start       : Vector2
+    last_drag_pos    : Vector2
+    mouse_down       : Logical
+    dragging         : Logical
+    overflowing      : Logical
+    buttonTap        : Logical
+    centerFont       : Logical
+    boxSet           : Logical
+    selection        : Int32
+    ticks_since_drag : Int32
+    content_height   : Int32
+    top_y            : Int32
+    boldIndices()    : Int32[]
+    font             : Font
+    font2            : Font
+    bounds           : Box
+    sctcaSite        : Box
+    nakashinSite     : Box
+    procopioSite     : Box
+    cells            : String[]
+    positions()      : Vector2[]
+
+  METHODS
+    method init( bounds,cells,font )
+      top_y = bounds.position.y
+      setCellOffset()
+      t = 0.0 
+
+    method setCellOffset
+      #Vector2(0,font.height/2)
+      positions.clear()
+      if(cells.count > 0) content_height = cells.count*(font.height*1.5)+font.height
+      forEach(i in 0..cells.count-1)
+        local var pos = Vector2(bounds.position.x,bounds.position.y + font.height/2 + i*font.height*1.5 + top_y)
+        positions.add(pos)
+      endForEach
+
+    method update
+      if (!dragging and boxSet)
+        top_y += velocity
+        velocity *= 0.97
+        if (abs(velocity) < 1.0) velocity = 0
+
+        local var y_max = bounds.position.y
+        local var y_min = y_max - (content_height - bounds.size.y)
+        if (top_y < y_min)
+          overflowing = true
+          dt = 1.0/30.0 
+          local var convertedMin = y_min - y_min
+          local var convertedTop = top_y - y_min
+
+          local var offset = convertedTop * (rubberband - t*rubberband)
+          if(offset > convertedMin)
+            top_y = y_min
+          else
+            top_y = offset + y_min
+          endIf
+        endIf
+        if (top_y > y_max) 
+          overflowing = true
+          dt = 1.0/50.0
+          rubberband = 0.95
+          local var offset = top_y * (rubberband - t*rubberband)
+          if(offset < y_max)
+            top_y = y_max
+          else
+            top_y = offset
+          endIf
+        endIf
+
+        if(overflowing)
+          t += dt
+          t = Math.min(t,1.0)
+        endIf
+      endIf
+
+      forEach(i in 0..cells.count-1)
+        if(centerFont)
+          positions[i] = Vector2(bounds.center.x, font.height + i*font.height*1.5 + top_y)
+        else
+          positions[i] = Vector2(bounds.position.x, font.height + i*font.height*1.5 + top_y)
+        endIf
+      endForEach
+      ++ticks_since_drag
+
+    method on( MouseEvent e )
+      if (e.mouse_id != 1)
+        return
+      endIf
+      if (!mouse_down and !bounds.contains(e.position))
+        return
+      endIf
+
+      which (e.type)
+        case MouseEvent.button_press
+          if(sctcaSite.contains(e.position)) selection = 1
+          if(nakashinSite.contains(e.position)) selection = 2
+          if(procopioSite.contains(e.position)) selection = 3
+          drag_start = e.position
+          last_drag_pos = drag_start
+          dragging = true
+          mouse_down = true
+          ticks_since_drag = 1
+          velocity = 0
+          overflowing = false
+          buttonTap = true
+          t = 0.0
+
+        case MouseEvent.movement:
+          if (mouse_down and content_height > bounds.size.y)
+            if((drag_start - e.position).magnitude > 20) 
+              buttonTap = false
+            endIf
+            local var delta = e.position - last_drag_pos
+
+            local var y_max = bounds.position.y
+            local var y_min = y_max - (content_height - bounds.size.y)
+            if(top_y+delta.y < y_min or top_y+delta.y > y_max) delta /= 2
+
+            top_y += delta.y
+            velocity = (velocity/ticks_since_drag + delta.y) / 3
+            last_drag_pos = e.position
+            ticks_since_drag = 1
+          endIf
+
+        case MouseEvent.button_release:
+          if(selection != 0 and buttonTap)
+            ObjC.openSite(selection)
+          endIf
+          selection = 0
+          if(buttonTap)
+            mouse_down = false
+            dragging = false
+            buttonTap = false 
+          else
+            mouse_down = false
+            dragging = false
+          endIf
+      endWhich
+
+    method draw
+      Display.clipping_region = bounds
+      if(boldIndices.count > 0)
+        font.handle = (Vector2(0,font.height/2))
+        font2.handle = (Vector2(0,font2.height/2))
+        local var idx = 0
+        forEach(i in 0..cells.count-1) 
+          if(boldIndices.contains(i))
+            local var st1 = ""
+            local var st2 = ""
+            if(idx == 0)
+              st1 = cells[i].substring(0,20)
+              st2 = cells[i].substring(21)
+            elseIf(idx == 1)
+              st1 = cells[i].substring(0,30)
+              st2 = cells[i].substring(31)
+            elseIf(idx == 2)
+              st1 = cells[i].substring(0,30)
+              st2 = cells[i].substring(31)
+            elseIf(idx == 3)
+              st1 = cells[i].substring(0,10)
+              st2 = cells[i].substring(11)
+            elseIf(idx == 4)
+              sctcaSite = Box(positions[i-2] - Vector2(0,font.height/2),Vector2(bounds.size.x,font.height*4.5))
+            elseIf(idx == 5)
+              st1 = cells[i].substring(0,17)
+              st2 = cells[i].substring(18)
+            elseIf(idx == 6)
+              nakashinSite = Box(positions[i-2] - Vector2(0,font.height/2),Vector2(bounds.size.x,font.height*4.5))
+            elseIf(idx == 7)
+              st1 = cells[i].substring(0,10)
+              st2 = cells[i].substring(11)
+            elseIf(idx == 8)
+              procopioSite = Box(positions[i-2] - Vector2(0,font.height/2),Vector2(bounds.size.x,font.height*4.5))
+              #st1 = cells[i].substring(0,8)
+              #st2 = cells[i].substring(9)
+            else
+              st1 = cells[i]
+            endIf
+            idx++
+            font2.draw(st1,positions[i] + Vector2(15,0))
+            font.draw(st2,positions[i] + Vector2(font2.text_width_of(st1)+15,0))
+          else
+            font.draw(cells[i],positions[i] + Vector2(15,0))
+          endIf
+        endForEach
+      else
+        forEach(i in 0..cells.count-1) font.draw(cells[i],positions[i] + Vector2(15,0))
+      endIf
+      Display.clear_clipping_region
+
+endClass
+
+singleton class AppData
+  PROPERTIES
+    siteData()  : PropertyTable[]
+    higherEd()  : PropertyTable[]
+    preserves() : PropertyTable[]
+    museums()   : PropertyTable[]
+    missions()  : PropertyTable[]
+    tLands()    : PropertyTable[]
+    tBus()      : PropertyTable[]
+    tMuseums()  : PropertyTable[]
+    nBus()      : PropertyTable[]
+    siteImg()   : String[]
+    higherImg() : String[]
+    preImg()    : String[]
+    musImg()    : String[]
+    missImg()   : String[]
+    tLandImg()  : String[]
+    tBusImg()   : String[]
+    tMusImg()   : String[]
+    nBusImg()   : String[]
+    returnFromSite : Logical
+    returnFromAbout: Logical
+    fromMaps       : Logical
+    goHome         : Logical
+    loaderDone     : Logical
+    music          : Sound
+    fontWidth      : Real64
+
+  METHODS
+    method init
+      music = Sound("BirdSong.m4a")
+      music.repeats = true
+
+    method getFuturaString().String
+      if(Display.true_size.y >= 2001)
+        return "Futura96Bold.png"
+      else
+        return "Futura73Bold.png"
+      endIf
+
+    method getPapyrusString().String
+      if(Display.true_size.y >= 2001)
+        return "Papyrus74.png"
+      else
+        return "Papyrus74.png"
+      endIf
+
+    method getTahomaString().String
+      if(Display.true_size.y >= 2001)
+        return "tahoma69.png"
+      elseIf(Display.true_size.y <= 1136)
+        return "tahoma43.png"
+      else
+        return "tahoma53.png"
+      endIf
+
+    method getWebdingsString().String
+      if(Display.true_size.y >= 2001)
+        return "Webdings76.png"
+      elseIf(Display.true_size.y <= 1136)
+        return "Webdings40.png"
+      else
+        return "Webdings52.png"
+      endIf
+
+    method getHanziString().String
+      if(Display.true_size.y >= 2001)
+        return "HanziPen72.png"
+      elseIf(Display.true_size.y <= 1136)
+        return "HanziPen44.png"
+      else
+        return "HanziPen55.png"
+      endIf
+
+    method findFontScale(Font currFont,Real64 currScale,Real64 mult, Real64 parent).Real64
+      currFont.scale = currScale
+      local var fontHeight = currFont.height
+      local var desiredHeight = mult*parent
+      local var newScale = desiredHeight/fontHeight
+      return newScale*currScale
+
+endClass
+
+class PicDownloader : HTTPDownloadListener
+  PROPERTIES
+    downloader : HTTPDownloader
+    background : CompositeImage
+    fileName   : String
+
+  METHODS
+    method downloadImage(String url)
+      downloader = HTTPDownloader( url, this)
+
+    method downloadImage(String url, fileName)
+      downloader = HTTPDownloader( url, this)
+
+    method on_download_finished(HTTPDownloader downloader)
+      if (downloader.data?)
+        local Bitmap bmp = Bitmap(downloader.data)
+        background = CompositeImage( bmp )
+        
+        background.handle = Handle.center
+        #HomeScreen.test = background
+        forEach (i of bmp.data)
+          local var c = bmp.data[i]
+          bmp.data[i] = (c & 0xff00ff00) | (c.right_shifted(16) & 0xff) | (c.left_shifted(16) & 0xff0000)
+        endForEach
+        try
+          local DataFile outfile = DataFile(fileName)
+          outfile.save( bmp.to_jpg_bytes(1.0) )
+          AndroidDownloaderScreen.on_finish()
+        catch(Error err)
+          println("" + err)
+        endTry
+      else 
+
+      endIf
+      System.force_garbage_collection
+endClass

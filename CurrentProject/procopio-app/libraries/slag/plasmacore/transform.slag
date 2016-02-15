@@ -1,0 +1,192 @@
+#==============================================================================
+# transform.slag
+#
+# 3.5.0 (2011.06.18)
+#
+# -----------------------------------------------------------------------------
+#
+# Copyright 2008-2011 Plasmaworks LLC
+#
+#   http://plasmaworks.com/plasmacore
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); 
+# you may not use this file except in compliance with the License. 
+# You may obtain a copy of the License at 
+#
+#   http://www.apache.org/licenses/LICENSE-2.0 
+#
+# Unless required by applicable law or agreed to in writing, 
+# software distributed under the License is distributed on an 
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, 
+# either express or implied. See the License for the specific 
+# language governing permissions and limitations under the License.
+#
+#==============================================================================
+compound TransformRow( Real64 c0, Real64 c1, Real64 c2 )
+
+compound Transform( TransformRow r0, TransformRow r1 )
+  # A 2x3 matrix (a 3x3 that ignores the last row)
+  # that represents various combinations of transformations.
+
+requisite singleton class TransformManager
+  METHODS
+    method create_from.Transform: 
+      # Creates a Tranform set up to be the identity matrix.
+      return identity
+
+    method create_from( Real64 r0c0, Real64 r0c1, Real64 r0c2,
+                        Real64 r1c0, Real64 r1c1, Real64 r1c2 ).Transform:
+      # Creates a 2x3 transform from arbitrary data.
+      return Transform( TransformRow(r0c0,r0c1,r0c2), 
+                        TransformRow(r1c0,r1c1,r1c2) )
+
+    method create_from( Vector2 handle, Radians angle, Vector2 scale, Vector2 translation ).Transform:
+      local Real64 hx = handle.x
+      local Real64 hy = handle.y
+      local Real64 sx = scale.x
+      local Real64 sy = scale.y
+      local Real64 cost = angle.cos
+      local Real64 sint = angle.sin
+      local Real64 tx = translation.x
+      local Real64 ty = translation.y
+      return Transform( TransformRow(cost*sx,-sint*sy,(tx-sx*hx*cost+sint*sy*hy)), 
+                        TransformRow(sint*sx, cost*sy,(ty-sx*hx*sint-cost*sy*hy)) )
+
+    method create_from( Radians angle, Vector2 scale, Vector2 translation ).Transform:
+      local Real64 sx = scale.x
+      local Real64 sy = scale.y
+      local Real64 cost = angle.cos
+      local Real64 sint = angle.sin
+      local Real64 tx = translation.x
+      local Real64 ty = translation.y
+      return Transform( TransformRow(cost*sx,-sint*sy,(tx-sx*cost+sint*sy)), 
+                        TransformRow(sint*sx, cost*sy,(ty-sx*sint-cost*sy)) )
+
+    method create_from( Vector2 size, Vector2 handle, Radians angle, Vector2 scale, 
+      Vector2 translate, Logical hflip, Logical vflip ).Transform: native
+
+    method current.Transform: native
+      # Multiplies out the camera transforms and the object transforms
+      # and returns a final camera*object local-to-screen transform.
+      # Results are cached; you can call this
+      # method heavily if needed.
+
+    method inverse( Transform t ).Transform: native
+      # Returns the inverse of a transform
+
+    method transform( Transform t, Vector2 v ).Vector2
+      # Applies the specified transformation to the given Vector2.
+      local var r0 = t.r0
+      local var r1 = t.r1
+      return Vector2( r0.c0*v.x + r0.c1*v.y + r0.c2, r1.c0*v.x + r1.c1*v.y + r1.c2 )
+
+    method op*( Transform transform1, Transform transform2 ).Transform: native
+      # Multiplies two transforms together.
+
+    method identity.Transform:
+      return Transform( TransformRow(1,0,0), TransformRow(0,1,0) )
+
+    method rotate( Radians angle ).Transform:
+      local Real64 cos_value = angle.cos
+      local Real64 sin_value = angle.sin
+      return Transform( TransformRow(cos_value,-sin_value,0), TransformRow(sin_value,cos_value,0) )
+
+    method rotate( Degrees angle ).Transform:
+      local Real64 cos_value = angle.cos
+      local Real64 sin_value = angle.sin
+      return Transform( TransformRow(cos_value,-sin_value,0), TransformRow(sin_value,cos_value,0) )
+
+    method translate( Vector2 delta ).Transform:
+      return Transform( TransformRow(1,0,delta.x), TransformRow(0,1,delta.y) )
+
+    method translate( Real64 dx, Real64 dy ).Transform:
+      return Transform( TransformRow(1,0,dx), TransformRow(0,1,dy) )
+
+    method scale( Vector2 scale ).Transform:
+      return Transform( TransformRow(scale.x,0,0), TransformRow(0,scale.y,0) )
+
+    method scale( Real64 sx, Real64 sy ).Transform:
+      return Transform( TransformRow(sx,0,0), TransformRow(0,sy,0) )
+
+    method scale( Real64 s ).Transform:
+      return Transform( TransformRow(s,0,0), TransformRow(0,s,0) )
+
+    method to_String( Transform transform ).String:
+      return "[$ $ $;\n $ $ $]" (transform.r0.c0, transform.r0.c1, transform.r0.c2,
+          transform.r1.c0, transform.r1.c1, transform.r1.c2)
+
+    method push_object_transform( Transform t ): native
+      # Adds the given transform to the object transform stack which
+      # translates, rotates, and scales the next thing drawn relative
+      # to the current camera setup.
+      #
+      # Every call to push_object_transform() should be paired with a 
+      # call to pop_object_transform().
+
+    method pop_object_transform: native
+      # Removes the most recently pushed object transform.
+
+    method push_camera_transform( Transform t ): native
+      # Adds the given transform to the camera transform stack which
+      # modifies the coordinate system for future drawing.
+
+    method pop_camera_transform: native
+      # Removes the most recently pushed camera transform.
+
+endClass
+
+
+class Transform3D
+  CLASS_METHODS
+    method identity.Transform3D
+      return Transform3D( 
+        { 1.0, 0.0, 0.0, 0.0,
+          0.0, 1.0, 0.0, 0.0,
+          0.0, 0.0, 1.0, 0.0,
+          0.0, 0.0, 0.0, 1.0 } )
+
+  PROPERTIES
+    r0c0, r0c1, r0c2, r0c3 : Real64
+    r1c0, r1c1, r1c2, r1c3 : Real64
+    r2c0, r2c1, r2c2, r2c3 : Real64
+    r3c0, r3c1, r3c2, r3c3 : Real64
+
+  METHODS
+    method init( r0c0, r0c1, r0c2, r0c3,
+        r1c0, r1c1, r1c2, r1c3,
+        r2c0, r2c1, r2c2, r2c3,
+        r3c0, r3c1, r3c2, r3c3 )
+
+    method to_String.String
+      local StringBuilder buffer()
+      buffer.println( "$(.2) $(.2) $(.2) $(.2)" (r0c0,r0c1,r0c2,r0c3) )
+      buffer.println( "$(.2) $(.2) $(.2) $(.2)" (r1c0,r1c1,r1c2,r1c3) )
+      buffer.println( "$(.2) $(.2) $(.2) $(.2)" (r2c0,r2c1,r2c2,r2c3) )
+      buffer.println( "$(.2) $(.2) $(.2) $(.2)" (r3c0,r3c1,r3c2,r3c3) )
+      return buffer.to_String
+
+    method op*( Transform3D other ).Transform3D
+      local var a = this
+      local var b = other
+      return Transform3D(
+        a.r0c0*b.r0c0 + a.r0c1*b.r1c0 + a.r0c2*b.r2c0 + a.r0c3*b.r3c0,
+        a.r0c0*b.r0c1 + a.r0c1*b.r1c1 + a.r0c2*b.r2c1 + a.r0c3*b.r3c1,
+        a.r0c0*b.r0c2 + a.r0c1*b.r1c2 + a.r0c2*b.r2c2 + a.r0c3*b.r3c2,
+        a.r0c0*b.r0c3 + a.r0c1*b.r1c3 + a.r0c2*b.r2c3 + a.r0c3*b.r3c3,
+
+        a.r1c0*b.r0c0 + a.r1c1*b.r1c0 + a.r1c2*b.r2c0 + a.r1c3*b.r3c0,
+        a.r1c0*b.r0c1 + a.r1c1*b.r1c1 + a.r1c2*b.r2c1 + a.r1c3*b.r3c1,
+        a.r1c0*b.r0c2 + a.r1c1*b.r1c2 + a.r1c2*b.r2c2 + a.r1c3*b.r3c2,
+        a.r1c0*b.r0c3 + a.r1c1*b.r1c3 + a.r1c2*b.r2c3 + a.r1c3*b.r3c3,
+
+        a.r2c0*b.r0c0 + a.r2c1*b.r1c0 + a.r2c2*b.r2c0 + a.r2c3*b.r3c0,
+        a.r2c0*b.r0c1 + a.r2c1*b.r1c1 + a.r2c2*b.r2c1 + a.r2c3*b.r3c1,
+        a.r2c0*b.r0c2 + a.r2c1*b.r1c2 + a.r2c2*b.r2c2 + a.r2c3*b.r3c2,
+        a.r2c0*b.r0c3 + a.r2c1*b.r1c3 + a.r2c2*b.r2c3 + a.r2c3*b.r3c3,
+
+        a.r3c0*b.r0c0 + a.r3c1*b.r1c0 + a.r3c2*b.r2c0 + a.r3c3*b.r3c0,
+        a.r3c0*b.r0c1 + a.r3c1*b.r1c1 + a.r3c2*b.r2c1 + a.r3c3*b.r3c1,
+        a.r3c0*b.r0c2 + a.r3c1*b.r1c2 + a.r3c2*b.r2c2 + a.r3c3*b.r3c2,
+        a.r3c0*b.r0c3 + a.r3c1*b.r1c3 + a.r3c2*b.r2c3 + a.r3c3*b.r3c3 )
+endClass
+

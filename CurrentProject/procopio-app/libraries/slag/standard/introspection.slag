@@ -1,0 +1,557 @@
+#=====================================================================
+# introspection.slag
+#
+# Slag Standard Library
+# v3.5.0 (2011.06.18)
+#
+# Introspection (aka Reflection) allows runtime inspection of and 
+# interaction with objects and methods.
+#
+# Primary classes:
+#   RuntimeType
+#   RuntimeProperties
+#   RuntimePropery
+#   RuntimeMethods
+#   RuntimeMethod
+#
+# Primary methods:
+#   Object::runtime_type()
+#   Object::runtime_properties()
+#   Object::runtime_methods()
+#
+# Example:
+#   # Given an arbitrary object, attempt to load an Image named
+#   # "sprites.png" for each Image reference named 'img_sprites'
+#   # (and so on).  Note: Image is a Plasmacore class.
+#   [include "introspection.slag"]
+#   ...
+#   method load_images( Object obj ):
+#     forEach (p in obj.runtime_properties)
+#       if (p.name.begins_with("img_"))
+#         p.as_Object = Image(p.name.after_first("img_") + ".png")
+#       endIf
+#     endForEach
+# 
+# --------------------------------------------------------------------
+#
+# Copyright 2010 Plasmaworks LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); 
+# you may not use this file except in compliance with the License. 
+# You may obtain a copy of the License at 
+#
+#   http://www.apache.org/licenses/LICENSE-2.0 
+#
+# Unless required by applicable law or agreed to in writing, 
+# software distributed under the License is distributed on an 
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, 
+# either express or implied. See the License for the specific 
+# language governing permissions and limitations under the License.
+#
+#=====================================================================
+augment Object
+  METHODS
+    method runtime_type.RuntimeType: native
+      # Part of Slag's introspection model, this method returns an object that 
+      # models the type (i.e. class) of this object.
+      #
+      # Only available when you [include "introspection.slag"].
+      #
+      # Example:
+      #
+      #   # Create a new object of the same class as an existing object of 
+      #   # unknown type.
+      #   local Object obj1 = ...
+      #   local Object obj2 = obj1.runtime_type.create_instance
+
+    method runtime_properties.RuntimeProperties: 
+      # Part of Slag's introspection model, this method returns an object that 
+      # models the properties of this object.
+      #
+      # Only available when you [include "introspection.slag"].
+      #
+      # Example:
+      #
+      #   # Print out the values of any strings that an object contains.
+      #   local Object obj = ...
+      #   local RuntimeType type_string("String")
+      #   forEach (p in obj.runtime_properties)
+      #     if (p.runtime_type == type_string)
+      #       println( "String property $ contains: $" (p.name,p.as_Object) )
+      #     endIf
+      #   endForEach
+      #
+      #   # Add one to an object's "x" property if it exists (assumed Int32).
+      #   local var p = obj.runtime_properties["x"]
+      #   if (p?) p.as_Int32 = p.as_Int32 + 1    # or: ++p.as_Int32
+      return RuntimeProperties(this)
+
+    method runtime_methods.RuntimeMethods:
+      # Part of Slag's introspection model, this method returns an object that 
+      # models the methods of this object.  Some methods defined in the program
+      # source code may not be present - unreferenced methods are culled out
+      # by the compiler.  If this is a problem it can be prevented by making
+      # the method 'requisite'.
+      #
+      # Only available when you [include "introspection.slag"].
+      #
+      # Example:
+      #
+      #   # Given a message name (e.g. "reset") call an "on" method of the same 
+      #   # name (e.g. "on_reset") if it exists.
+      #   local var m = obj.runtime_methods["on_"+mesg_name]
+      #   if (m?) m.call
+      return RuntimeMethods(this)
+endAugment
+
+
+augment Runtime
+  # A utility singleton used by RuntimeType to obtain runtime type information
+  # from the native layer.
+  method find_type_index( String type_name ).Int32: native
+    # Returns the integer index that the Slag Runtime uses to identify the 
+    # given type name.
+endAugment
+
+
+class RuntimeType( Int32 index )
+  # Models the Slag Runtime meta-data about a given class including the type name,
+  # method names and types, and property names and types.
+  #
+  #
+  # ==== See Also ====
+  # * [[SlagDoc:Object#runtime_type|Object::runtime_type()]]
+  # * [[SlagDoc:RuntimeProperties|RuntimeProperties]]
+  # * [[SlagDoc:RuntimeMethods|RuntimeMethods]]
+
+  method init( String name ):
+    # Creates a RuntimeType that models the existing class with the given name.
+    #
+    # '''Important:''' the Slag compiler culls any classes that are never instantiated
+    # in code.  If you only ever instantiate a class using ''RuntimeType.create_instance()''
+    # you must declare the class as a "requisite class" so that the compiler includes it.
+    index = Runtime.find_type_index(name)
+
+  method name.String: native
+    # Returns the name of the type represented by this RuntimeType.
+
+  method to_String.String: 
+    # Returns the name of the type represented by this RuntimeType.
+    return name
+
+  method op==( Object other ).Logical:
+    # Returns "true" if ''this'' and ''other'' are the same RuntimeType.
+    return this == other.(RuntimeType)
+
+  method op==( RuntimeType other ).Logical:
+    # Returns "true" if ''this'' and ''other'' are the same RuntimeType.
+    return index == other.index
+
+  method instance_of( RuntimeType base_type ).Logical: native
+    # Returns "true" if this type is ''instanceOf'' the specified ''base_type''.
+
+  method create_instance.Object: native
+    # Creates and returns an instance of this type.  You must manually call
+    # an ''init()'' method on the object.
+    #
+    # '''Important:''' the Slag compiler culls any classes that are never instantiated
+    # in code.  If you only ever instantiate a class using ''RuntimeType.create_instance()''
+    # you must declare the class as a "requisite class" so that the compiler includes it.
+    #
+    # Example:
+    #
+    #   # Given a string called ''action_word'' containing a word like "Walk" or "Talk",
+    #   # create an instance of class "ActionWalk" or "ActionTalk" as appropriate
+    #   # (extended from some class Action) and call init(position) on it.
+    #   local var type = RuntimeType[ "Action" + action_word ]
+    #   local Action action = type.create_instance.(Action)
+    #   action.init(position)
+
+endClass
+
+class RuntimeProperties( Object context ) : List<<RuntimeProperty>>
+  # Models the meta-data for a specific object's properties.  Can be used to read and
+  # write properties using strings as property names.  Obtained by calling
+  # runtime_properties() on an object.
+  #
+  # ==== See Also ====
+  # * [[SlagDoc:Object#runtime_properties|Object::runtime_properties()]]
+
+  method count.Int32: native
+    # Returns the count of how many properties this object has.
+
+  requisite method clear:
+    # No action - only present to satisfy the List aspect of this class.
+    noAction
+
+  method get( Int32 property_index ).RuntimeProperty:
+    # Returns meta-data about the specific property at the given ''property_index'' (0..<''count'').
+    return RuntimeProperty( context, property_index )
+
+  method get( String name ).RuntimeProperty:
+    # Returns meta-data about the specific property with the given ''name'',
+    # or "null" if there's no such property.
+    forEach (p in this) 
+      if (p.name == name) return p
+    endForEach
+    return null
+
+  method to_String.String:
+    # Returns a list of the properties tracked by this object as a String.
+    local StringBuilder buffer('{')
+    local var first = true
+    forEach (property in this)
+      if (first) first = false
+      else buffer.print(',')
+      buffer.print( property )
+    endForEach
+    buffer.print('}')
+    return buffer.to_String
+
+endClass
+
+class RuntimeProperty( Object context, Int32 property_index )
+  # Models meta-data for a specific property of a specific object.
+
+  method type.RuntimeType:              native
+    # Returns the property's RuntimeType.
+    #
+    # Example:
+    #
+    #   println( "Test".runtime_properties[0].type )  # prints: Array<<Char>>
+
+  method name.String:                   native
+    # Returns the property's name.
+    #
+    # Example:
+    #
+    #   println( "Test".runtime_properties[0].name )  # prints: data
+
+  method as_Object.Object:              native
+    # Returns the property as an Object.  If the property is not actually
+    # an object you will likely crash or corrupt the program.
+    #
+    # Example:
+    #
+    #   local String name = actor.runtime_properties["name"].as_Object.(String)
+
+  method as_Object( Object new_value ): native
+    # Sets this property to be the given Object.  If the property is not actually
+    # an object or if ''new_value'' is not ''instanceOf'' the property type you will 
+    # likely crash or corrupt the program.
+    #
+    # Example:
+    #
+    #   actor.runtime_properties["name"].as_Object = "Conan"
+
+  method as_Int64.Int64:                native
+    # Returns the property as an Int64.  If the property is not actually
+    # an Int64 you will likely crash or corrupt the program.
+    #
+    # Example:
+    #
+    #   println( actor.runtime_properties["timestamp"].as_Int64 )
+
+  method as_Int64( Int64 new_value ):   native
+    # Sets this property to be the given Int64.  If the property is not actually
+    # an Int64 you will likely crash or corrupt the program.
+    #
+    # Example:
+    #
+    #   actor.runtime_properties["timestamp"].as_Real64 = time_ms
+
+  method as_Int32.Int32:                native
+    # Returns the property as an Int32.  If the property is not actually
+    # an Int32 you will likely crash or corrupt the program.
+    #
+    # Example:
+    #
+    #   println( actor.runtime_properties["lives"].as_Int32 )
+
+  method as_Int32( Int32 new_value ):   native
+    # Sets this property to be the given Int32.  If the property is not actually
+    # an Int32 you will likely crash or corrupt the program.
+    #
+    # Example:
+    #
+    #   actor.runtime_properties["lives"].as_Int32 = 3
+
+  method as_Char.Char:                  native
+    # Returns the property as a Char.  If the property is not actually
+    # a Char you will likely crash or corrupt the program.
+    #
+    # Example:
+    #
+    #   println( actor.runtime_properties["first_initial"].as_Char )
+
+  method as_Char( Char new_value ):     native
+    # Sets this property to be the given Char.  If the property is not actually
+    # a Char you will likely crash or corrupt the program.
+    #
+    # Example:
+    #
+    #   actor.runtime_properties["first_initial"].as_Char = 'A'
+
+  method as_Byte.Byte:                  native
+    # Returns the property as a Char.  If the property is not actually
+    # a Char you will likely crash or corrupt the program.
+    #
+    # Example:
+    #
+    #   println( actor.runtime_properties["unlikely_byte_value"].as_Byte )
+
+  method as_Byte( Byte new_value ):     native
+    # Sets this property to be the given Byte.  If the property is not actually
+    # a Byte you will likely crash or corrupt the program.
+    #
+    # Example:
+    #
+    #   actor.runtime_properties["unlikely_byte_value"].as_Byte = 255
+
+  method as_Logical.Logical:
+    # Returns the property as a Logical.  If the property is not actually
+    # a Logical you will likely crash or corrupt the program.
+    #
+    # Example:
+    #
+    #   println( actor.runtime_properties["dead"].as_Logical )
+    return Logical(as_Int32)
+
+  method as_Logical( Logical new_value ):
+    # Sets this property to be the given Logical.  If the property is not actually
+    # a Logical you will likely crash or corrupt the program.
+    #
+    # Example:
+    #
+    #   actor.runtime_properties["dead"].as_Logical = false
+    as_Int32 = Int32(new_value)
+
+  method as_Real64.Real64:
+    # Returns the property as a Real64.  If the property is not actually
+    # a Real64 you will likely crash or corrupt the program.
+    #
+    # Example:
+    #
+    #   println( actor.runtime_properties["speed"].as_Real64 )
+    return as_Int64.as_Real64
+
+  method as_Real64( Real64 new_value ):
+    # Sets this property to be the given Real64.  If the property is not actually
+    # a Real64 you will likely crash or corrupt the program.
+    #
+    # Example:
+    #
+    #   actor.runtime_properties["speed"].as_Real64 = 2.0
+    as_Int64 = new_value.as_Int64
+
+  method as_Real32.Real32:
+    # Returns the property as a Real32.  If the property is not actually
+    # a Real32 you will likely crash or corrupt the program.
+    #
+    # Example:
+    #
+    #   println( actor.runtime_properties["f"].as_Real64 )
+    return as_Int32.as_Real32
+
+  method as_Real32( Real32 new_value ):
+    # Sets this property to be the given Real32.  If the property is not actually
+    # a Real32 you will likely crash or corrupt the program.
+    #
+    # Example:
+    #
+    #   actor.runtime_properties["f"].as_Real32 = 0.2
+    as_Int32 = new_value.as_Int32
+
+  method to_String.String:
+    # Returns this property as a "Type : name" string.
+    return "$:$" (name,type)
+endClass
+
+class RuntimeMethods( Object context ) : List<<RuntimeMethod>>
+  # Models the meta-data for a specific object's methods.  Can be used to find
+  # and call methods using strings as property names.  Obtained by calling
+  # runtime_methods() on an object.
+  #
+  # A RuntimeMethods object may be iterated through and treated like a list.
+  #
+  # '''Important:''' the Slag compiler culls any methods that are never called
+  # in regular code.  If you only ever call a method using a RuntimeMethod class,
+  # you must declare the method as a "requisite method" so that the compiler 
+  # includes it.
+  #
+  # ==== See Also ====
+  # * [[SlagDoc:Object#runtime_methods|Object::runtime_methods()]]
+
+  method count.Int32: native
+    # Returns the number of available methods.
+
+  requisite method clear:
+    # No action - only present to satisfy the List aspect of this class.
+    noAction
+
+  method get( Int32 method_index ).RuntimeMethod:
+    # Returns meta-data about the method at the specified ''method_index'' (0..<''count''). 
+    return RuntimeMethod( context, method_index )
+
+  method get( String signature ).RuntimeMethod:
+    # Returns meta-data about the method with the given ''signature'',
+    # or "null" if there's no such method.
+    #
+    # Two examples of signature format.  Note that parentheses are always
+    # included and the return type is always omitted.
+    #
+    # {| class="slagdoc" style="width:384px;"
+    # ! Method Declaration !! Signature
+    # |-
+    # |method init: || init()
+    # |-
+    # |method test( Int32 a, String st ).Real64: || test(Int32,String)
+    # |}
+    forEach (m in this) 
+      if (m.signature == signature) return m
+    endForEach
+    return null
+
+  method to_String.String:
+    # Returns a list of all the methods as a string.
+    local StringBuilder buffer('{')
+    local var first = true
+    forEach (m in this)
+      if (first) first = false
+      else buffer.print(',')
+      buffer.print( m.signature )
+    endForEach
+    buffer.print('}')
+    return buffer.to_String
+
+endClass
+
+class RuntimeMethod( Object context, Int32 method_index )
+  # Models meta-data for a specific method of a specific object.
+  #
+  # Example:
+  #  
+  #   # Given a function name "fnname", find and call that function 
+  #   # in some arbitrary object with two real numbers ''a'' and ''b'' 
+  #   # as parameters and print the real number result:
+  #   
+  #   local var sig = fnname + "(Real64,Real64)"
+  #   println( object.runtime_methods[sig].arg(a).arg(b).call_Real64 )
+  #
+  #
+  # ==== See Also ====
+  # * [[SlagDoc:RuntimeMethods|RuntimeMethods]]
+  # * [[SlagDoc:Object#runtime_methods|Object::runtime_methods()]]
+
+  method name.String:                              native
+    # Returns the base name of this method, e.g. "println".
+
+  method return_type.RuntimeType:                  native
+    # Returns the return type of this method or "null" if there's no return type.
+
+  method parameter_types.ArrayList<<RuntimeType>>: native
+    # Returns a list of this method's parameter types.
+
+  method signature.String:                         native
+    # Returns the signature string of this method.
+
+  method to_String.String:
+    # Returns the signature string of this method.
+    return (signature)
+
+  method arg( Object obj ).RuntimeMethod:    native
+    # Pushes an object reference onto the stack as the next parameter 
+    # (left to right) for the next ''call()'' to this method.  It is your
+    # responsibility to ensure that the parameters are of the correct
+    # type and order - if they aren't, you will likely crash or corrupt the 
+    # program.
+
+  method arg( Int64 value ).RuntimeMethod:   native
+    # Pushes an Int64 value onto the stack as the next parameter 
+    # (left to right) for the next ''call()'' to this method.  It is your
+    # responsibility to ensure that the parameters are of the correct
+    # type and order - if they aren't, you will likely crash or corrupt the 
+    # program.
+
+  method arg( Int32 value ).RuntimeMethod:   native
+    # Pushes an Int32 value onto the stack as the next parameter 
+    # (left to right) for the next ''call()'' to this method.  It is your
+    # responsibility to ensure that the parameters are of the correct
+    # type and order - if they aren't, you will likely crash or corrupt the 
+    # program.
+
+  method arg( Logical value ).RuntimeMethod:
+    # Pushes a Logical value onto the stack as the next parameter 
+    # (left to right) for the next ''call()'' to this method.  It is your
+    # responsibility to ensure that the parameters are of the correct
+    # type and order - if they aren't, you will likely crash or corrupt the 
+    # program.
+    arg( Int32(value) )
+    return this
+
+  method arg( Real64 value ).RuntimeMethod:
+    # Pushes a Real64 value onto the stack as the next parameter 
+    # (left to right) for the next ''call()'' to this method.  It is your
+    # responsibility to ensure that the parameters are of the correct
+    # type and order - if they aren't, you will likely crash or corrupt the 
+    # program.
+    arg( value.as_Int64 )
+    return this
+
+  method arg( Real32 value ).RuntimeMethod:
+    # Pushes a Real64 value onto the stack as the next parameter 
+    # (left to right) for the next ''call()'' to this method.  It is your
+    # responsibility to ensure that the parameters are of the correct
+    # type and order - if they aren't, you will likely crash or corrupt the 
+    # program.
+    arg( value.as_Int32 )
+    return this
+
+
+  method call:                 native
+    # Calls this method on its original object using the variables that 
+    # have been pushed onto the stack with various ''arg()'' calls.
+    #
+    # This version assumes that the method returns nil (void in C and Java).
+    # If it doesn't you will likely crash or corrupt the program.
+
+  method call_Object.Object:   native
+    # This version assumes that the method returns an object reference.
+    # If it doesn't you will likely crash or corrupt the program.
+
+  method call_Int64.Int64:     native
+    # This version assumes that the method returns an Int64.
+    # If it doesn't you will likely crash or corrupt the program.
+
+  method call_Int32.Int32:     native
+    # This version assumes that the method returns an Int32.
+    # If it doesn't you will likely crash or corrupt the program.
+
+  method call_Char.Char:
+    # This version assumes that the method returns a Char.
+    # If it doesn't you will likely crash or corrupt the program.
+    return Char(call_Int32)
+
+  method call_Byte.Byte:
+    # This version assumes that the method returns a Byte.
+    # If it doesn't you will likely crash or corrupt the program.
+    return Byte(call_Int32)
+
+  method call_Logical.Logical:
+    # This version assumes that the method returns a Logical.
+    # If it doesn't you will likely crash or corrupt the program.
+    return Logical(call_Int32)
+
+  method call_Real64.Real64:
+    # This version assumes that the method returns a Real64.
+    # If it doesn't you will likely crash or corrupt the program.
+    return call_Int64.as_Real64
+
+  method call_Real32.Real32:
+    # This version assumes that the method returns a Real32.
+    # If it doesn't you will likely crash or corrupt the program.
+    return call_Int32.as_Real32
+
+endClass
+
+

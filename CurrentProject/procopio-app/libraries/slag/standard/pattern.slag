@@ -1,0 +1,1350 @@
+#=====================================================================
+# pattern.slag
+#
+# Slag Standard Library
+# v3.5.0 (2011.06.18)
+#
+# Pattern-based matching and String manipulation.  Uses a unique 
+# pattern syntax that's similar to EBNF instead of the traditional
+# (and arguably archaic) Regular Expression syntax.
+#
+# Primary classes:
+#   Pattern
+#
+# Primary methods:
+#   String::matches(Pattern)
+#   String::extract_groups(Pattern)
+#   String::index_of(Pattern)
+#   String::replace(Pattern,String)
+#
+# Example:
+#   [include "pattern.slag"]
+#   ...
+#   local Pattern phone_number_pattern( 
+#       "'(' {digit*3} ') ' {digit*3} '-' {digit*4}" )
+#   println( "(928) 555-1212".extract_groups(phone_number_pattern) )
+#     # Prints:
+#     #   928
+#     #   555
+#     #   1212
+# 
+# --------------------------------------------------------------------
+#
+# Copyright 2010 Plasmaworks LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); 
+# you may not use this file except in compliance with the License. 
+# You may obtain a copy of the License at 
+#
+#   http://www.apache.org/licenses/LICENSE-2.0 
+#
+# Unless required by applicable law or agreed to in writing, 
+# software distributed under the License is distributed on an 
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, 
+# either express or implied. See the License for the specific 
+# language governing permissions and limitations under the License.
+#
+#=====================================================================
+augment String
+  METHODS
+    method matches( Pattern p ).Logical:
+      # Returns:
+      #   "true" if this string matches the given pattern with no
+      #          excess characters.
+      #   "false" otherwise.
+      return p.matches( this )
+
+    method extract_groups( Pattern p ).String[]:
+      # Extracts the tagged groups that pattern p matches as a list
+      # of strings.  The entire string must fit the pattern or else
+      # "null" is returned - see extract_all_groups(Pattern) 
+      # for an alternative.
+      #
+      # Example:
+      #   local Pattern p( "'size' ws {digit+} ws 'x' ws {digit+}" )
+      #   println( "size 2x4".extract_groups(p) )
+      #     # Prints: {2,4}
+      local String[] tagged_groups()
+      if (not p.matches(this, tagged_groups)) return null
+      return tagged_groups
+
+    method extract_all_groups( Pattern p ).String[]:
+      # Finds each occurrence of pattern 'p' within this string
+      # and returns the String list of groups found from all matches.
+      # Returns an empty list if the pattern didn't occur in this
+      # string or if the pattern didn't contain any groups.
+      #
+      # Example:
+      #   local Pattern comment( "{'#' (not eol)*}" )
+      #   println( "abc #extract\ndef\n#comments".extract_all_groups(comment) )
+      #     # prints: {#extract,#comments}
+      local String[] tagged_groups()
+      local RewindableReader<<Char>> reader( create_reader )
+      while (reader.has_another)
+        local String result = p.match( reader, false, tagged_groups )
+        if (result is null) reader.read
+      endWhile
+      return tagged_groups
+
+    method index_of( Pattern p, Int32 starting_index=0 ).Int32:
+      # Finds the first occurrence of the given pattern within this
+      # string, with an optional starting index (default: 0).
+      #
+      # Returns (result >= 0) if found or (-1) if not found.
+      local RewindableReader<<Char>> reader( create_reader )
+      reader.skip( starting_index )
+      forEach (index in starting_index ..< count)
+        local String result = p.match( reader )
+        if (result isNot null) return index
+        reader.read
+      endForEach
+      return -1
+
+    method replace( Pattern p, String replacement ).String:
+      # Replaces all occurences of pattern 'p' with the given
+      # string.  The 'replacement' string may contain the
+      # insertion markers $[0], $[1], etc.  These are replaced
+      # by group 0, group 1, etc. from the pattern.
+      #
+      # Returns the modified string.
+      #
+      # Example:
+      #   local Pattern name( "{id} ws {id}" )
+      #   local String regular = "Abe Pralle"
+      #   local String roster = regular.replace( name, "$[1], $[0]" ) 
+      #   println( roster )  # prints: Pralle, Abe
+      local StringBuilder buffer()
+      local RewindableReader<<Char>> reader( create_reader )
+      local String[] groups()
+      local PatternStringReplacementBuilder builder( replacement )
+      while (reader.has_another)
+        groups.clear
+        local String result = p.match( reader, false, groups )
+        if (result isNot null) 
+          buffer.print( builder.build(groups) )
+        else 
+          buffer.print( reader.read )
+        endIf
+      endWhile
+      return buffer.to_String
+endAugment
+
+class PatternStringReplacementBuilder : Reader<<String>>
+  # Internal use - this utility class is used to replace pattern
+  # matches in String::replace().
+  PROPERTIES
+    counter=0    : Int32
+    next     : String
+    format   : String
+    has_next    : Logical
+    groups   : String[]
+
+  METHODS
+    method init( format ):
+      # Initializes this PatternStringReplacementBuilder to read 
+      # from the given string.
+
+    method rewind:
+      # Rewinds this string replacer to the beginning.
+      counter = 0
+      has_next = prep_next
+
+    method build( groups ).String:
+      local StringBuilder buffer()
+      rewind
+      forEach (st in this) buffer.print( st )
+      return buffer.to_String
+
+    method has_another.Logical:
+      # Returns "true" if this reader has another value that can
+      # be previewed with peek() or read with read().
+      return has_next
+
+    method peek.String:
+      # Returns the next value that will be returned from read().
+      # If there is no next value then a NoNextValueError is thrown.
+      if (not has_next) throw NoNextValueError()
+      return next
+
+    method read.String:
+      # Returns the next value from this reader.  If (not has_another)
+      # then a NoNextValueError is thrown.
+      if (not has_next) throw NoNextValueError()
+      local String result = next
+      has_next = prep_next
+      return result
+
+    method prep_next.Logical:
+      # Prepares the next value that will be used by peek() and 
+      # read().  Returns "true" if there is another value, "false"
+      # if not.
+      if (counter == format.count) return false
+
+      if (counter < format.count - 3)
+        # room for a format?
+        if (format[counter] == '$' and format[counter+1] == '[')
+          counter += 2
+          local Int32 end = counter + 1
+          local Int32 index = 0
+          local Logical finished = false
+          while( counter < format.count)
+            local Char ch = format[counter]
+            counter++
+            if (ch.is_digit)
+              index = index * 10 + (ch - '0')
+            elseIf (ch == ']')
+              finished = true
+              escapeWhile
+            else
+              throw PatternError( "Invalid insertion marker in replacement string." )
+            endIf
+          endWhile
+          if (not finished)
+            throw PatternError( "Missing ']' of a replacement string insertion marker." )
+          elseIf (index >= groups.count)
+            throw PatternError( "No such group: $" (index) )
+          endIf
+          next = groups[index]
+          return true
+        endIf
+      endIf
+
+      # single character is next
+      next = format.substring(counter,counter)
+      counter++
+      return true
+endClass
+
+#=====================================================================
+#  Pattern
+#=====================================================================
+class PatternError : Error
+  # This class of error may be generated when instantiating new 
+  # Pattern objects.
+  METHODS
+    method init( message="Error defining pattern." ):
+      ip = System.execution_ip(1)
+endClass
+
+class Pattern
+  # Patterns are used to match or parse patterns of text.
+  #
+  # Unlike many languages, Slag's patterns are not based on 
+  # "regular expressions" but rather a custom grammar that's similar 
+  # to "EBNF" which is used for defining language syntax.
+  #
+  # For example, the following Pattern would match a phone
+  # number of the format "(123) 456-7890":
+  #
+  #   local Pattern phone_number_pattern(
+  #     "'(' digit*3 ') ' digit*3 '-' digit*4" )
+  #   local String number = "(123) 456-7890"
+  #   println( number.matches(phone_number_pattern) )
+  #     # prints: true
+  #
+  # Note how literal text is quoted - and must be matched exactly - 
+  # while unquoted text is used to define rules, constraints, and
+  # "wildcard" matches.
+  #
+  # The following operators are used in pattern definitions:
+  #
+  #   '...'      - literal text term, e.g. 'simulation_speed'
+  #   ()         - group of terms - counts as a term itself
+  #   {}         - tagged group of terms - when matched, saved in 
+  #                groups[].
+  #   ?          - zero or one of the preceding term
+  #   +          - one or more of the preceding term
+  #   *          - zero or more of the preceding term
+  #   *3         - exactly 3 of the preceding term
+  #   *4..6      - 4, 5, or 6 of the preceding term
+  #   'c1'..'c2' - matches any single character in the range c1 through c2
+  #   not        - matches any single character so long as the next term
+  #                is not satisfied.
+  #   or         - pattern can be satisfied by previous term or next term
+  #
+  # The following identifiers are also available.  Square braces 
+  # contain informal descriptions; all other definitions use
+  # formal pattern syntax.
+  #
+  #        space - ' '
+  #          tab - [tab character]
+  #   whitespace - (space or tab)* 
+  #           ws - whitespace
+  #        digit - ('0'..'9')
+  #    lowercase - ('a'..'z')
+  #    uppercase - ('A'..'Z')
+  #       letter - (lowercase or uppercase)
+  #           id - (letter or '_')(letter or digit or '_')*
+  #           lf - [Char(10)]
+  #           cr - [Char(13)]
+  #          eol - cr? lf
+  #    backslash - [\]
+  #        quote - [']
+  #          any - [any single character]
+  #
+  # Two special notes:
+  #
+  #   1.  'whitespace' and 'ws' match zero OR MORE spaces or tabs.
+  #       You do not have to write "ws*" or the like; writing "ws*2"
+  #       would never match because the first "ws" would consume
+  #       all the spaces and tabs and the second would be left with
+  #       nothing.
+  #
+  #   2.  'any' has a special behavior.  If you put an upper limit
+  #       on the number of matches - "any*4" or "any*2..5" - then
+  #       'any' refers to any single character as usual.  However 
+  #       if there is no upper limit ("any*", "any+") then only the 
+  #       minimum number of characters that still allow the rest of 
+  #       the pattern to match will be counted.
+  #
+  #       For example, the pattern "'a' any*" matches both "abc"
+  #       and "abd" whereas the pattern "'a' any* 'c'" matches
+  #       "abc" but not "abd".
+
+  CLASS_PROPERTIES
+    next_tag_group_index : Int32
+    match_end_of_input  : Logical
+
+  PROPERTIES
+    matcher : PatternMatcher
+
+  METHODS
+    method init( String st, Logical reset_tag_groups=true ):
+      # Initializes this Pattern to match the pattern defined by the
+      # parameter string.
+      if (reset_tag_groups) next_tag_group_index = 0
+      local LookaheadReader<<Char>> src( st )
+      matcher = parse_pattern( src )
+      if (src.has_another) 
+        throw PatternError( "Extra characters in pattern." )
+      endIf
+
+    method matches( String st, String[] groups = null ).Logical:
+      # Returns true if this pattern matches the given string.  To
+      # be considered a match, 'st' cannot have extra characters
+      # at the end that that don't fit the pattern.
+      #
+      # An empty String list may be sent in as a parameter.  If
+      # the pattern matches the string, 'groups' will be filled with 
+      # each {tagged group} that's matched in the pattern.
+      local RewindableReader<<Char>> reader( st.create_reader )
+      return (match(reader, true, groups) isNot null)
+
+    method matches( Readable<<Char>> readable, String[] groups = null ).Logical:
+      # Returns true if this pattern matches the given readable 
+      # character data.  To be considered a match, the readable 
+      # object cannot have extra characters at the end that that 
+      # don't fit the pattern.
+      #
+      # An empty String list may be sent in as a parameter.  If
+      # the pattern matches the string, 'groups' will be filled with 
+      # each {tagged group} that's matched in the pattern.
+      local RewindableReader<<Char>> reader( readable.create_reader )
+      return (match(reader, true, groups) isNot null)
+
+    method match( Readable<<Char>> input, Logical match_entire=false, String[] groups = null ).String:
+      # Returns true if this pattern matches the next input read from
+      # 'input'.
+      #
+      # Parameters:
+      #   input
+      #     The input source of characters for matching.
+      #
+      #   match_entire 
+      #     Set to "true" if this pattern is required to match the
+      #     entire sequence of input.  If it is "false" then there
+      #     can be unread input remaining after the pattern matches.
+      #
+      #   groups
+      #     An String[] object that will be filled with the tagged
+      #     groups of characters that match within the pattern.
+      #     
+      # Example:
+      #   local Pattern p( "{digit+},{digit+}" )
+      #   println( p.match("3.14 is roughly pi") )      # prints: true
+      #   println( p.match("3.14 is roughly pi",true) ) # prints: false
+      #   local String[] groups()
+      #   p.match( "3.14" )
+      #   println( groups )  # prints: {3,14}
+      return match( RewindableReader<<Char>>(input.create_reader), match_entire, groups )
+
+    method match( Reader<<Char>> input, Logical match_entire=false, String[] groups = null ).String:
+      # Returns true if this pattern matches the next input read from
+      # 'input'.
+      #
+      # Parameters:
+      #   input
+      #     The input source of characters for matching.
+      #
+      #   match_entire 
+      #     Set to "true" if this pattern is required to match the
+      #     entire sequence of input.  If it is "false" then there
+      #     can be unread input remaining after the pattern matches.
+      #
+      #   groups
+      #     An String[] object that will be filled with the tagged
+      #     groups of characters that match within the pattern.
+      #     
+      # Example:
+      #   local Pattern p( "{digit+},{digit+}" )
+      #   println( p.match("3.14 is roughly pi") )      # prints: true
+      #   println( p.match("3.14 is roughly pi",true) ) # prints: false
+      #   local String[] groups()
+      #   p.match( "3.14" )
+      #   println( groups )  # prints: {3,14}
+      return match( RewindableReader<<Char>>(input), match_entire, groups )
+
+    method match( RewindableReader<<Char>> input, Logical match_entire=false, String[] groups = null ).String:
+      # Returns true if this pattern matches the next input read from
+      # 'input'.
+      #
+      # Parameters:
+      #   input
+      #     The input source of characters for matching.
+      #
+      #   match_entire 
+      #     Set to "true" if this pattern is required to match the
+      #     entire sequence of input.  If it is "false" then there
+      #     can be unread input remaining after the pattern matches.
+      #
+      #   groups
+      #     An String[] object that will be filled with the tagged
+      #     groups of characters that match within the pattern.
+      #     
+      # Example:
+      #   local Pattern p( "{digit+},{digit+}" )
+      #   println( p.match("3.14 is roughly pi") )      # prints: true
+      #   println( p.match("3.14 is roughly pi",true) ) # prints: false
+      #   local String[] groups()
+      #   p.match( "3.14", true, groups )
+      #   println( groups )  # prints: {3,14}
+      match_end_of_input = match_entire
+
+      local PatternMatchInfo state( input, matcher )
+      if (matcher.match(state) )
+        if (groups isNot null) groups.add( state.groups )
+        return state.text.to_String
+      else
+        return null
+      endIf
+
+    method parse_pattern( LookaheadReader<<Char>> src ).PatternMatcher:
+      # Internal use.
+
+      #  pattern     ::= or_term *  (sequence)
+      #  or_terms    ::= repeat_term ['or' repeat_term]*
+      #  repeat_term ::= higher_precedence_term '?'
+      #                | higher_precedence_term '+'
+      #                | higher_precedence_term '*' [ [0-9]+ ['..' [0-9]+ ]]
+      #                | higher_precedence_term
+      #  higher_precedence_term
+      #              ::= '(' pattern ')'
+      #                | '{' pattern '}'        (tagged group)
+      #                | atomic_term
+      #
+      #  atomic_term ::= 'not' pattern
+      #                | id
+      #                | ch1 '..' ch2
+      #                | literal_string
+      local PatternMatcher result = parse_or_terms(src)
+
+      src.discard_spaces
+      if (src.has_another)
+        if (")}".index_of(src.peek) >= 0) return result
+        result.chain_next( parse_pattern(src) )
+      endIf
+      return result
+
+    method parse_or_terms( LookaheadReader<<Char>> src ).PatternMatcher:
+      # Internal use.
+
+      local PatternMatcher first_term = parse_repeat_term( src )
+      src.discard_spaces
+      if (src.is_exhausted or src.peek != 'o' or src.peek(2) != 'r') return first_term
+
+      local AltPatternMatcher or_terms()
+      or_terms.terms.add( first_term )
+
+      loop
+        src.discard_spaces
+        if (src.consume("or"))
+          or_terms.terms.add( parse_repeat_term(src) )
+        else
+          return or_terms
+        endIf
+      endLoop
+
+    method parse_repeat_term( LookaheadReader<<Char>> src ).PatternMatcher:
+      # Internal use.
+
+      local PatternMatcher m = parse_higher_precedence_term( src )
+
+      src.discard_spaces
+      if (src.is_exhausted) return m
+
+      which (src.peek)
+        case '?': 
+          src.read 
+          if (m.matches_any) return AnyMatcher(0,1)
+          return ArbitraryCountPatternMatcher( m, 0, 1 )
+
+        case '+': 
+          src.read
+          if (m.matches_any) return AnyMatcher(1)
+          return ArbitraryCountPatternMatcher( m, 1 )
+
+        case '*': 
+          src.read
+          src.discard_spaces
+          if (not src.has_another or not src.peek.is_digit) 
+            # term '*'  (0 or more)
+            if (m.matches_any) return AnyMatcher(0)
+            return ArbitraryCountPatternMatcher( m )
+          endIf
+
+          # term '*' count
+          local Int32 min_count = parse_quantity(src)
+          src.discard_spaces
+          if (not src.has_another or src.peek != '.') 
+            if (m.matches_any) return AnyMatcher(min_count, min_count)
+            return ArbitraryCountPatternMatcher( m, min_count, min_count )
+          endIf
+
+          # term '*' low .. high
+          src.read
+          if (src.read != '.') throw PatternError( "'..' expected, found '.'." )
+          if (not src.peek.is_digit) throw PatternError( "Numeric quantity expected after '..'." )
+          local Int32 max_count = parse_quantity(src)
+          if (m.matches_any) return AnyMatcher(min_count, max_count)
+          return ArbitraryCountPatternMatcher( m, min_count, max_count )
+
+        others: return m
+      endWhich
+
+    method parse_quantity( LookaheadReader<<Char>> src ).Int32:
+      # Internal use.
+
+      # require( src.peek.is_digit )
+      local Int32 n = 0
+      while (src.has_another)
+        if (not src.peek.is_digit) escapeWhile
+        n = n * 10 + (src.read - '0')
+      endWhile
+      return n
+      
+    method parse_higher_precedence_term( LookaheadReader<<Char>> src ).PatternMatcher:
+      # Internal use.
+
+      src.discard_spaces
+      if (src.consume("("))
+        local PatternMatcher result = parse_pattern( src )
+        if (not src.consume(")")) throw PatternError( "Closing ')' expected." )
+        return result
+      elseIf (src.consume("{"))
+        local Int32 cur_tag_group_index = next_tag_group_index
+        next_tag_group_index++
+        local PatternMatcher result = parse_pattern( src )
+        if (not src.consume("}")) throw PatternError( "Closing '}' expected." )
+        local BeginTagGroupPatternMatcher tagged(cur_tag_group_index)
+        tagged.chain_next( result )
+        tagged.chain_next( EndTagGroupPatternMatcher(cur_tag_group_index) )
+        return tagged
+      else
+        return parse_atomic_term( src )
+      endIf
+
+    method parse_atomic_term( LookaheadReader<<Char>> src ).PatternMatcher:
+      # Internal use.
+
+      src.discard_spaces
+      if (not src.has_another) 
+        throw PatternError( "Unexpected end of pattern looking for ID or character literal." )
+      endIf
+
+      local Char ch = src.peek
+      if (ch.is_letter or ch == '_')
+        # identifier
+        local StringBuilder buffer()
+        while (src.has_another)
+          ch = src.peek
+          if (ch.is_alphanumeric or ch == '_')
+            buffer.print( src.read )
+          else
+            escapeWhile 
+          endIf
+        endWhile
+
+        local var id = buffer.to_String
+        local var result = get_matcher_for_id( id, src )
+        if (result?) return result
+        throw PatternError( "Unrecognized pattern id: $" (id) )
+
+      elseIf (ch == '\'')
+        local PatternMatcher result = parse_literal( src )
+        return result
+      endIf
+
+      throw PatternError( "Id or literal string expected, got '$'" (src.peek) )
+
+    method get_matcher_for_id( String id, LookaheadReader<<Char>> src ).PatternMatcher:
+      # Internal use
+      which (id)
+        case "not":        return NotPatternMatcher( parse_pattern(src) )
+        case "space":      return CharRangePatternMatcher( ' ' )
+        case "tab":        return CharRangePatternMatcher( '\t' )
+        case "whitespace", "ws": 
+                           return Pattern( "(space or tab)*", false ).matcher
+        case "digit":      return Pattern( "'0'..'9'", false ).matcher
+        case "lowercase":  return Pattern( "'a'..'z'", false ).matcher
+        case "uppercase":  return Pattern( "'A'..'Z'", false ).matcher
+        case "letter":     return Pattern( "lowercase or uppercase", false ).matcher 
+        case "id":         return Pattern( "(letter or '_')(letter or digit or '_')*", false ).matcher
+        case "lf":         return CharRangePatternMatcher( Char(10) )
+        case "cr":         return CharRangePatternMatcher( Char(13) )
+        case "eol":        return Pattern( "cr? lf", false ).matcher
+        case "backslash":  return CharRangePatternMatcher( '\\' )
+        case "quote":      return CharRangePatternMatcher( '\'' )
+        case "any":        return CharRangePatternMatcher( 0, 0xffff )
+        others: 
+          return null
+      endWhich
+
+    method parse_literal( LookaheadReader<<Char>> src ).PatternMatcher:
+      # Internal use.
+
+      # string literal
+      local StringBuilder buffer()
+      src.read #eat the '
+      while (src.has_another)
+        local Char ch = src.read
+        if (ch == '\'') 
+          # check for 'ch1' .. 'ch2'
+          src.discard_spaces
+          if (src.has_another(2) and src.peek == '.' and src.peek(2) == '.')
+            if (buffer.count > 1)
+              throw PatternError( "'..' range cannot be used after a multi-character literal." )
+            endIf
+            local Char low_char = buffer[0], high_char
+            src.read
+            src.read
+            src.discard_spaces
+            contingent
+              necessary (src.consume("'"))
+              high_char = src.read
+              necessary (src.consume("'"))
+            satisfied
+              return CharRangePatternMatcher( low_char, high_char )
+            unsatisfied
+              throw PatternError( "Single-character literal expected after '..'." )
+            endContingent
+
+          else
+            return LiteralPatternMatcher( buffer.to_String )
+          endIf
+        else 
+          buffer.print( ch )
+        endIf
+      endWhile
+      throw PatternError( "A literal string is missing its closing quote." )
+endClass
+
+class PatternMatchInfo
+  # Internal use.
+
+  PROPERTIES
+    input         : RewindableReader<<Char>>
+    text()        : StringBuilder
+    group_begin() : Int32[]
+    group_end()   : Int32[]
+    text_marks()  : Int32[]
+    top_level_matcher : PatternMatcher
+
+  METHODS
+    method init( input, PatternMatcher first_matcher ):
+      top_level_matcher = first_matcher
+      while (top_level_matcher.next isNot null)
+        top_level_matcher = top_level_matcher.next
+      endWhile
+
+    method set_mark:
+      input.set_mark
+      text_marks.add( text.count )
+
+    method rewind_to_mark:
+      input.rewind_to_mark
+      text.discard( text_marks.remove_last )
+      forEach (index of group_begin)
+        if (group_begin[index] > text.count) group_begin[index] = 0
+      endForEach
+      forEach (index of group_end)
+        if (group_end[index] > text.count) group_end[index] = 0
+      endForEach
+
+    method clear_mark:
+      input.clear_mark
+      text_marks.remove_last
+
+    method begin_tag_group( Int32 tag_index ):
+      while (group_begin.count <= tag_index)
+        group_begin.add( 0 )
+        group_end.add( 0 )
+      endWhile
+      group_begin[tag_index] = text.count
+
+    method end_tag_group( Int32 tag_index ):
+      group_end[tag_index] = text.count
+
+    method groups.String[]:
+      local String[] results( group_begin.count )
+      forEach (index of group_begin)
+        local Int32 start = group_begin[index]
+        local Int32 finish = group_end[index]
+        if (finish > start)
+          results.add( String(text[start..finish-1]) )
+        endIf
+      endForEach
+      return results
+
+endClass
+
+
+class PatternMatcher
+  # Internal use.
+  PROPERTIES
+    next : PatternMatcher
+
+  METHODS
+    method chain_next( PatternMatcher _next ): 
+      if (this is _next)
+        # already chained via alternate route; done
+        return
+      endIf
+
+      if (next isNot null) next.chain_next( _next )
+      else next = _next
+
+    method match( PatternMatchInfo state ).Logical: abstract
+
+    method matches_any.Logical: 
+      # Overridden in CharRangePatternMatcher
+      return false
+
+    method match_next( PatternMatchInfo state ).Logical:
+      if (next isNot null) return next.match( state )
+
+      if (not Pattern.match_end_of_input) return true
+      if (this isNot state.top_level_matcher) return true
+      return (not state.input.has_another)
+endClass
+
+
+class BeginTagGroupPatternMatcher : PatternMatcher
+  # Internal use.
+  PROPERTIES
+    tag_group_index : Int32
+
+  METHODS
+    method init( tag_group_index ):
+
+    method match( PatternMatchInfo state ).Logical:
+      state.set_mark
+      state.begin_tag_group( tag_group_index )
+      if (match_next( state ))
+        state.clear_mark
+        return true
+      else
+        state.rewind_to_mark
+        return false
+      endIf
+
+    method to_String.String:
+      return "[ $" (next)
+endClass
+
+
+class EndTagGroupPatternMatcher : PatternMatcher
+  # Internal use.
+  PROPERTIES
+    tag_group_index : Int32
+
+  METHODS
+    method init( tag_group_index ):
+
+    method match( PatternMatchInfo state ).Logical:
+      state.end_tag_group( tag_group_index )
+      state.set_mark
+      if (match_next( state ))
+        state.clear_mark
+        return true
+      else
+        state.rewind_to_mark
+        return false
+      endIf
+
+    method to_String.String:
+      return "] $" (next)
+endClass
+
+
+class AltPatternMatcher : PatternMatcher
+  # Internal use.
+  PROPERTIES
+    terms(4) : PatternMatcher[]
+
+  METHODS
+    method init:
+
+    method init( PatternMatcher p1, PatternMatcher p2 ):
+      terms.add( p1 )
+      terms.add( p2 )
+
+    method init( PatternMatcher p1, PatternMatcher p2, PatternMatcher p3 ):
+      terms.add( p1 )
+      terms.add( p2 )
+      terms.add( p3 )
+
+    method chain_next( PatternMatcher _next ):
+      if (this is _next) return
+      forEach (term in terms)
+        term.chain_next( _next )
+      endForEach
+
+    method match( PatternMatchInfo state ).Logical:
+      contingent
+        forEach (term in terms)
+          state.set_mark
+          sufficient (term.match(state))
+          state.rewind_to_mark
+        endForEach
+
+        return false
+
+      satisfied
+        state.clear_mark
+
+        # We don't need to save the state here because 
+        # AltPatternMatcher never has a next matcher but we use
+        # the call to see if we've reached the end of input (if
+        # required).
+        return match_next( state )
+
+      endContingent
+
+    method to_String.String:
+      return "$" (terms)
+endClass
+
+
+class ArbitraryCountPatternMatcher : PatternMatcher
+  # Internal use.
+  PROPERTIES
+    term : PatternMatcher
+    min_count, max_count : Int32
+
+  METHODS
+    method init( term, min_count=0, max_count=-1 ):
+
+    method match( PatternMatchInfo state ).Logical:
+      contingent
+        state.set_mark
+        necessary (find_matches(state))
+        necessary (match_next(state))
+
+      satisfied
+        state.clear_mark
+        return true
+
+      unsatisfied
+        state.rewind_to_mark
+        return false
+      endContingent
+
+    method find_matches( PatternMatchInfo state ).Logical:
+      contingent
+        state.set_mark
+
+        # read in at least 'min_count' number
+        forEach (1..min_count) necessary (term.match(state))
+
+      satisfied
+        state.clear_mark
+
+        # read in up to 'max_count' more (or an indefinite # when -1)
+        if (max_count == -1)
+          loop
+            state.set_mark
+            if (term.match(state))
+              state.clear_mark
+            else
+              state.rewind_to_mark
+              return true
+            endIf
+          endLoop
+        else
+          forEach (min_count+1 .. max_count)
+            state.set_mark
+            if (term.match(state))
+              state.clear_mark
+            else
+              state.rewind_to_mark
+              return true
+            endIf
+          endForEach
+        endIf
+
+        return true
+
+      unsatisfied
+        state.rewind_to_mark
+        return false
+      endContingent
+
+    method to_String.String: 
+      if (max_count == -1) 
+        if (min_count == 0) return "($)* $" (term,next)
+        else                return "($)+ $" (term,next)
+      else
+        return "($)*$..$ $" (term,min_count,max_count,next)
+      endIf
+endClass
+
+class AnyMatcher : PatternMatcher
+  # Internal use.
+
+  # Wildcard that matches variable amounts of any character.  Unlike
+  # the other matchers that complete their own match before allowing
+  # the next linked matcher to go, this matcher conservatively 
+  # matches an additional character at a time and allows the next
+  # matcher to try until the rest of the pattern matches as well.
+  PROPERTIES
+    min_count, max_count : Int32
+
+  METHODS
+    method init( min_count=0, max_count=-1 ):
+
+    method match( PatternMatchInfo state ).Logical:
+      if (not state.input.has_another(min_count)) return false
+
+      if (next is null)
+        # no next matcher in pattern; just read as many as we can
+
+        # min required
+        forEach (1..min_count) state.text.print( state.input.read )
+
+        # extra
+        if (max_count == -1)
+          while (state.input.has_another) state.text.print( state.input.read )
+          return true
+        else
+          forEach (min_count+1 .. max_count)
+            if (not state.input.has_another) return true
+            state.text.print( state.input.read )
+          endForEach
+          return true
+        endIf
+      endIf
+
+      # we have a next matcher and at least 'min_count' number of 
+      # characters... see what fits
+      local Int32 original_count = state.text.count
+      state.input.set_mark
+
+      forEach (1..min_count) state.text.print( state.input.read )
+
+      if (match_next(state))
+        state.input.clear_mark
+        return true
+      endIf
+
+      if (max_count == -1)
+        # could be any number of additional characters
+        loop
+          if (state.input.has_another)
+            state.text.print( state.input.read )
+          else
+            state.input.rewind_to_mark
+            return false
+          endIf
+
+          if (match_next(state))
+            state.input.clear_mark
+            return true
+          endIf
+        endLoop
+            
+      else
+        # Theres a max # of additional characters
+        local Int32 n = min_count+1
+        while (n < max_count)
+          if (state.input.has_another)
+            state.text.print( state.input.read )
+          else
+            state.input.rewind_to_mark
+            return false
+          endIf
+
+          if (match_next(state))
+            state.input.clear_mark
+            return true
+          endIf
+
+          n++
+        endWhile
+
+        state.input.rewind_to_mark
+        return false
+      endIf
+
+    method to_String.String: 
+      if (max_count == -1) 
+        if (min_count == 0) return "any* $" (next)
+        else                return "any+ $" (next)
+      else
+        return "any*$..$ $" (min_count,max_count,next)
+      endIf
+endClass
+
+
+class LiteralPatternMatcher : PatternMatcher
+  # Internal use.
+  PROPERTIES
+    literal : String
+
+  METHODS
+    method init( literal ):
+
+    method match( PatternMatchInfo state ).Logical:
+      contingent
+        state.set_mark
+        necessary (state.input.consume(literal))
+        state.text.print( literal )
+        necessary (match_next(state))
+
+      satisfied
+        state.clear_mark
+        return true
+
+      unsatisfied
+        state.rewind_to_mark
+        return false
+      endContingent
+
+    method to_String.String: 
+      return "'$' $" (literal,next)
+endClass
+
+
+class CharRangePatternMatcher : PatternMatcher
+  PROPERTIES
+    low_ch, high_ch : Char
+
+  METHODS
+    method init( low_ch, high_ch ):
+
+    method init( low_ch ):
+      high_ch = low_ch
+
+    method matches_any.Logical: 
+      return (low_ch==0 and high_ch==0xffff)
+
+    method match( PatternMatchInfo state ).Logical:
+      if (not state.input.has_another) return false
+      local Char ch = state.input.peek
+      if (ch < low_ch or ch > high_ch) return false
+
+      contingent
+        state.set_mark
+        state.text.print( state.input.read )
+        necessary (match_next(state))
+
+      satisfied
+        state.clear_mark
+        return true
+
+      unsatisfied
+        state.rewind_to_mark
+        return false
+
+      endContingent
+
+    method to_String.String: 
+      return "'$'..'$' $" (low_ch,high_ch,next)
+endClass
+
+
+class NotPatternMatcher : PatternMatcher
+  # Internal use.
+  PROPERTIES
+    term : PatternMatcher
+
+  METHODS
+    method init( term ):
+
+    method match( PatternMatchInfo state ).Logical:
+      if (not state.input.has_another) return false
+
+      contingent
+        state.set_mark
+        necessary (not term.match(state))
+        necessary (match_next(state))
+
+      satisfied
+        state.rewind_to_mark
+        state.text.print( state.input.read )
+        return true
+
+      unsatisfied
+        state.rewind_to_mark
+        return false
+
+      endContingent
+
+    method to_String.String: 
+      return "not ($) $" (term,next)
+endClass
+
+class LookaheadReader<<$DataType>> : Reader<<$DataType>>
+  # Wraps an existing reader and can peek more than one value ahead.
+  #
+  # peek(1) is equivalent to peek(); peek(n) reads 'n' values ahead.
+  #
+  # Example:
+  #   local LookaheadReader<<Int32>> range(1..10)
+  #   println( range.read )     # prints: 1
+  #   println( range.peek )     # prints: 2
+  #   println( range.peek(2) )  # prints: 3
+  #   println( range.peek(4) )  # prints: 5
+  #   println( range.read )     # prints: 2
+  #   println( range.peek(2) )  # prints: 4
+  PROPERTIES
+    src : Reader<<$DataType>>
+      # The backing source of values for this LookaheadReader.
+
+    input_queue() : $DataType[]
+      # Internal use - buffer of values read in while peeking.
+
+  METHODS
+    method init( src ):
+      # Initializes this LookaheadReader to read from the given 
+      # reader.
+
+    method init( Readable<<$DataType>> readable ): 
+      # Initializes this LookaheadReader to read from the given 
+      # readable character data.
+      init( readable.create_reader )
+
+    method has_another.Logical: 
+      # Returns "true" if this reader has another value that can
+      # be previewed with peek() or read with read().
+      return has_another(1)
+
+    method has_another( Int32 reads_ahead ).Logical:
+      # Returns "true" if this reader has at least 'reads_ahead' more
+      # values that can be previewed with peek() or read with read().
+      while (input_queue.count < reads_ahead)
+        if (not src.has_another) return false
+        peek( input_queue.count + 1 )
+      endWhile
+      return true
+
+    method peek.$DataType:
+      # Returns the next value that will be returned from read().
+      # If there is no next value then a NoNextValueError is thrown.
+      return peek(1)
+
+    method peek( Int32 reads_ahead ).$DataType:
+      # Returns the value that will be returned after 'reads_ahead'
+      # more reads.
+      while (input_queue.count < reads_ahead)
+        if (not src.has_another) throw NoNextValueError()
+        input_queue.add( src.read )
+      endWhile
+      return input_queue[ reads_ahead - 1 ]
+
+    method read.$DataType:
+      # Returns the next value from this reader.  If (not has_another)
+      # then a NoNextValueError is thrown.
+      if (input_queue.count > 0) return input_queue.remove_first
+      if (not src.has_another) throw NoNextValueError()
+      return src.read
+endClass
+
+
+augment LookaheadReader<<Char>>
+  METHODS
+    method consume( String sequence ).Logical:
+      # Attempts to read and discard the given string.  Returns "true"
+      # and discards the entire string on success or returns "false" 
+      # and discards nothing on failure.
+      #
+      # Only defined for LookaheadReader<<Char>>.
+      forEach (i of sequence)
+        if (not has_another(i+1)) return false
+        if (peek(i+1) != sequence[i]) return false
+      endForEach
+      forEach (1..sequence.count) read
+      return true
+
+    method discard_spaces.Logical:
+      # Discards any number of spaces that come next in the input.
+      #
+      # Returns "true" if at least one space was discarded or "false"
+      # if not.
+      #
+      # Only defined for LookaheadReader<<Char>>.
+      if (not has_another) return false
+      if (peek != ' ') return false
+      while (consume(' '))
+      endWhile
+      #while (has_another and (peek != ' '))
+      return true
+endAugment
+
+
+class RewindableReader<<$DataType>> : Reader<<$DataType>>
+  # Wraps an existing reader.  Is able to set a mark at the current
+  # read position, rewind to the most recently set mark, and clear
+  # the most recently set mark.  Any number of marks may be in play.
+  #
+  # Example:
+  #   local RewindableReader<<Char>> input( "ABC" )
+  #   input.set_mark
+  #   println( input.read )  # prints: A
+  #   input.set_mark
+  #   println( input.read )  # prints: B
+  #   input.set_mark
+  #   println( input.read )  # prints: C
+  #   input.rewind_to_mark
+  #   println( input.read )  # prints: C
+  #   input.clear_mark
+  #   input.rewind_to_mark
+  #   println( input.read )  # prints: A
+  #   println( input.read )  # prints: B
+  #   println( input.read )  # prints: C
+  PROPERTIES
+    src : LookaheadReader<<$DataType>>
+      # The backing source of values for this RewindableReader.
+
+    counter = 0 : Int32
+      # A positional counter incremented with each read.
+
+    marks() : Int32[]
+      # A set of saved positions.  Used by set_mark(), clear_mark(),
+      # and rewind_to_mark().
+
+  METHODS
+    method init( Readable<<$DataType>> source ):
+      # Initializes this reader to read from the existing readable
+      # object.
+      init( source.create_reader )
+
+    method init( Reader<<$DataType>> reader ):
+      # Initializes this reader to read from the existing reader
+      # given.
+      src = LookaheadReader<<$DataType>>( reader )
+
+    method has_another.Logical: 
+      # Returns "true" if this reader has another value that can
+      # be previewed with 'peek' or read with 'read.
+      return src.has_another( counter + 1 )
+
+    method has_another( Int32 reads_ahead ).Logical:
+      # Returns "true" if this reader has at least 'reads_ahead' more
+      # values that can be previewed with peek() or read with read().
+      return src.has_another( counter + reads_ahead )
+
+    method peek.$DataType:
+      # Returns the next value that will be returned from read().
+      # If there is no next value then a NoNextValueError is thrown.
+      return src.peek( counter+1 )
+
+    method read.$DataType:
+      # Returns the next value from this reader.  If (not has_another)
+      # then a NoNextValueError is thrown.
+      if (marks.count?) 
+        return src.read
+      else
+        counter++
+        return src.peek( counter )
+      endIf
+
+    method peek( Int32 reads_ahead ).$DataType:
+      # Returns the value that will be returned after 'reads_ahead'
+      # more reads.
+      return src.peek( counter + reads_ahead )
+
+    method set_mark:
+      # Notes the current position of this reader for use with
+      # rewind_to_mark() and clear_mark().  set_mark() may be called
+      # any number of times at different positions.  The most recently
+      # set mark is always the one affected by rewind_to_mark() and
+      # clear_mark().
+      marks.add( counter )
+
+    method rewind_to_mark:
+      # Repositions this reader at the point of the most recent call
+      # to set_mark() and erases that mark.
+      counter = marks.remove_last
+
+    method clear_mark:     
+      # Erases the most recently set mark that hasn't been removed
+      # yet through rewind_to_mark() or clear_mark().
+      local var num_cleared = counter - marks.remove_last 
+      if (marks.count?)
+        counter -= num_cleared
+        forEach (1..num_cleared) src.read
+      endIf
+endClass
+
+augment RewindableReader<<Char>>
+  METHODS
+    method consume( String st ).Logical:
+      # Attempts to read and discard the given string.  Returns "true"
+      # and discards the entire string on success or returns "false" 
+      # and discards nothing on failure.
+      #
+      # Only defined for RewindableReader<<Char>>.
+      if (not has_another(st.count)) return false
+      set_mark
+      forEach (ch in st)
+        if (ch != read) rewind_to_mark; return false
+      endForEach
+      clear_mark
+      return true
+
+    method discard_spaces.Logical:
+      # Discards any number of spaces that come next in the input.
+      #
+      # Returns "true" if at least one space was discarded or "false"
+      # if not.
+      #
+      # Only defined for RewindableReader<<Char>>.
+      if (not has_another) return false
+      if (peek != ' ') return false
+      while (consume(' '))
+      endWhile
+      return true
+
+    method parse( Pattern p ).String:
+      # Returns and removes the substring of pending input that 
+      # matches the given pattern or 'null' if the pattern doesn't
+      # match.
+      #
+      # Only defined for RewindableReader<<Char>>.
+      return p.match( this )
+
+    method read_line.String:
+      # Returns the next line of characters (up to a CRLF or LF) from
+      # this reader.  The CRLF characters are not part of the result
+      # and are discarded.  If (not has_another) then a 
+      # NoNextValueError is thrown.
+      #
+      # Only defined for RewindableReader<<Char>>.
+      local StringBuilder result()
+      forEach (ch in this)
+        if (ch == 13) nextIteration
+        if (ch == 10) escapeForEach
+        result.print( ch )
+      endForEach
+      return result.to_String
+endAugment

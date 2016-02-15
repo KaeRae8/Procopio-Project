@@ -1,0 +1,776 @@
+#=====================================================================
+# input.slag
+#
+# 3.5.0 (2011.06.18)
+#
+# --------------------------------------------------------------------
+#
+# Copyright 2010 Plasmaworks LLC
+#
+#   http://plasmaworks.com/plasmacore
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); 
+# you may not use this file except in compliance with the License. 
+# You may obtain a copy of the License at 
+#
+#   http://www.apache.org/licenses/LICENSE-2.0 
+#
+# Unless required by applicable law or agreed to in writing, 
+# software distributed under the License is distributed on an 
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, 
+# either express or implied. See the License for the specific 
+# language governing permissions and limitations under the License.
+#
+#=====================================================================
+
+#=====================================================================
+# InputListener
+#=====================================================================
+underlying aspect InputListener
+  # Defines the methods of a InputListener that receives input events.
+  METHODS
+    method on( KeyEvent event )
+
+    method on( MouseEvent event )
+
+    method on( AccelerationEvent event )
+
+    method on( ScreenEvent event )
+
+    overlaying method listen_to( DispatcherType dispatcher )
+      # Instructs this InputListener to listen to the given 
+      # dispatcher.
+      insertUnderlying
+      if (dispatcher instanceOf InputDispatcher)
+        dispatcher.(InputDispatcher).input_listeners.add( this )
+      endIf
+
+    overlaying method stop_listening_to( DispatcherType dispatcher )
+      # Stops this InputListener from listening to the given 
+      # dispatcher.
+      insertUnderlying
+      if (dispatcher instanceOf InputDispatcher)
+        dispatcher.(InputDispatcher).input_listeners.remove( this )
+      endIf
+endAspect
+
+
+#=====================================================================
+# InputDispatcher
+#=====================================================================
+underlying aspect InputDispatcher : DispatcherType
+  # Defines the methods of an input dispatcher.
+  PROPERTIES
+    input_listeners(1) : InputListener[]
+      # List of key listeners receiving events from this dispatcher.
+
+  METHODS
+    method dispatch( KeyEvent event )
+      # Sends the given key event to all registered listeners.
+      forEach (i in 0..<input_listeners.count) input_listeners[i].on( event )
+
+    method dispatch( MouseEvent event )
+      # Sends the given mouse event to all registered listeners.
+      forEach (i in 0..<input_listeners.count) input_listeners[i].on( event )
+
+    method dispatch( AccelerationEvent event )
+      # Sends the given acceleration event to all registered listeners.
+      forEach (i in 0..<input_listeners.count) input_listeners[i].on( event )
+
+    method dispatch( ScreenEvent event )
+      # Sends the given screen event to all registered listeners.
+      forEach (i in 0..<input_listeners.count) input_listeners[i].on( event )
+
+endAspect
+
+
+#=====================================================================
+# Event
+#=====================================================================
+class Event
+  # Base class for KeyEvent, MouseEvent, and AccelerationEvent.
+endClass
+
+
+#=====================================================================
+# KeyEvent
+#=====================================================================
+class KeyEvent : Event
+  # Contains information about a specific key event.  Override
+  # on(KeyEvent) in your Screen subclass to handle key events.
+  ENUMERATE
+    release = 0
+    press   = 1
+    repeat  = 2
+
+  PROPERTIES
+    type      : Int32
+      # One of
+      #   KeyEvent.press
+      #   KeyEvent.repeat
+      #   KeyEvent.release
+
+    keycode   : Int32
+      # The raw keycode of the key pressed - Key.keycode_a,
+      # Key.keycode_0, etc.  Corresponds to SDL keycode values.
+
+    unicode   : Char
+      # The unicode value of the key pressed - 'A', '0', etc.
+
+    modifiers : Int32
+      # Flags indicating what key modifiers were pressed at the time
+      # of the key event.  Use the following methods to check
+      # (event is the KeyEvent; the methods are actualy defined
+      # in class KeyEventManager).
+      #
+      #   event.shift_pressed
+      #   event.ctrl_pressed
+      #   event.alt_pressed
+      #   event.caps_locked
+
+  METHODS
+    method init( type, keycode, unicode, modifiers )
+
+    method shift_pressed.Logical
+      return (modifiers & Key.modifier_shift) != 0
+
+    method ctrl_pressed.Logical
+      return (modifiers & Key.modifier_ctrl) != 0
+
+    method alt_pressed.Logical
+      return (modifiers & Key.modifier_alt) != 0
+
+    method caps_locked.Logical
+      return (modifiers & Key.modifier_caps_lock) != 0
+
+    method to_String.String
+      local StringBuilder buffer()
+      which (type)
+        case release: buffer.print("key release ")
+        case press:   buffer.print("key press ")
+        case repeat:  buffer.print("key repeat ")
+      endWhich
+      if (unicode >= ' ' and unicode <= 126)
+        buffer.print( unicode )
+        buffer.print(' ')
+      endIf
+      buffer.print('(')
+      buffer.print( unicode.(Int32) )
+      buffer.print(')')
+      return buffer.to_String
+
+    method is_press( Char required_unicode=0 ).Logical
+      return (type == press and (required_unicode==0 or unicode==required_unicode))
+
+    method is_release( Char required_unicode=0 ).Logical
+      return (type == release and (required_unicode==0 or unicode==required_unicode))
+
+    method is_repeat( Char required_unicode=0 ).Logical
+      return (type == repeat and (required_unicode==0 or unicode==required_unicode))
+
+    method is_press( Int32 required_keycode ).Logical
+      return (type == press and (required_keycode==0 or keycode==required_keycode))
+
+    method is_release( Int32 required_keycode ).Logical
+      return (type == release and (required_keycode==0 or keycode==required_keycode))
+
+    method is_repeat( Int32 required_keycode ).Logical
+      return (type == repeat and (required_keycode==0 or keycode==required_keycode))
+endClass
+
+
+singleton class Key
+  # A collection of key constants.  Compare these with the keycode
+  # values in your Key events or use them as indices into the
+  # Input.key_state[] table.
+  PROPERTIES
+    modifier_shift     =   1 : Int32
+    modifier_ctrl      =   2 : Int32
+    modifier_alt       =   4 : Int32
+    modifier_caps_lock =   8 : Int32
+    modifier_command   =  16 : Int32
+    
+    keycode_backspace     =   8 : Int32
+    keycode_tab           =   9 : Int32
+    keycode_enter         =  13 : Int32
+    keycode_pause         =  19 : Int32
+    keycode_escape        =  27 : Int32
+
+    keycode_space         =  32 : Int32
+    keycode_exclaim       =  33 : Int32
+    keycode_quote         =  34 : Int32
+    keycode_hash          =  35 : Int32
+    keycode_dollar        =  36 : Int32
+    keycode_ampersand     =  38 : Int32
+    keycode_apostrophe    =  39 : Int32
+    keycode_left_paren    =  40 : Int32
+    keycode_right_paren   =  41 : Int32
+    keycode_asterisk      =  42 : Int32
+    keycode_plus          =  43 : Int32
+    keycode_comma         =  44 : Int32
+    keycode_minus         =  45 : Int32
+    keycode_period        =  46 : Int32
+    keycode_slash         =  47 : Int32
+    keycode_0             =  48 : Int32
+    keycode_1             =  49 : Int32
+    keycode_2             =  50 : Int32
+    keycode_3             =  51 : Int32
+    keycode_4             =  52 : Int32
+    keycode_5             =  53 : Int32
+    keycode_6             =  54 : Int32
+    keycode_7             =  55 : Int32
+    keycode_8             =  56 : Int32
+    keycode_9             =  57 : Int32
+    keycode_colon         =  58 : Int32
+    keycode_semicolon     =  59 : Int32
+    keycode_less          =  60 : Int32
+    keycode_equals        =  61 : Int32
+    keycode_greater       =  62 : Int32
+    keycode_question      =  63 : Int32
+    keycode_at            =  64 : Int32
+    keycode_left_bracket  =  91 : Int32
+    keycode_backslash     =  92 : Int32
+    keycode_right_bracket =  93 : Int32
+    keycode_circumflex    =  94 : Int32
+    keycode_underline     =  95 : Int32
+    keycode_grave         =  96 : Int32
+    keycode_a             =  97 : Int32
+    keycode_b             =  98 : Int32
+    keycode_c             =  99 : Int32
+    keycode_d             = 100 : Int32
+    keycode_e             = 101 : Int32
+    keycode_f             = 102 : Int32
+    keycode_g             = 103 : Int32
+    keycode_h             = 104 : Int32
+    keycode_i             = 105 : Int32
+    keycode_j             = 106 : Int32
+    keycode_k             = 107 : Int32
+    keycode_l             = 108 : Int32
+    keycode_m             = 109 : Int32
+    keycode_n             = 110 : Int32
+    keycode_o             = 111 : Int32
+    keycode_p             = 112 : Int32
+    keycode_q             = 113 : Int32
+    keycode_r             = 114 : Int32
+    keycode_s             = 115 : Int32
+    keycode_t             = 116 : Int32
+    keycode_u             = 117 : Int32
+    keycode_v             = 118 : Int32
+    keycode_w             = 119 : Int32
+    keycode_x             = 120 : Int32
+    keycode_y             = 121 : Int32
+    keycode_z             = 122 : Int32
+    keycode_delete        = 127 : Int32
+    keycode_numpad_0      = 256 : Int32
+    keycode_numpad_1      = 257 : Int32
+    keycode_numpad_2      = 258 : Int32
+    keycode_numpad_3      = 259 : Int32
+    keycode_numpad_4      = 260 : Int32
+    keycode_numpad_5      = 261 : Int32
+    keycode_numpad_6      = 262 : Int32
+    keycode_numpad_7      = 263 : Int32
+    keycode_numpad_8      = 264 : Int32
+    keycode_numpad_9      = 265 : Int32
+    keycode_numpad_period = 266 : Int32
+    keycode_numpad_slash  = 267 : Int32
+    keycode_numpad_star   = 268 : Int32
+    keycode_numpad_minus  = 269 : Int32
+    keycode_numpad_plus   = 270 : Int32
+    keycode_numpad_enter  = 271 : Int32
+    keycode_numpad_equals = 272 : Int32
+
+    keycode_up_arrow      = 273 : Int32
+    keycode_down_arrow    = 274 : Int32
+    keycode_right_arrow   = 275 : Int32
+    keycode_left_arrow    = 276 : Int32
+    keycode_insert        = 277 : Int32
+    keycode_home          = 278 : Int32
+    keycode_end           = 279 : Int32
+    keycode_page_up       = 280 : Int32
+    keycode_page_down     = 281 : Int32
+    keycode_f1            = 282 : Int32
+    keycode_f2            = 283 : Int32
+    keycode_f3            = 284 : Int32
+    keycode_f4            = 285 : Int32
+    keycode_f5            = 286 : Int32
+    keycode_f6            = 287 : Int32
+    keycode_f7            = 288 : Int32
+    keycode_f8            = 289 : Int32
+    keycode_f9            = 290 : Int32
+    keycode_f10           = 291 : Int32
+    keycode_f11           = 292 : Int32
+    keycode_f12           = 293 : Int32
+    keycode_f13           = 294 : Int32
+    keycode_f14           = 295 : Int32
+    keycode_f15           = 296 : Int32
+    keycode_num_lock      = 300 : Int32
+    keycode_caps_lock     = 301 : Int32
+    keycode_scroll        = 302 : Int32
+    keycode_right_shift   = 303 : Int32
+    keycode_left_shift    = 304 : Int32
+    keycode_right_ctrl    = 305 : Int32
+    keycode_left_ctrl     = 306 : Int32
+    keycode_right_alt     = 307 : Int32
+    keycode_left_alt      = 308 : Int32
+    keycode_right_win     = 309 : Int32
+    keycode_right_meta    = 309 : Int32
+    keycode_right_command = 309 : Int32
+    keycode_left_win      = 310 : Int32
+    keycode_left_meta     = 310 : Int32
+    keycode_left_command  = 310 : Int32
+    keycode_sys_request   = 317 : Int32
+
+    keycode_first_printable = keycode_space         : Int32
+    keycode_last_printable  = keycode_numpad_equals : Int32
+
+    keycode_to_unicode_lc =
+      Char{
+        0,   1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,  12,  13,  14,  15, 
+       16,  17,  18,  19,  20,  21,  22,  23,  24,  25,  26,  27,  28,  29,  30,  31, 
+       32,  33,  34,  35,  36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47, 
+      '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',  58,  59,  60,  61,  62,  63, 
+       64,  97,  98,  99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 
+      112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122,  91,  92,  93,  94,  95, 
+       96,  97,  98,  99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 
+      112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 
+      128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 154, 139, 156, 141, 158, 143, 
+      144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 255, 
+      160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 
+      176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 
+      224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 
+      240, 241, 242, 243, 244, 245, 246, 215, 248, 249, 250, 251, 252, 253, 254, 223, 
+      224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 
+      240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255,  
+      '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '/', '*', '-', '+',  10,   
+      '=',   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   
+        0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+        0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+        0,   0,   0
+      } : Char[]
+
+  
+    keycode_to_unicode_uc = 
+      Char{
+        0,   1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,  12,  13,  14,  15, 
+       16,  17,  18,  19,  20,  21,  22,  23,  24,  25,  26,  27,  28,  29,  30,  31,
+       32,  33,  34,  35,  36,  37,  38, '"',  40,  41,  42, '=', '<', '_', '>', '?', 
+      ')', '!', '@', '#', '$', '%', '^', '&', '*', '(',  58, ':',  60, '+',  62,  63, 
+       64,  65,  66,  67,  68,  69,  70,  71,  72,  73,  74,  75,  76,  77,  78,  79, 
+       80,  81,  82,  83,  84,  85,  86,  87,  88,  89,  90, '{', '|', '}',  94,  95, 
+      '~',  65,  66,  67,  68,  69,  70,  71,  72,  73,  74,  75,  76,  77,  78,  79, 
+       80,  81,  82,  83,  84,  85,  86,  87,  88,  89,  90, 123, 124, 125, 126, 127, 
+      128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 
+      144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 138, 155, 140, 157, 142, 159, 
+      160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 
+      176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 
+      192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 
+      208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 
+      192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 
+      208, 209, 210, 211, 212, 213, 214, 247, 216, 217, 218, 219, 220, 221, 222, 159, 
+      '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '/', '*', '-', '+',  10,   
+      '=',   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   
+        0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+        0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+        0,   0,   0
+      } : Char[]
+
+    unicode_to_keycode : Array<<Char>>
+
+  METHODS
+    method init
+      unicode_to_keycode = Array<<Char>>( keycode_to_unicode_lc.count )
+      forEach (i of keycode_to_unicode_uc)
+        unicode_to_keycode[ keycode_to_unicode_uc[i] ] = i
+        unicode_to_keycode[ keycode_to_unicode_lc[i] ] = i
+      endForEach
+
+endClass
+
+#=====================================================================
+# MouseEvent
+#=====================================================================
+class MouseEvent : Event
+  # Contains information about a specific mouse event.  Override
+  # on(MouseEvent) in your Screen subclass to handle mouse events.
+  ENUMERATE
+    button_release    = 0
+    button_press      = 1
+    relative_movement = 2
+    movement          = 3
+    wheel_up          = 4
+    wheel_down        = 5
+    present           = 6
+    absent            = 7
+
+  PROPERTIES
+    type     : Int32
+      # One of
+      #   MouseEvent.movement
+      #   MouseEvent.relative_movement,
+      #   MouseEvent.button_press
+      #   MouseEvent.button_release,
+      #   MouseEvent.wheel_up
+      #   MouseEvent.wheel_down, 
+      #   MouseEvent.present
+      #   MouseEvent.absent
+
+    mouse_id : Int32
+      # Which mouse is being used.  Normally this will be 1.  For
+      # iOS, each different simultaneous touch is sent as a
+      # different mouse_id that will remain the same throughout the
+      # duration of the touch.
+
+    button   : Int32
+      # The mouse position at the time of the mouse event.
+
+    position : Vector2
+      # The mouse button that was pressed for appropriate events.
+
+  METHODS
+    method init( type, mouse_id, position, button )
+      noAction
+
+    method is_movement.Logical
+      return (type == movement)
+
+    method is_relative_movement.Logical
+      return (type == relative_movement)
+
+    method is_button_press( Int32 which_button=0 ).Logical
+      return (type == button_press and (which_button == 0 or button == which_button))
+
+    method is_button_release( Int32 which_button=0 ).Logical
+      return (type == button_release and (which_button == 0 or button == which_button))
+
+    method is_wheel_up.Logical
+      return (type == wheel_up)
+
+    method is_wheel_down.Logical
+      return (type == wheel_down )
+
+    method is_present.Logical
+      return (type == present)
+
+    method is_absent.Logical
+      return (type == absent)
+endClass
+
+
+#=====================================================================
+# AccelerationEvent
+# RollPitchYaw
+#=====================================================================
+class AccelerationEvent : Event
+  # Contains information about a specific acceleration event for
+  # iOS, Wii, and other platforms capable of detecting acceleration.  
+  # Override on(AccelerationEvent) in your Screen subclass to handle 
+  # accleration events.
+
+  PROPERTIES
+    controller_id : Int32
+     # Which controller is being used.  This will be 1 on iOS;
+     # it can be 1..4 on the Wii.
+  
+    x, y, z       : Real64
+     # The acceleration on the x, y, and z axes.
+
+  METHODS
+    method init( controller_id, x, y, z )
+      noAction
+
+    method orientation.RollPitchYaw
+      # Returns a RollPitchYaw compound (containing roll,pitch,yaw:Radians)
+      # with the orientation of the device assuming that gravity is 
+      # the primary force acting on the device (in other words this
+      # doesn't give useful information if the controller is being shaken 
+      # violently).
+      return RollPitchYaw( Vector2(x,z).radians, Vector2(y,z).radians, Vector2(x,y).radians )
+
+    method to_String.String
+      return "#$ ($,$,$)" (controller_id,x,y,z)
+endClass
+
+compound RollPitchYaw( Radians roll, Radians pitch, Radians yaw )
+
+singleton class RollPitchYawManager
+  METHODS
+    method to_String( RollPitchYaw orientation ).String
+      return "($,$,$)" (Degrees(orientation.roll),
+          Degrees(orientation.pitch),Degrees(orientation.yaw))
+endClass
+
+
+#=====================================================================
+# ScreenEvent
+#=====================================================================
+class ScreenEvent : Event
+  # Contains information about an screen state-related event.  
+  # Override on(ScreenEvent) in your Screen subclass to handle Screen
+  # events.
+  ENUMERATE
+    update
+    draw
+    activate
+    suspend
+    resume
+    deactivate
+    images_lost
+
+  PROPERTIES
+    type : Int32
+      # The type of screen event, one of
+      #   update
+      #   draw
+      #   activate
+      #   suspend
+      #   resume
+      #   deactivate
+      #   images_lost
+
+  METHODS
+    method init( type )
+
+    method to_String.String
+      which (type)
+        case update:      return "update"
+        case draw:        return "draw"
+        case activate:    return "activate"
+        case suspend:     return "suspend"
+        case resume:      return "resume"
+        case deactivate:  return "deactivate"
+        case images_lost: return "images_lost"
+        others:           return "unknown"
+      endWhich
+
+    method is_update.Logical
+      # Returns "true" if this event is of type 'update'.
+      return (type == update)
+    
+    method is_draw.Logical
+      # Returns "true" if this event is of type 'draw'.
+      return (type == draw)
+    
+    method is_activate.Logical
+      # Returns "true" if this event is of type 'activate'.
+      return (type == activate)
+
+    method is_suspend.Logical
+      # Returns "true" if this event is of type 'suspend'.
+      return (type == suspend)
+
+    method is_resume.Logical
+      # Returns "true" if this event is of type 'resume'.
+      return (type == resume)
+
+    method is_deactivate.Logical
+      # Returns "true" if this event is of type 'deactivate'.
+      return (type == deactivate)
+
+    method is_images_lost.Logical
+      # Returns "true" if this event is of type 'images_lost'.
+      return (type == images_lost)
+endClass
+
+
+requisite singleton class Input : InputDispatcher
+  # Manages application input.  Depending on your application you may
+  # wish to handle input event messages in your Screen subclass
+  # (on(MouseEvent) etc.) or use this class to poll the current input
+  # state.
+  PROPERTIES
+    first_repeat_delay_in_ticks = 30 : Int32
+      # Internal use.
+
+    next_repeat_delay_in_ticks  =  3 : Int32
+
+    key_modifiers : Int32
+      # The set of flags representing which SHIFT, ALT, and CTRL key 
+      # modifiers are currently pressed.  Most applications will want
+      # to call one of these methods instead
+      #
+      #   shift_pressed()
+      #   ctrl_pressed()
+      #   alt_pressed()
+      #   caps_locked()
+
+    key_state = Array<<Logical>>(512)  : Array<<Logical>>
+      # "true" if the given raw keycode (e.g. Key.keycode_a) is
+      # currently pressed, "false" if not.
+
+    last_key_pressed          : Int32
+      # Internal use - used for key repeating.
+
+    key_repeat_delay_in_ticks : Int32
+      # Internal use - a countdown until a pressed key repeats.
+
+    mouse_present=true  : Logical
+      # "true" if this application has the mouse focus.
+
+    mouse_positions(11) : Array<<Vector2>>
+
+    mouse_button_state=Array<<Logical>>(11) : Array<<Logical>>
+      # mouse_button_state[i] (where i is 1 to 10) is "true" if
+      # that mouse button is currently pressed.
+
+    has_acceleration : Logical
+
+    acceleration_x, acceleration_y, acceleration_z : Real64
+
+  METHODS
+    method init
+      has_acceleration = defined(PLATFORM_IOS) or defined(ANDROID) or defined(WP7)
+
+    method mouse_position( Int32 index=1 ).Vector2
+      return mouse_positions[index]
+
+    method shift_pressed.Logical
+      # Returns "true" if either of the shift keys is currently pressed.
+      return (key_modifiers & Key.modifier_shift) != 0
+
+    method caps_locked.Logical
+      # Returns "true" if CAPS LOCK is on.
+      return (key_modifiers & Key.modifier_caps_lock) != 0
+
+    method ctrl_pressed.Logical
+      # Returns "true" if either of the control keys is currently
+      # pressed.
+      return (key_modifiers & Key.modifier_ctrl) != 0
+
+    method alt_pressed.Logical
+      # Returns "true" if either of the alt keys is currently
+      # pressed.
+      return (key_modifiers & Key.modifier_alt) != 0
+
+    method command_pressed.Logical
+      # Returns "true" if either of the Mac command keys is currently pressed.
+      return (key_modifiers & Key.modifier_command) != 0
+
+    method update
+      if (has_acceleration) dispatch( AccelerationEvent(1,acceleration_x,acceleration_y,acceleration_z) )
+
+      # Internal use - updates the input system.
+      if (last_key_pressed > 0)
+        key_repeat_delay_in_ticks--
+        if (key_repeat_delay_in_ticks <= 0)
+          dispatch( KeyEvent(repeat, last_key_pressed, keycode_to_Char(last_key_pressed), key_modifiers) )
+          key_repeat_delay_in_ticks = next_repeat_delay_in_ticks
+        endIf
+      endIf
+
+    method keycode_to_Char( Int32 keycode ).Char
+      # Converts the given keycode into its Unicode equivalent, taking
+      # the current shift keys into consideration.
+
+      # test special cases in the midst of the printable char range
+      if (keycode == Key.keycode_delete) return Char(0)
+      if (keycode == Key.keycode_numpad_enter) return Char(0)
+
+      if (keycode >= Key.keycode_first_printable and keycode <= Key.keycode_last_printable)
+        if (shift_pressed ~ caps_locked) 
+          return Key.keycode_to_unicode_uc[ keycode ]
+        else
+          return Key.keycode_to_unicode_lc[ keycode ]
+        endIf
+      endIf
+
+      return Char(0)
+
+    method handle_key_press( Char ch, Int32 code )
+      key_state[code]  = true
+      last_key_pressed = code
+      key_repeat_delay_in_ticks = first_repeat_delay_in_ticks
+
+      if (ch == 0) 
+        which (code)
+          case Key.keycode_left_shift:    key_modifiers |= Key.modifier_shift
+          case Key.keycode_right_shift:   key_modifiers |= Key.modifier_shift
+          case Key.keycode_left_ctrl:     key_modifiers |= Key.modifier_ctrl
+          case Key.keycode_right_ctrl:    key_modifiers |= Key.modifier_ctrl
+          case Key.keycode_left_alt:      key_modifiers |= Key.modifier_alt
+          case Key.keycode_right_alt:     key_modifiers |= Key.modifier_alt
+          case Key.keycode_caps_lock:     key_modifiers |= Key.modifier_caps_lock
+          case Key.keycode_left_command:  key_modifiers |= Key.modifier_command
+          case Key.keycode_right_command: key_modifiers |= Key.modifier_command
+        endWhich
+      endIf
+
+      if (code == Key.keycode_enter and alt_pressed)
+        # ALT+ENTER toggles fullscreen
+        key_state[code]  = false
+        last_key_pressed = 0
+        Display.on_toggle_fullscreen
+      elseIf (code == Key.keycode_f4 and alt_pressed)
+        # ALT+F4 exits app (compatible with Windows)
+        key_state[code]  = false
+        last_key_pressed = 0
+        Application.on_exit_request
+      elseIf (code == Key.keycode_q and 
+        key_state[Key.keycode_left_command] or key_state[Key.keycode_right_command])
+        # COMMAND+Q also exits app (compatible with Mac)
+        key_state[code]  = false
+        last_key_pressed = 0
+        Application.on_exit_request
+      else
+        dispatch( KeyEvent(press, code, ch, key_modifiers) )
+        dispatch( KeyEvent(repeat, code, ch, key_modifiers) )
+      endIf
+
+    method handle_key_release( Char ch, Int32 code )
+      key_state[code] = false
+      if (code == last_key_pressed) last_key_pressed = 0
+
+      if (ch == 0) 
+        which (code)
+          case Key.keycode_left_shift:
+            if (not key_state[Key.keycode_right_shift]) key_modifiers &= !Key.modifier_shift
+          case Key.keycode_right_shift:
+            if (not key_state[Key.keycode_left_shift]) key_modifiers &= !Key.modifier_shift
+          case Key.keycode_left_ctrl:
+            if (not key_state[Key.keycode_right_ctrl]) key_modifiers &= !Key.modifier_ctrl
+          case Key.keycode_right_ctrl:
+            if (not key_state[Key.keycode_left_ctrl]) key_modifiers &= !Key.modifier_ctrl
+          case Key.keycode_left_alt:
+            if (not key_state[Key.keycode_right_alt]) key_modifiers &= !Key.modifier_alt
+          case Key.keycode_right_alt:
+            if (not key_state[Key.keycode_left_alt]) key_modifiers &= !Key.modifier_alt
+          case Key.keycode_caps_lock:
+            key_modifiers &= !Key.modifier_caps_lock
+          case Key.keycode_left_command:
+            if (not key_state[Key.keycode_right_command]) key_modifiers &= !Key.modifier_command
+          case Key.keycode_right_command:
+            if (not key_state[Key.keycode_left_command]) key_modifiers &= !Key.modifier_command
+        endWhich
+      endIf
+
+      # Internal use.
+      if (code == Key.keycode_enter and alt_pressed)
+        # ALT+ENTER finishing
+      elseIf (code == Key.keycode_f4 and alt_pressed)
+        # ALT+F4 finishing
+      else
+        dispatch( KeyEvent(release, code, ch, key_modifiers) )
+      endIf
+
+    method keyboard_visible( Logical setting ): native
+      # Shows or hides the on-screen keyboard (iOS and Android).
+
+    method keyboard_visible.Logical: native
+
+    method input_capture( Logical setting ): native
+      # Property-set that specifies whether input is captured by
+      # (and restricted to) this application.  This is "false" by 
+      # default.
+      #
+      # Example:
+      #   Application.input_capture = true
+
+    method mouse_visible( Logical setting ): native
+      # Property-set that specifies the visibility of the system 
+      # mouse.  This is "true" by default.
+      #
+      # Example:
+      #   Application.mouse_visible = false
+
+
+endClass
+

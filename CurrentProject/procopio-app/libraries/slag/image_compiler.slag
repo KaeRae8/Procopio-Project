@@ -1,0 +1,713 @@
+# 2010.06.17 by Abe Pralle
+
+[include "plasmacore.slag"]
+
+singleton class ImageCompiler
+  PROPERTIES
+    mfile                : String
+    platform="undefined" : String
+    base_dir="."         : String
+    data_dir, image_dir  : String
+    output_dir : String
+
+  METHODS
+    method init
+      try
+        init2
+      catch (FatalError err)
+        # Already printed something
+        System.exit(1)
+      endTry
+
+    method init2
+      local var args = command_line_args.create_reader
+      while (args.has_another)
+        local var arg = args.read
+        which (arg)
+          case "-platform"
+            platform = args.read
+
+          case "-resource_base_dir"
+            base_dir = args.read
+
+          case "-output_dir"
+            output_dir = args.read
+
+          others
+            println( "***UNKNOWN ARGUMENT: $***" (arg) )
+        endWhich
+      endWhile
+
+      println( "PLATFORM: " + platform )
+      println( "RESOURCE BASE DIRECTORY: " + base_dir )
+
+      data_dir = base_dir + "/data"
+      image_dir = base_dir + "/images"
+
+      if (output_dir is null) output_dir = "build/$/images" (platform)
+      File(output_dir).mkdir
+
+      File(data_dir).mkdir
+
+      Manifest.init
+
+      # Look for a postive platform-specific file - e.g. mac looks for
+      # "platform-mac".
+      local var platform_id = "-$-" (platform)
+
+      forEach (filename in File(data_dir).directory_listing(File.ignore_hidden))
+        if (File(data_dir+"/"+filename).is_directory)
+          if (filename.begins_with("platform-") and not filename.begins_with("platform-not"))
+            if ((filename+'-').contains(platform_id))
+              if (File("$/$/image_manifest.txt"(data_dir,filename)).exists)
+                mfile = "$/$/image_manifest.txt" (data_dir,filename)
+                escapeForEach
+              endIf
+            endIf
+          endIf
+        endIf
+      endForEach
+
+      # Look for a negative match - e.g. mac looks for "platform-not-windows".
+      if (mfile is null)
+        forEach (filename in File(data_dir).directory_listing(File.ignore_hidden))
+          if (File(data_dir+"/"+filename).is_directory)
+            if (filename.begins_with("platform-not-"))
+              if (not ((filename+'-').contains(platform_id)))
+                if (File("$/$/image_manifest.txt"(data_dir,filename)).exists)
+                  mfile = "$/$/image_manifest.txt" (data_dir,filename)
+                  escapeForEach
+                endIf
+              endIf
+            endIf
+          endIf
+        endForEach
+      endIf
+
+      # Use the regular image manifest.
+      if (mfile is null) mfile = data_dir+"/image_manifest.txt"
+      if (File(mfile).exists)
+        Manifest.load(mfile)
+      else
+        Manifest.modified = true
+      endIf
+      Manifest.set_category("general")
+
+      forEach (filename in File(image_dir).directory_listing(File.recursive|File.ignore_hidden))
+        filename .= replace('\\','/')
+        if (not (File(image_dir+"/"+filename).is_directory))
+
+          if (filename.begins_with("platform-"))
+            local var p = filename.before_first('/') + '-'
+            if (filename.begins_with("platform-not-"))
+              if (p.contains(platform_id)) nextIteration
+            else
+              if (not (p.contains(platform_id))) nextIteration
+            endIf
+          endIf
+
+          local var lc = filename.to_lowercase
+          if (lc.ends_with(".png") or lc.ends_with(".jpg") or lc.ends_with(".jpeg"))
+            Manifest.add(filename)
+            if (File(image_dir+"/"+filename).newer_than(mfile)) Manifest.modified = true
+          endIf
+        endIf
+      endForEach
+
+      local var uses_sheets = false
+      forEach (info in duplicate(Manifest.index.values.to_List))
+        if (not info.exists) Manifest.remove(info)
+        elseIf (not info.standalone) uses_sheets = true
+      endForEach
+
+      if (uses_sheets)
+        contingent
+          sufficient (Manifest.modified)
+
+          forEach (category in Manifest.categories)
+            necessary (category.num_sheets? or category.images.count==0)
+
+            forEach (n in 0..<category.num_sheets)
+              local var f = "$/image_sheet_$_$.png" (output_dir,category.name,n)
+              necessary (File(f).exists and not File(mfile).newer_than(f))
+            endForEach
+          endForEach
+
+        unsatisfied
+          Manifest.modified = true
+        endContingent
+      endIf
+
+      if (Manifest.modified)
+        local var dir = output_dir
+        if (File(dir).exists) 
+          try
+            forEach (f in File(dir).directory_listing(File.recursive|File.absolute|File.ignore_hidden))
+              if (not File(f).is_directory) File(f).delete
+            endForEach
+          catch (Error err)
+            println( "Error deleting " + dir )
+            System.exit(1)
+          endTry
+        endIf
+        File(dir).mkdir
+
+        if (uses_sheets)
+          Manifest.generate_sheets
+        endIf
+
+        System.catch_control_c( true )
+        println( "  Writing " + mfile )
+        Manifest.save(mfile)
+        System.catch_control_c( false )
+
+        if (uses_sheets) Manifest.save_sheets
+      endIf
+
+      Manifest.copy_standalone
+
+      local var total_sheets = 0
+      forEach (c in Manifest.categories) 
+        if (c.name != "ignore") total_sheets += c.num_sheets
+      endForEach
+
+      if (Manifest.modified)
+        println( "  [$ and $]" ("# image sheet".pluralize(total_sheets),
+          "# standalone image".pluralize(Manifest.standalone_count)) )
+        println
+
+        if (uses_sheets)
+          println( "  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *" )
+          println( "  Remember to run pngout on the modified image sheets before release." )
+          println( "  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *" )
+          println
+        endIf
+      endIf
+
+endClass
+
+class FatalError : Error;
+
+singleton class Manifest
+  PROPERTIES
+    index()   : HashTable<<String,ImageInfo>>
+    modified  : Logical
+
+    standalone()     : ImageInfo[]
+    categories()     : CategoryInfo[]
+    current_category : CategoryInfo
+
+    sheet_width=1024  : Int32
+    sheet_height=1024 : Int32
+
+  METHODS
+    method init
+      set_category( "general" )
+
+    method add( String filename )
+      if (index.contains(filename)) 
+        index[filename].exists = true
+      else
+        local ImageInfo info(filename,true)
+        index[filename] = info
+        if (info.standalone)
+          standalone.add(info)
+        else
+          if (current_category is null) set_category("general")
+          current_category.add(info)
+          modified = true
+        endIf
+      endIf
+
+    method remove( ImageInfo info )
+      modified = true
+      if (info.standalone)
+        index.remove(info.filepath)
+        standalone.remove(info)
+      else
+        info.category.remove(info)
+      endIf
+
+    method set_category( String name )
+      if (name == "standalone") current_category = null; return
+
+      forEach (c in categories)
+        if (c.name == name)
+          current_category = c
+          return
+        endIf
+      endForEach
+
+      current_category = CategoryInfo( name )
+      categories.add(current_category)
+
+    method load( String filepath )
+      local var line_reader = LineReader(File(filepath))
+      forEach (line in line_reader)
+        line .= trim
+
+        if (line.count == 0) nextIteration
+        which (line[0])
+          case '#':
+            nextIteration
+
+          case '[':
+            local var args = line.substring(1,line.count-2).split
+            which (args[0])
+              case "size":
+                sheet_width  = args[1].to_Int32
+                sheet_height = args[2].to_Int32
+                nextIteration
+
+              case "category":
+                set_category( args[1] )
+                nextIteration
+
+              others:
+                throw Error( "Unsupported directive: $." (line) )
+            endWhich
+
+          case '"':
+            local Scanner scanner(line)
+            local var img_name = scanner.scan_String
+            local ImageInfo info(img_name)
+            index[img_name] = info
+            if (current_category?)
+              current_category.add(info)
+            else
+              info.standalone = true
+              standalone.add( info )
+            endIf
+
+            loop
+              if (scanner.consume("ignore"))
+                info.ignore = true
+                nextIteration
+              endIf
+
+              if (scanner.consume("priority"))
+                info.priority = scanner.scan_Int32
+                nextIteration
+              endIf
+
+              if (scanner.consume("composite"))
+                info.composite = true
+                if (scanner.consume("permanent")) info.permanent = true
+                nextIteration
+
+              elseIf (scanner.next_is("font") or scanner.next_is("varfont"))
+                scanner.consume("font")
+                if (scanner.consume("varfont")) info.proportional = true
+                if (scanner.next_is_Int32) info.character_count = scanner.scan_Int32
+                else info.character_count = -1
+                if (scanner.consume("permanent")) info.permanent = true
+                nextIteration
+
+              elseIf (scanner.consume("split"))
+                info.tiles_wide = scanner.scan_Int32
+                scanner.consume("x")
+                info.tiles_high = scanner.scan_Int32
+                if (scanner.consume("permanent")) info.permanent = true
+                nextIteration
+
+              endIf
+
+              escapeLoop
+            endLoop
+
+          others:
+            local Scanner scanner(line)
+            if (scanner.consume("size") or scanner.consume("height") ...
+                  or scanner.consume("chunk_size"))
+              nextIteration
+            elseIf (scanner.consume("tile"))
+              if (current_category?)
+                local var sheet_index = scanner.scan_Int32
+                current_category.num_sheets = max(current_category.num_sheets,sheet_index+1)
+              endIf
+              nextIteration
+            elseIf (scanner.consume("char"))
+              if (current_category?)
+                local var sheet_index = scanner.scan_Int32
+                current_category.num_sheets = max(current_category.num_sheets,sheet_index+1)
+              endIf
+              nextIteration
+            else
+              throw Error( //Unexpected input in manifest.txt: "$".// (line) )
+            endIf
+
+        endWhich
+      endForEach
+
+    method save( String filepath )
+      local var writer = File(filepath).create_writer
+
+      writer.println( 
+[string]
+# THIS FILE IS AUTOMATICALLY REFRESHED DURING BUILDS.
+#
+# - The filenames of png and jpg/jpeg files in the images/ folder are 
+#   automatically added to this manifest.
+#
+# - Your changes to image file parameters on the same line following an image 
+#   filename) are saved.
+#
+# - Any line starting with two spaces contains auto-generated data and can be 
+#   deleted for readability.  It will be regenerated during the next build.
+#
+# - You can switch categories with [category new_catogory_name] and move image
+#   files under different categories to find the right balance of grouping
+#   like images and minimizing the total number of image sheets.
+#
+# - Images in [category standalone] will not be placed on texture sheets.
+#
+# - Images in [category permanent] will be retained after a call to
+#   ImageManager.release_all() - they are permanently cached.
+#
+# - Images in [category ignore] are not processed.  You cannot load ignored 
+#   images in-game.
+#
+# - You can follow any image filename with one of the following options:
+#
+#   composite           - Breaks a large image up into manageable chunks.
+#                         Load as a CompositeImage("filename").
+#
+#   split 4x2           - Splits an image up into (e.g.) 2 rows of 4 tiles.
+#                         Load as an image list "Image[](filename)" or
+#                         as an Animation("filename").
+#
+#   font                - Separates the character images of a fixed-width
+#   font 95               font.  May be followed by a count of how many
+#                         characters are in the font (default 95 - 
+#                         Unicode 32..126).
+#
+#   varfont             - Separates the character images of a variable-width
+#                         (proportional) font.  An extra row of pixels
+#                         should be at the top of the font image with
+#                         alternating colors to indicate letter widths.
+#                         The number of characters is automatically
+#                         determined.  Load as Font("filename").
+#
+#   ignore              - Leave this image out completely.
+#
+#   priority 1          - Assign a higher or lower priority to this image.
+#                         Higher-priority images are always placed first on
+#                         sheets, allowing manual tweaking of the placement
+#                         algorithm.  Priority is 0 by default.
+[endString] )
+
+      forEach (info in standalone)
+        if (not info.exists) removeCurrent info
+      endForEach
+
+      if (standalone.count?)
+        writer.println( "[category standalone]" )
+        forEach (info in standalone) writer.println(info)
+      endIf
+      writer.println
+
+      forEach (sheet in categories)
+        writer.print( sheet )
+      endForEach
+
+      writer.close
+
+    method generate_sheets
+      #sheet_width = -1  # force size to be written
+      forEach (c in categories)
+        if (c.name != "ignore") c.generate_sheets
+      endForEach
+
+    method save_sheets
+      forEach (c in categories) c.save_sheets
+
+    method standalone_count.Int32
+      local var result = 0
+      forEach (info in standalone)
+        if (not info.ignore) ++result
+      endForEach
+      return result
+
+    method copy_standalone
+      forEach (info in standalone)
+        if (info.ignore) nextIteration
+        local var f = info.filepath
+        local var image_dir = ImageCompiler.image_dir
+        if (File(image_dir+"/"+f).newer_than("$/$"(ImageCompiler.output_dir,f)))
+          println( "  Copying $ to $" (f,ImageCompiler.output_dir) )
+          File("$/$" (ImageCompiler.output_dir,File(f).path)).mkdir
+          File(image_dir+"/"+f).copy("$/$"(ImageCompiler.output_dir,f))
+        endIf
+      endForEach
+endClass
+
+class ImageInfo : TileLayoutInfo
+  PROPERTIES
+    category   : CategoryInfo
+    filepath   : String
+    standalone : Logical
+    composite  : Logical
+    ignore     : Logical
+
+    character_count : Int32
+    proportional : Logical
+    permanent    : Logical
+
+    tiles_wide, tiles_high : Int32
+
+    exists     : Logical
+    bitmap     : Bitmap
+    sub_images : ImageInfo[]
+
+  METHODS
+    method init( filepath, Logical check_standalone=false )
+      if (check_standalone)
+        load_bitmap
+        exists = true
+      endIf
+
+    method init( bitmap )
+
+    method ignore.Logical
+      return (&ignore or (category? and category.name == "ignore"))
+
+    method prep_for_layout( ImageInfo[] list )
+      if (ignore) return
+
+      load_bitmap
+      if (sub_images?)
+        forEach (info in sub_images) info.prep_for_layout(list)
+      else
+        list.add(this)
+        bounds = Box(0,0,bitmap.width,bitmap.height)
+      endIf
+
+    method load_bitmap
+      if (bitmap?) return
+
+      bitmap = Bitmap(File(ImageCompiler.image_dir+"/"+filepath).to_bytes)
+
+      if (composite)
+        tiles_wide = (bitmap.width+253)/254
+        tiles_high = (bitmap.height+253)/254
+        sub_images = ImageInfo[](tiles_wide*tiles_high)
+        forEach (j in 0..<tiles_high)
+          forEach (i in 0..<tiles_wide)
+            sub_images.add( ImageInfo(Bitmap(bitmap,Box(i*254,j*254,254,254))) )
+            sub_images.last.bitmap.add_padding
+          endForEach
+        endForEach
+
+      elseIf (tiles_wide?)
+        local var w = bitmap.width  / tiles_wide
+        local var h = bitmap.height / tiles_high
+        sub_images = ImageInfo[](tiles_wide*tiles_high)
+        forEach (j in 0..<tiles_high)
+          forEach (i in 0..<tiles_wide)
+            sub_images.add( ImageInfo(Bitmap(bitmap,Box(i*w,j*h,w,h))) )
+            sub_images.last.bitmap.add_padding
+          endForEach
+        endForEach
+
+      else
+        local var is_font = character_count?
+        if (bitmap.width > (Manifest.sheet_width-2) ...
+            or bitmap.height > (Manifest.sheet_height-2) or is_font)
+          if (character_count?)
+            sub_images = ImageInfo[](max(character_count,20))
+
+            if (proportional)
+              local Int32 letter_start_x = 0
+              local Int32 letter_height = bitmap.height - 1
+              character_count = 0
+              while (letter_start_x < bitmap.width)
+                ++character_count
+                local Int32 letter_width = find_letter_width( letter_start_x )
+                local Bitmap letter_bmp = Bitmap( bitmap, 
+                    Vector2(letter_start_x,1), Vector2(letter_width,letter_height) )
+                sub_images.add( ImageInfo(letter_bmp) )
+                sub_images.last.bitmap.add_padding
+                letter_start_x += letter_width
+              endWhile
+            else
+              # Non-proportional font
+              if (character_count == -1) character_count = 95
+              forEach (ch in bitmap.split_into_tiles(character_count,1))
+                sub_images.add( ImageInfo(ch) )
+                sub_images.last.bitmap.add_padding
+              endForEach
+            endIf
+
+          else
+            if (category?)
+              println(//* * * * * * * * * * * * * * * * * * * * //
+                      //* * * * * * * * * * * * * * * * * * * *\n//
+                      //ERROR: "$" is too big to fit in a regular category.\n//
+                      //       Mark it as 'composite' or put it in the 'standalone'\n//
+                      //       category.\n// 
+                      //* * * * * * * * * * * * * * * * * * * * //
+                      //* * * * * * * * * * * * * * * * * * * *\n// ...
+                      (filepath) )
+              throw FatalError()
+            endIf
+            standalone = true
+          endIf
+
+        else
+          # regular image
+          bitmap.add_padding
+        endIf
+      endIf
+
+    method find_letter_width( Int32 letter_start_x ).Int32
+      # Internal use.
+      local var start_color = bitmap.data[ letter_start_x ]
+      forEach (x in letter_start_x+1..bitmap.width)
+        if (bitmap.data[x] != start_color) return (x - letter_start_x)
+      endForEach
+      return bitmap.width - letter_start_x
+
+    method to_String.String
+      local StringBuilder buffer()
+      buffer.print( //"$"// (filepath) )
+
+      load_bitmap
+
+      if (ignore) buffer.print( " ignore" )
+
+      if (standalone) 
+        if (permanent) buffer.print(" permanent")
+        return buffer.to_String
+      endIf
+
+      if (priority != 0) buffer.print( " priority " + priority )
+
+      if (composite)
+        buffer.print( " composite" )
+        if (permanent) buffer.print(" permanent")
+        buffer.println
+        buffer.println( "  size $ $" (bitmap.width,bitmap.height) )
+        buffer.println( "  chunk_size 254 254" )
+      elseIf (character_count?)
+        if (proportional?)
+          buffer.print( " varfont $" (character_count) )
+          if (permanent) buffer.print(" permanent")
+          buffer.println
+          buffer.println( "  height $" (sub_images.first.bitmap.height) )
+          forEach (i of sub_images)
+            local var info = sub_images[i]
+            local Int32 x = info.bounds.position.x
+            local Int32 y = info.bounds.position.y
+            local Int32 w = info.bounds.width
+            buffer.println( "  char $ $ $ $" (info.sheet_index,x,y,w) )
+          endForEach
+        else 
+          buffer.print( " font $" (character_count) )
+          if (permanent) buffer.print(" permanent")
+          buffer.println
+          local var bmp = sub_images.first.bitmap
+          buffer.println( "  size $ $" (bmp.width, bmp.height) )
+          forEach (i of sub_images)
+            local var info = sub_images[i]
+            buffer.println( "  char $ $ $" (info.sheet_index, 
+              Int32(info.bounds.position.x), Int32(info.bounds.position.y)) )
+          endForEach
+        endIf
+      elseIf (tiles_wide?)
+        buffer.print( " split $x$" (tiles_wide,tiles_high) )
+        if (permanent) buffer.print(" permanent")
+        buffer.println
+        local var bmp = sub_images.first.bitmap
+        buffer.println( "  size $ $" (bmp.width,bmp.height) )
+      else
+        if (permanent) buffer.print(" permanent")
+        buffer.println
+      endIf
+
+      if (character_count == 0)
+        if (sub_images?)
+          forEach (info in sub_images)
+            local Int32 x = info.bounds.position.x
+            local Int32 y = info.bounds.position.y
+            buffer.println( "  tile $ $ $" (info.sheet_index,x,y) )
+          endForEach
+        else
+          local Int32 x = bounds.position.x
+          local Int32 y = bounds.position.y
+          local Int32 w = bounds.width
+          local Int32 h = bounds.height
+          buffer.println( "  tile $ $ $ $ $" (sheet_index,x,y,w,h) )
+        endIf
+      endIf
+
+      return buffer.to_String
+endClass
+
+class CategoryInfo
+  PROPERTIES
+    name       : String
+    images()   : ImageInfo[]
+    num_sheets : Int32
+    sheets()   : Bitmap[]
+    sheet_width, sheet_height : Int32
+
+  METHODS
+    method init( name )
+      sheet_width = Manifest.sheet_width
+      sheet_height = Manifest.sheet_height
+
+    method add( ImageInfo image_info )
+      image_info.category = this
+      images.add( image_info )
+
+    method remove( ImageInfo info )
+      images.remove(info)
+
+    method to_String.String
+      if (images.count == 0) return ""
+
+      local StringBuilder buffer()
+
+      if (sheet_width != Manifest.sheet_width or sheet_height != Manifest.sheet_height)
+        Manifest.sheet_width = sheet_width
+        Manifest.sheet_height = sheet_height
+        buffer.println( "[size $ $]\n" (sheet_width, sheet_height) )
+      endIf
+
+      buffer.println( "[category $]" (name) )
+
+      forEach (info in images)
+        buffer.println( info )
+      endForEach
+
+      return buffer.to_String
+
+    method generate_sheets
+      local ImageInfo[] layout_list()
+
+      forEach (info in images) info.prep_for_layout(layout_list)
+
+      local Vector2 size(sheet_width,sheet_height)
+      TileLayout<<ImageInfo>>(size).layout( layout_list )
+
+      num_sheets = 0
+      forEach (info in layout_list)
+        num_sheets = max( num_sheets, info.sheet_index+1 )
+      endForEach
+
+      forEach (1..num_sheets) sheets.add(Bitmap(size.x,size.y,Color.blue))
+
+      forEach (info in layout_list)
+        info.bitmap.draw_to( sheets[info.sheet_index], info.bounds.position, false )
+      endForEach
+
+    method save_sheets
+      if (name == "ignore") return
+      forEach (i in 0..<num_sheets)
+        local var f = "$/image_sheet_$_$.png"(ImageCompiler.output_dir,name,i)
+        println( "  Writing " + f )
+        sheets[i].unmultiply_alpha
+        File(f).save( sheets[i].to_png_bytes )
+      endForEach
+endClass
+

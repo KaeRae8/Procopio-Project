@@ -1,0 +1,1749 @@
+# This file will be automatically replaced during upgrades.
+# Edit build.slag if you want to add your own commands.
+
+[define MANIFEST_FILENAME "manifest.txt"]
+
+class BuildCore : GoGo
+  PROPERTIES
+    slagc_exe, gslag_exe : String
+    platform : String
+    manifest : Manifest
+    online_manifest : Manifest
+
+    require_gogo : Logical
+    base_dir="." : String
+    data_dir, image_dir, sound_dir, media_dir : String
+
+    checked_for_core_upgrade : Logical
+
+    source_dirs() : String[]
+      # All the Slag files in these directories are added as additional project source.
+      # This includes the files in timestamp checks to determine whether a project should 
+      # be recompiled.
+
+  METHODS
+    method build( String cmd ):
+      if (finish_upgrade) return
+
+      if (local_properties.contains("UPGRADE_MODULES"))
+        local_properties.remove("UPGRADE_MODULES")
+        println( "> Upgrade modules" )
+        if (not check_upgrade) println( "No updates are available." )
+        else return
+      endIf
+
+      if (not File(MANIFEST_FILENAME).exists)
+        create_file( File(MANIFEST_FILENAME),
+[string]
+id: plasmacore
+version: 3.5.0
+date: 20110618
+name: Plasmacore 3.5.0
+url:  http://plasmaworks.github.io/files/plasmacore/archive/plasmacore-3.5.0.zip
+description: Original install.
+[endString] )
+      endIf # //
+
+      if (File("platforms/windows/defaults").exists)
+        copy( File("platforms/windows/defaults/main.cpp"), Directory("platforms/windows"), Copy.missing_only )
+        copy( File("platforms/windows/defaults/plasmacore_windows.sln"), 
+          Directory("platforms/windows"), Copy.missing_only )
+        copy( File("platforms/windows/defaults/plasmacore-vm/plasmacore-vm.vcxproj"), 
+          Directory("platforms/windows/plasmacore-vm"), Copy.missing_only )
+        copy( File("platforms/windows/defaults/plasmacore-xc/plasmacore-xc.vcxproj"), 
+          Directory("platforms/windows/plasmacore-xc"), Copy.missing_only )
+      endIf
+
+      if (File("platforms/mac/defaults").exists)
+        copy( File("platforms/mac/defaults/main.mm"), Directory("platforms/mac"), Copy.missing_only )
+        copy( File("platforms/mac/defaults/plasmacore_mac.xcodeproj/project.pbxproj"), 
+        Directory("platforms/mac/plasmacore_mac.xcodeproj"), Copy.missing_only )
+      endIf
+
+
+      if (not File("platforms").exists)
+        println( "---------------------------------" 
+            "----------------------------------------------" )
+        println( //There are no platforms installed - running "gogo install platform".// )
+        println( "---------------------------------" 
+            "----------------------------------------------" )
+        install_module( "platform" )
+        return
+      endIf
+
+      cmd = menu( cmd, //Enter the number or value of an option ("1" or "build") or [ENTER] to exit.\nYou can also type "gogo 1" or "gogo build" (for example) to skip this menu.//,
+      { 
+        "build::Compile and run for the current platform ($)." (System.os),
+        "compile::Compile for the current platform ($)." (System.os),
+        "run::Run the last compiled version for the current platform ($)." (System.os),
+        "log::View the debug log for the most recent run.",
+        "build-xc::Cross-compile and run for the current platform ($)." (System.os),
+        "compile-xc::Cross-compile for the current platform ($)." (System.os),
+        "clean::Remove intermediate build files and build products.",
+        "upgrade::Check for a Plasmacore upgrade online.",
+        "install [platform|slaglib|nativelib|partial-module-name]::Download and install a new plasmacore module (e.g. ios,libpng).",
+        "reinstall [partial-module-name]::Reinstall a previously installed plasmacore module in case of accidental file deletion. Does not automatically reinstall dependencies.",
+        "pngout::Run pngout to optimize images from the most recent compile.",
+        "doc (type)::Print documentation on 'type'.  Examples: doc Image, doc Image::handle, doc \"HashTable<<String,Int32>>\".",
+        "ios-vm/xc | android-vm/xc | wp7::Compile targeting a mobile platform."
+      }
+      )
+      if (cmd is null) return
+
+      local var install_name = ""
+      if (cmd.begins_with("reinstall [part")) cmd = "reinstall"
+      if (cmd.begins_with("install [platform")) cmd = "install"
+      if (cmd == "install" or cmd == "reinstall")
+        if (command_line_args.count > 1)
+          install_name = command_line_args[1]
+        endIf
+      endIf
+      if (cmd.begins_with("doc ")) cmd = "doc"
+
+      which (cmd)
+        case "install":   install_module(install_name)
+        case "reinstall": reinstall_module(install_name)
+
+        case "upgrade":
+          if (not check_upgrade) println( "No updates are available." )
+          return
+
+        case "clean", "xclean": clean
+
+        case "ios-vm/xc | android-vm/xc | wp7":
+          println( //Re-run "$ target" where target is one of the following:// (gogo_name) )
+          println( //  ios-vm// )
+          println( //  ios-xc// )
+          println( //  android-vm// )
+          println( //  android-xc// )
+          println( //  wp7// )
+          return
+
+        case "iphone", "iphone-vm", "iphone-xc"
+          println( //Use "ios" instead of "iphone".// )
+          return
+
+        case "android","android-vm": set_up; build_android_vm
+        case "android-xc": set_up; build_android_xc
+        case "ios", "ios-vm":   set_up; build_ios_vm
+        case "ios-xc": set_up; build_ios_xc
+        case "wp7": set_up; build_wp7_xc
+
+        case "build":
+          which (System.os)
+            case "mac":     set_up; build_mac
+            case "windows": set_up; build_windows
+            case "linux":   set_up; build_linux
+            others: throw Error( "Unsupported system: " + System.os )
+          endWhich
+
+        case "build-xc":
+          which (System.os)
+            case "mac":     set_up; build_mac_xc
+            case "windows": set_up; build_windows_xc
+            case "linux":   set_up; build_linux_xc
+            others: throw Error( "Unsupported system: " + System.os )
+          endWhich
+
+        case "compile":
+          which (System.os)
+            case "mac":     set_up; compile_mac
+            case "windows": set_up; compile_windows
+            case "linux":   set_up; compile_linux
+            others: throw Error( "Unsupported system: " + System.os )
+          endWhich
+
+        case "compile_xc":
+          which (System.os)
+            case "mac":     set_up; compile_mac_xc
+            case "windows": set_up; compile_windows_xc
+            case "linux":   set_up; compile_linux_xc
+            others: throw Error( "Unsupported system: " + System.os )
+          endWhich
+
+        case "run":
+          which (System.os)
+            case "mac":     set_up; run_mac
+            case "windows": set_up; run_windows
+            case "linux":   set_up; run_linux
+            others: throw Error( "Unsupported system: " + System.os )
+          endWhich
+
+        case "pngout":
+          set_up
+          run_pngout
+
+        case "doc":
+          set_up
+          if (command_line_args.count != 2)
+            println( //Examples of use:// )
+            println( //  $ doc Image// (gogo_name) )
+            println( //  $ doc Image::handle// (gogo_name) )
+            println( //  $ doc "HashTable<<String,Int32>>"// (gogo_name) )
+            println( //  $ doc "HashTable<<String,Int32>>::find"// (gogo_name) )
+          else
+            local var project_id = format_id(project_properties["PROJECT_NAME"])
+            local String p
+            if (local_properties.contains("LAST_PLATFORM"))
+              p = local_properties["LAST_PLATFORM"].to_uppercase
+              if (p == "IOS") p = "PLATFORM_IOS"
+            else
+              p = System.os.to_uppercase
+            endIf
+            execute( //$ -platform $ -define PLASMACORE -src_path "src;libraries;libraries/slag;libraries/slag/standard;libraries/slag/plasmacore" plasmacore.slag -doc "$"// ...
+            (slagc_exe,p,command_line_args[1]) )
+
+          endIf
+
+        case "mac":     set_up; build_mac
+        case "windows": set_up; build_windows
+        case "compile-mac":     set_up; compile_mac
+        case "compile-windows": set_up; compile_windows
+
+        case "log": set_up; show_logfile
+
+        others:
+          throw Error( //unsupported command "$".// (cmd) )
+      endWhich
+
+      if (require_gogo)
+        if (System.os == "windows")
+          println( "Type 'gogo' to complete the install." )
+        else
+          println( "Type './gogo' to complete the install." )
+        endIf
+      endIf
+
+    method gogo_name.String:
+      if (System.os == "windows") return "gogo"
+      return "./gogo"
+
+    method set_platform( String new_platform ).Logical:
+      new_platform .= to_lowercase
+      &platform = new_platform
+      if (new_platform != local_properties["LAST_PLATFORM"])
+        local_properties["LAST_PLATFORM"] = new_platform
+        return true
+      endIf
+      return false
+
+    method format_class_id( String text ).String:
+      local StringBuilder id()
+      forEach (ch in text)
+        which (ch)
+          case 'A'..'Z', 'a'..'z', '0'..'9', '_' : id.print(ch)
+        endWhich
+      endForEach
+      return id.to_String
+
+    method format_id( String text ).String:
+      local StringBuilder id()
+      forEach (ch in text)
+        which (ch)
+          case 'A'..'Z': id.print( Char(ch+32) )
+          case 'a'..'z', '0'..'9' : id.print( ch )
+          case '-','_',' ': id.print('_')
+        endWhich
+      endForEach
+      return id.to_String
+
+    method format_jni_id( String text ).String:
+      local StringBuilder id()
+      forEach (ch in format_id(text))
+        if (ch != '_') id.print(ch)
+      endForEach
+      return id.to_String
+
+    method input_name( String prompt, String default_id="" ).String:
+      local var text = input_String(prompt)
+      if (text == "") text = default_id
+      while (text == "")
+        prompt = {"Whoops, try again: ","Gotta give me something: ","Come again? "}.random
+        text = input_String(prompt)
+      endWhile
+      return text
+
+    method set_up:
+      project_properties.set_default( "RESOURCE_BASE_DIR", "." )
+      base_dir = project_properties["RESOURCE_BASE_DIR"]
+      data_dir  = base_dir + "/data"
+      image_dir = base_dir + "/images"
+      sound_dir = base_dir + "/sounds"
+      media_dir = base_dir + "/media"
+
+      mkdir( "build" )
+      mkdir( data_dir )
+      mkdir( image_dir )
+      mkdir( media_dir )
+      mkdir( sound_dir )
+
+      which (System.os)
+        case "mac":
+          slagc_exe = "bin/mac/slagc"
+          gslag_exe  = "bin/mac/gslag"
+
+        case "windows":
+          slagc_exe = "bin\\windows\\slagc.exe"
+          gslag_exe  = "bin\\windows\\gslag.exe"
+
+        others
+          slagc_exe = "slagc"
+          gslag_exe  = "gslag"
+      endWhich
+
+      if (not project_properties.contains("PROJECT_NAME"))
+        local var name = input_name( "Enter the name of this project (e.g. Jetsom Sam): " )
+        project_properties["PROJECT_NAME"] = name
+      endIf
+
+      if (not project_properties.contains("DEVELOPER_NAME"))
+        local var name = input_name("Set your developer name (e.g. Plasmaworks): ")
+        project_properties["DEVELOPER_NAME"] = name
+      endIf
+
+      if (not project_properties.contains("DISPLAY_SIZE"))
+        println( "Choose a nominal display size for your project (320x480, 480x320, etc.):" )
+        local var dims = input_String( "Size: " ).split('x')
+        local var w = dims[0].to_Int32
+        local var h = dims[1].to_Int32
+        project_properties["DISPLAY_SIZE"] = "$ $" (w,h)
+        if (w > h) project_properties["DISPLAY_ORIENTATION"] = "landscape"
+        else project_properties["DISPLAY_ORIENTATION"] = "portrait"
+      endIf
+
+      build_properties["PROJECT_ID"] = format_id( project_properties["PROJECT_NAME"] )
+      build_properties["JNI_PROJECT_ID"] = format_jni_id( project_properties["PROJECT_NAME"] )
+      build_properties["DEVELOPER_ID"] = format_id( project_properties["DEVELOPER_NAME"] )
+      build_properties["JNI_DEVELOPER_ID"] = format_jni_id( project_properties["DEVELOPER_NAME"] )
+
+      println( project_properties )
+
+      load_local_properties
+
+      mkdir( "src" )
+      local File main_file( "src/$.slag" (build_properties["PROJECT_ID"]) )
+      if (not main_file.exists)
+        local var class_id = format_class_id(project_properties["PROJECT_NAME"])
+        local var project_id = format_id(project_properties["PROJECT_NAME"])
+        local StringBuilder src()
+        src.println( 
+#------------------------------------------------------------------------------
+[string]
+singleton class $ : Screen
+  PROPERTIES
+    mesg="Game On!" : String 
+    hit_box         : Box
+
+  METHODS
+    method init
+      # The initializer (aka constructor).
+      println(mesg)
+      hit_box = Box(Display.center,Vector2(128,128)) - Vector2(64,64)
+
+    method update
+      # Update your game state here.
+      # You can check Input.key_state[Key.keycode_a] and 
+      # Input.mouse_button_state[1+] to check for keys and buttons being held 
+      # down over time.
+
+    method draw
+      # Draw the current game state here.
+      SystemFont.handle = Handle.center
+      SystemFont.draw( ""+Input.mouse_position, Display.center )
+
+      hit_box.fill( Color.green )
+
+    method on( MouseEvent e )
+      if (e.is_button_press(1))
+        println( "Mouse button $$ pressed at $$" (e.button,e.position) )
+
+        if (hit_box.contains(e.position))
+          Display.background_color = random_Color
+          hit_box = Box( Display.bounding_box.at(random_Vector2), Vector2(128,128) )
+          hit_box = (hit_box - Vector2(64,64)).clamped(Display.bounding_box)
+        endIf
+      endIf
+
+    method on( KeyEvent e )
+      if (e.is_press(Key.keycode_escape)) System.exit
+endClass
+[endString] (class_id) )
+#------------------------------------------------------------------------------
+
+        create_file( main_file, src.to_String )
+      endIf
+
+    method load_local_properties:
+      local_properties.set_default( "LAST_PLATFORM", "none" )
+
+      println( local_properties )
+
+    method compile_images:
+      # compile image_compiler.slag
+      local var slagc_platform = platform.to_uppercase
+      if (slagc_platform == "IOS") slagc_platform = "PLATFORM_IOS"
+
+      if (File("libraries/slag/image_compiler.slag").newer_than("build/image_compiler.etc"))
+        execute( //$ -platform $ -src_path "src;libraries;libraries/slag;libraries/slag/standard;libraries/slag/plasmacore" "libraries/slag/image_compiler.slag" -include "plasmacore.slag" -dest_path "build" // (slagc_exe,slagc_platform) )
+      endIf
+
+      # execute
+      execute( //$ build/image_compiler.etc -platform $ -resource_base_dir $// ...
+        (gslag_exe,platform,base_dir) )
+
+
+    method update_images_zip( String dest_path, Logical zip_images=true ):
+      if (zip_images) println( "> Checking $/images.zip " (dest_path) )
+      else            println( "> Updating $/images" (dest_path) )
+
+      compile_images
+
+      if (zip_images)
+        local FileSet images("build/$/images"(platform))
+        zip( images, dest_path+"/images.zip", "images", 0 )
+      endIf
+
+    method copy_images_to_assets
+      FileSet("build/android/images").sync_into( "platforms/android/assets/images" )
+
+    method update_data_zip( String dest_path ):
+      println( "> Checking $/data.zip " (dest_path) )
+
+      # common data
+      local FileSet data(data_dir)
+      data.exclude( "platform-*" )
+      zip( data, dest_path+"/data.zip", "data", 0 )
+
+      # platform-specific data
+      local var platform_spec = "-$-" (platform)
+      forEach (filename in File(data_dir).directory_listing(File.relative|File.ignore_hidden))
+        if (File(data_dir+"/"+filename).is_directory and filename.begins_with("platform-"))
+          local var st = filename + "-"
+          contingent
+            if (st.begins_with("platform-not"))
+              necessary (not st.contains(platform_spec))
+            else
+              necessary (st.contains(platform_spec))
+            endIf
+          satisfied
+          zip( FileSet(data_dir+"/"+filename), dest_path+"/data.zip", "data", 0 )
+          endContingent
+        endIf
+      endForEach
+
+      if (platform != "ios")
+        dest_path += "/media"
+        println( "> Checking $" (dest_path) )
+        forEach (filename in File(media_dir).directory_listing(File.relative|File.ignore_hidden))
+          if (filename.begins_with("platform-"))
+            if (File(media_dir+"/"+filename).is_directory)
+              local var st = filename + "-"
+              contingent
+                if (st.begins_with("platform-not"))
+                  necessary (not st.contains(platform_spec))
+                else
+                  necessary (st.contains(platform_spec))
+                endIf
+              satisfied
+                copy( FileSet(media_dir+"/"+filename), Directory(dest_path) )
+              endContingent
+            endIf
+          else
+            copy( File(media_dir+"/"+filename), Directory(dest_path) )
+          endIf
+        endForEach
+      endIf
+
+    method update_data( String dest_path ):
+      println( "> Checking data" )
+
+      mkdir( "platforms/android/assets/data" )
+      local var platform_spec = "-$-" (platform)
+      forEach (filename in File(data_dir).directory_listing(File.relative|File.ignore_hidden|File.recursive))
+        if (filename.begins_with("platform-"))
+          if (File(data_dir+"/"+filename).is_directory)
+            local var st = filename + "-"
+            contingent
+              if (st.begins_with("platform-not"))
+                necessary (not st.contains(platform_spec))
+              else
+                necessary (st.contains(platform_spec))
+              endIf
+            satisfied
+            copy( FileSet(data_dir+"/"+filename), Directory(dest_path+"/data") )
+            endContingent
+          endIf
+        elseIf (not File(data_dir+"/"+filename).is_directory)
+          copy( File(data_dir+"/"+filename), Directory(dest_path+"/data") )
+        endIf
+      endForEach
+
+      mkdir( "platforms/android/assets/media" )
+      forEach (filename in File(media_dir).directory_listing(File.relative|File.ignore_hidden|File.recursive))
+        if (filename.begins_with("platform-"))
+          if (File(media_dir+"/"+filename).is_directory)
+            local var st = filename + "-"
+            contingent
+              if (st.begins_with("platform-not"))
+                necessary (not st.contains(platform_spec))
+              else
+                necessary (st.contains(platform_spec))
+              endIf
+            satisfied
+              copy( FileSet(media_dir+"/"+filename), Directory(dest_path+"/media") )
+            endContingent
+          endIf
+        elseIf (not File(media_dir+"/"+filename).is_directory)
+          copy( File(media_dir+"/"+filename), Directory(dest_path+"/media") )
+        endIf
+      endForEach
+
+    method update_sounds_zip( String dest_path ):
+      println( "> Checking $/sounds.zip " (dest_path) )
+
+      # common sounds
+      local FileSet sounds(sound_dir)
+      sounds.exclude( "platform-*" )
+      zip( sounds, dest_path+"/sounds.zip", "sounds", 0 )
+
+      # platform-specific sounds
+      local var platform_spec = "-$-" (platform)
+      forEach (filename in File(sound_dir).directory_listing(File.relative|File.ignore_hidden))
+        if (File(sound_dir+"/"+filename).is_directory and filename.begins_with("platform-"))
+          local var st = filename + "-"
+          contingent
+            if (st.begins_with("platform-not"))
+              necessary (not st.contains(platform_spec))
+            else
+              necessary (st.contains(platform_spec))
+            endIf
+          satisfied
+            zip( FileSet(sound_dir+"/"+filename), dest_path+"/sounds.zip", "sounds", 0 )
+          endContingent
+        endIf
+      endForEach
+
+    method update_sounds( String dest_path ):
+      println( "> Checking sounds" )
+
+      mkdir( "platforms/android/assets/sounds" )
+
+      local var platform_spec = "-$-" (platform)
+      forEach (filename in File(sound_dir).directory_listing(File.relative|File.ignore_hidden|File.recursive))
+        if (filename.begins_with("platform-"))
+          if (File(sound_dir+"/"+filename).is_directory)
+            local var st = filename + "-"
+            contingent
+              if (st.begins_with("platform-not"))
+                necessary (not st.contains(platform_spec))
+              else
+                necessary (st.contains(platform_spec))
+              endIf
+            satisfied
+              copy( FileSet(sound_dir+"/"+filename), Directory(dest_path) )
+            endContingent
+          endIf
+        elseIf (not File(sound_dir+"/"+filename).is_directory)
+          copy( File(sound_dir+"/"+filename), Directory(dest_path) )
+        endIf
+      endForEach
+
+    method run_pngout:
+      local var p = local_properties["LAST_PLATFORM"]
+      println( "> PNGOUT build/$/images" (p) )
+      if (not File("build/$/images"(p)).exists)
+        println( "  No images found." )
+        return
+      endIf
+
+      local String exe
+      local String url
+      which (System.os)
+        case "windows":
+          exe = "bin/windows/pngout.exe"
+          url = "http://advsys.net/ken/util/pngout.exe"
+
+        case "mac":
+          exe = "bin/mac/pngout"
+          url = "http://static.jonof.id.au/dl/kenutils/pngout-20091108-darwin.tar.gz"
+
+        others:
+          println( "GoGo does not yet implement pngout support for this OS." )
+          return
+      endWhich
+
+      if (not File(exe).exists)
+        if (choose("  Download Ken Silverman's PNGOUT from\n  $? " (url)))
+          local var bytes = download(url)
+          if (bytes is null)
+            println( "  Download failed. Manually download pngout and store it here:\n    " + exe )
+            return
+          endIf
+
+          which (System.os)
+            case "mac":
+              local var gz = url.after_last('/')
+              pushd( "build/mac" )
+              File(gz).save(bytes)
+              execute( "tar -xvf " + gz )
+              popd
+              copy( File("build/mac/$/pngout"(gz.before_last(".tar.gz"))), Directory("bin/mac") )
+
+            others:
+              File(exe).save(bytes)
+          endWhich
+        else
+          println( "Aborting." )
+          return
+        endIf
+      endIf
+
+      pushd( "build/$/images" (p) )
+      local FileSet files(".","*.png")
+      forEach (file in files.relative_files)
+        try
+          execute( "$/$ $" (File("../../..").absolute_filepath,exe,file) )
+        catch (Error failed_to_compress)
+        endTry
+      endForEach
+      popd
+
+    method compile_vm( String dest_path ):
+      local var slagc_platform = platform.to_uppercase
+      if (slagc_platform == "IOS") slagc_platform = "PLATFORM_IOS"
+
+      mkdir( dest_path )
+      local var project_id = build_properties["PROJECT_ID"]
+
+      local FileSet src_files( "src" )
+      forEach (dir in source_dirs) src_files.add( FileSet(dir,"*.slag") )
+
+      println( "> Compiling Slag source code" )
+      if (src_files.newer_than(dest_path+"/game.etc") ...
+          or FileSet("libraries/slag").newer_than(dest_path+"/game.etc") ...
+          or File(data_dir+"/image_manifest.txt").newer_than(dest_path+"/game.etc"))
+        println( "COMPILING FOR VIRTUAL MACHINE" )
+        execute( //$ -platform $ -define PLASMACORE -src_path "src;libraries;libraries/slag;libraries/slag/standard;libraries/slag/plasmacore" "$.slag" -include "plasmacore.slag" -dest_path "$" -output game// ...
+        (slagc_exe,slagc_platform,project_id,dest_path) )
+      else
+        println( dest_path + "/game.etc is up to date." )
+      endIf
+
+    method compile_xc( String dest_path, Logical use_longjmp=false ):
+      local var slagc_platform = platform.to_uppercase
+      if (slagc_platform == "IOS") slagc_platform = "PLATFORM_IOS"
+
+      local var project_id = build_properties["PROJECT_ID"]
+      local FileSet src_files( "src" )
+      forEach (dir in source_dirs) src_files.add( FileSet(dir,"*.slag") )
+
+      println( "> Compiling Slag source code" )
+      if (src_files.newer_than(dest_path+"/game_xc.cpp"))
+        local var longjmp_setting = ""
+        if (use_longjmp) longjmp_setting = "-use_longjmp "
+        println( "CROSS-COMPILING TO C++" )
+        execute( //$ -platform $ -define PLASMACORE -src_path "src;libraries;libraries/slag;libraries/slag/standard;libraries/slag/plasmacore" "$.slag" -include "plasmacore.slag" //
+          //-dest_path "$" -cpp $ -output game// ...
+          (slagc_exe,slagc_platform,project_id,dest_path,longjmp_setting) )
+      else
+        println( "cpp files are up to date." )
+      endIf
+
+    method compile_mac:
+      if (not File("platforms/mac").exists)
+        throw Error(//The Mac module is not installed.  Type "./gogo install mac".//)
+      endIf
+      local var project_name = project_properties["PROJECT_NAME"]
+
+      set_platform("mac")
+
+      local var res = "dist/mac/$.app/Contents/Resources" (project_name)
+      mkdir( res )
+      update_images_zip( res )
+      update_data_zip( res )
+      update_sounds_zip( res )
+      compile_vm( "build/mac" )
+
+      if (File("dist/mac/$.app/Contents/MacOS/plasmacore-xc"(project_name)).exists)
+        delete( "dist/mac" )
+      endIf
+
+      local var dist_res = "dist/mac/$.app/Contents/Resources" (project_name)
+
+      copy( File("build/mac/game.etc"), Directory(dist_res) )
+      copy( File("project.properties"), Directory(dist_res) )
+
+      println( "> Copying executable files" )
+      if (copy(FileSet("platforms/mac/plasmacore-vm.app"), Directory("dist/mac/$.app" (project_name))))
+        chmod( "dist/mac/$.app/Contents/MacOS/plasmacore-vm" (project_name), "a+rx" )
+      endIf
+
+    method compile_mac_xc:
+      if (not File("platforms/mac/defaults").exists)
+        throw Error(//The Mac project module is not installed.  Type "./gogo install mac-project".//)
+      endIf
+      local var project_name = project_properties["PROJECT_NAME"]
+
+      set_platform("mac")
+
+      if (File("dist/mac/$.app/Contents/MacOS/plasmacore-vm"(project_name)).exists)
+        delete( "dist/mac" )
+      endIf
+
+      local var res = "dist/mac/$.app/Contents/Resources" (project_name)
+      mkdir( res )
+      update_images_zip( res )
+      update_data_zip( res )
+      update_sounds_zip( res )
+      compile_xc( "build/mac" )
+
+      local var dist_res = "dist/mac/$.app/Contents/Resources" (project_name)
+
+      copy( File("project.properties"), Directory(dist_res) )
+
+      pushd( "platforms/mac" )
+      execute( "xcodebuild -target plasmacore-xc" )
+      popd
+
+      println( "> Copying executable files" )
+      if (copy(FileSet("platforms/mac/build/Release/plasmacore-xc.app"), Directory("dist/mac/$.app" (project_name))))
+        chmod( "dist/mac/$.app/Contents/MacOS/plasmacore-xc" (project_name), "a+rx" )
+      endIf
+
+    method build_mac:
+      compile_mac
+      run_mac
+
+    method build_mac_xc:
+      compile_mac_xc
+      run_mac
+
+    method run_mac:
+      local var project_name = project_properties["PROJECT_NAME"]
+      execute( //open "dist/mac/$.app"// (project_name) )
+
+    method compile_linux:
+      if (not File("platforms/linux").exists)
+        throw Error(//The Linux project module is not installed.  Type "./gogo install linux-project".//)
+      endIf
+
+      copy( FileSet("platforms/linux/defaults"), Directory("platforms/linux"),
+            Copy.missing_only )
+
+      local var project_name = project_properties["PROJECT_NAME"]
+
+      set_platform("linux")
+
+      local var res = "dist/linux/$" (project_name)
+      mkdir( res )
+      update_images_zip( res )
+      update_data_zip( res )
+      update_sounds_zip( res )
+      compile_vm( res )
+
+      copy( File("project.properties"), Directory(res) )
+
+      pushd( "platforms/linux" )
+      execute( "make" )
+      popd
+
+      println( "> Copying executable files" )
+      if ( copy(File("platforms/linux/build/plasmacore-vm"), 
+          File(res+"/"+project_name)) )
+        chmod( "$/$" (res,project_name), "a+rx" )
+      endIf
+
+    method compile_linux_xc:
+      if (not File("platforms/linux").exists)
+        throw Error(//The Linux project module is not installed.  Type "./gogo install linux-project".//)
+      endIf
+
+      copy( FileSet("platforms/linux/defaults"), Directory("platforms/linux"),
+            Copy.missing_only )
+
+      local var project_name = project_properties["PROJECT_NAME"]
+
+      set_platform("linux")
+
+      local var res = "dist/linux/$" (project_name)
+      mkdir( res )
+      update_images_zip( res )
+      update_data_zip( res )
+      update_sounds_zip( res )
+
+      mkdir( "platforms/linux/build" )
+      compile_xc( "platforms/linux/build" )
+
+      copy( File("project.properties"), Directory(res) )
+
+      pushd( "platforms/linux" )
+      execute( "make xc" )
+      popd
+
+      println( "> Copying executable files" )
+      if (copy(File("platforms/linux/build/game"), 
+          File("$/$" (res,project_name))) )
+        chmod( "$/$" (res,project_name), "a+rx" )
+      endIf
+
+    method build_linux:
+      compile_linux
+      run_linux
+
+    method build_linux_xc:
+      compile_linux_xc
+      run_linux
+
+    method run_linux
+      local var project_name = project_properties["PROJECT_NAME"]
+      execute( //"dist/linux/$/$"// (project_name,project_name) )
+
+    method build_windows:
+      compile_windows
+      run_windows
+
+    method build_windows_xc:
+      compile_windows_xc
+      run_windows
+
+    method run_windows:
+      local var project_name = project_properties["PROJECT_NAME"]
+      execute( //"dist\\windows\\$\\$.exe"// (project_name,project_name) )
+
+    method compile_windows:
+      if (not File("platforms/windows").exists)
+        throw Error(//The Windows module is not installed.  Type "gogo install windows".//)
+      endIf
+      set_platform("windows")
+
+      local var project_name = project_properties["PROJECT_NAME"]
+      local var dist = "dist/windows/" + project_name
+
+      mkdir( dist )
+      update_images_zip( dist )
+      update_data_zip( dist )
+      update_sounds_zip( dist )
+      compile_vm( dist )
+
+      copy( File("platforms/windows/plasmacore.exe"), File("$/$.exe"(dist,project_name)) )
+      copy( File("platforms/windows/audiere.dll"), Directory(dist) )
+      copy( File("platforms/windows/SDL.dll"), Directory(dist) )
+      copy( File("project.properties"), Directory(dist) )
+
+    method compile_windows_xc:
+      if (not File("platforms/windows/defaults").exists)
+        throw Error(//The Windows project module is not installed.  Type "gogo install windows-project".//)
+      endIf
+      set_platform("windows")
+
+      local var project_name = project_properties["PROJECT_NAME"]
+      local var dist = "dist/windows/" + project_name
+
+      mkdir( dist )
+      update_images_zip( dist )
+      update_data_zip( dist )
+      update_sounds_zip( dist )
+      mkdir( "build/windows" )
+      compile_xc( "build/windows" )
+
+      println
+      println( //Load Visual Studio 2008 or better and open the platforms\\plasmacore_windows solution.  Set the build mode to Release and then right-click..build "plasmacore-xc".//.word_wrap(70) )
+      println
+      input_String( "Press [ENTER] when the build has finished." )
+
+      copy( File("platforms/windows/Release/plasmacore-xc.exe"), File("$/$.exe"(dist,project_name)) )
+      copy( File("platforms/windows/audiere.dll"), Directory(dist) )
+      copy( File("platforms/windows/SDL.dll"), Directory(dist) )
+      copy( File("project.properties"), Directory(dist) )
+
+    method android_check:
+      if (not File("platforms/android").exists)
+        throw Error(//The android module is not installed.  Type "$ install android".// (gogo_name))
+      endIf
+
+      if (System.os == "windows")
+        local String filename = "gogo_temp_result.txt"
+        System.execute( "pwd > " + filename )
+        local String cur_dir = String.create_from(File(filename))
+        File(filename).delete
+
+        if (not cur_dir.to_lowercase.contains("cygdrive"))
+          throw Error( "You must execute this command in a Cygwin window." )
+        endIf
+      endIf
+
+      set_platform("android")
+
+    method android_build( String vm_or_xc ):
+      if (not local_properties.contains("ANDROID_SDK"))
+        contingent
+          which (System.os)
+            case "mac":
+              local String sdk
+              forEach (line in File("/Applications").directory_listing(absolute))
+                if (line.contains("android-sdk-mac_86")) sdk = line; escapeForEach
+              endForEach
+              necessary (sdk?)
+              local_properties["ANDROID_SDK"] = sdk
+
+            case "windows":
+              local var path = File("C:$\\android-sdk-windows" (System["HOMEPATH"]))
+              necessary (path.exists)
+              local_properties["ANDROID_SDK"] = path.filepath
+
+            others:
+              necessary (false)
+
+          endWhich
+
+        unsatisfied
+            throw Error(//You must install the Android SDK and set //
+                //"ANDROID_SDK: /path/to/sdk" in "local.properties".// )
+        endContingent
+      endIf
+
+      if (not local_properties.contains("ANDROID_NDK"))
+        local String ndk
+        contingent
+          which (System.os)
+            case "mac":
+              forEach (line in File("/Applications").directory_listing(absolute))
+                if (line.contains("android-ndk"))
+                  if (ndk is null or line > ndk) ndk = line
+                endIf
+              endForEach
+              necessary (ndk?)
+
+            case "windows":
+              # Look for R5b
+              local var path = File("C:$\\android-ndk-r5b" (System["HOMEPATH"]))
+              ndk = path.filepath
+              sufficient  (path.exists)
+
+              # Try R4b instead
+              path = File("C:$\\android-ndk-r4b" (System["HOMEPATH"]))
+              ndk = path.filepath
+              necessary (path.exists)
+
+            others:
+              necessary (false)
+
+          endWhich
+
+        satisfied
+            local_properties["ANDROID_NDK"] = ndk
+
+        unsatisfied
+            throw Error(//You must install the Android NDK and set //
+                //"ANDROID_NDK: /path/to/ndk" in "local.properties".// )
+        endContingent
+      endIf
+
+      if (not project_properties.contains("ANDROID_API_LEVEL"))
+        println( "Set the Android API level for this project." )
+        local var level = input_String("Enter {4,5,6,7,8} or {1.6,2.0,2.0.1,2.1,2.2}: ")
+        which (level)
+          case "1.6": level = "4"
+          case "2.0": level = "5"
+          case "2.0.1": level = "6"
+          case "2.1":   level = "7"
+          case "2.2":   level = "8"
+          case "2.3":   level = "9"
+          case "3.0":   level = "10"
+        endWhich
+        project_properties["ANDROID_API_LEVEL"] = level
+      endIf
+
+      local var project_package_id = format_jni_id(project_properties["PROJECT_NAME"])
+      build_properties["DEVELOPER_PACKAGE_ID"]= format_jni_id(project_properties["DEVELOPER_NAME"])
+      build_properties["PROJECT_CLASS_ID"]    = format_class_id(project_properties["PROJECT_NAME"])
+      build_properties["PROJECT_PACKAGE_ID"]  = format_jni_id(project_properties["PROJECT_NAME"])
+      
+      local var android_path = "platforms/android"
+      local var defaults = "platforms/android/defaults"
+      local var src_path = "platforms/android/src/$/$" ...
+        (build_properties["DEVELOPER_PACKAGE_ID"], build_properties["PROJECT_PACKAGE_ID"])
+
+      copy( File(defaults+"/AppTemplate.java"),
+      File(src_path+"/$.java"(build_properties["PROJECT_CLASS_ID"])),
+          Copy.missing_only | Copy.insert_properties )
+
+      copy( FileSet(defaults,"*.java").exclude("AppTemplate.java"),
+        Directory(src_path), Copy.insert_properties )
+
+      copy( File(defaults+"/AndroidManifest.xml"),
+        Directory(android_path), Copy.missing_only | Copy.insert_properties )
+
+      copy( File(defaults+"/strings.xml"),
+        Directory(android_path+"/res/values"), Copy.missing_only | Copy.insert_properties )
+
+      copy( File(defaults+"/icon.png"),
+        Directory(android_path+"/res/drawable"), Copy.missing_only )
+
+      copy( File(defaults+"/build.properties"),
+        Directory(android_path), Copy.missing_only | Copy.insert_properties )
+
+      copy( File(defaults+"/build.xml"),
+        Directory(android_path), Copy.insert_properties )
+
+      copy( File(defaults+"/custom.cpp"),
+        Directory(android_path+"/jni"), Copy.insert_properties | Copy.missing_only )
+
+      copy( FileSet(defaults,"*.cpp").exclude("custom.cpp"), Directory(android_path+"/jni"), 
+        Copy.insert_properties )
+
+      copy( FileSet(defaults,"*.h"), Directory(android_path+"/jni"), Copy.insert_properties )
+
+      local var sdk_path = local_properties["ANDROID_SDK"]
+      if (System.os == "windows") sdk_path .= replace("\\","\\\\")
+      create_file( File(android_path+"/local.properties"),
+[string]
+# Automatically generated based on YOUR computer's configuration.
+# Do NOT check in to a code repository.
+sdk.dir=$
+[endString] (sdk_path) )
+
+       if (not File(local_properties["ANDROID_NDK"]).exists)
+        throw Error( "Set ANDROID_NDK in local.properties to the path where the Android NDK can be found." )
+      endIf
+
+      local var ndk = local_properties["ANDROID_NDK"]
+      local var ndk_app = ndk + "/apps/$" (project_package_id)
+      mkdir( ndk_app )
+
+      local var project_location = File(File(".").absolute_filepath).with_forward_slashes.filepath
+      if (System.os == "windows")
+        # Cygwin make 3.81 doesn't support "C:" anymore; change "X:" to "/cygdrive/X"
+        project_location = "/cygdrive/$()$" (project_location[0],project_location.substring(2))
+      endIf
+
+      create_file( File(ndk_app + "/Application.mk"),
+        "APP_MODULES := $\n" (project_package_id) +
+        "APP_PROJECT_PATH := $/platforms/android\n" (project_location) )
+
+      local String mk_type = "unknown"
+      if (local_properties.contains("LAST_ANDROID_BUILD"))
+        mk_type = local_properties["LAST_ANDROID_BUILD"]
+      endIf
+
+      copy( File(defaults+"/Android-vm.mk"), Directory(android_path+"/jni"), Copy.missing_only )
+      copy( File(defaults+"/Android-xc.mk"), Directory(android_path+"/jni"), Copy.missing_only )
+
+      local File src_mk(android_path+"/jni/Android-$.mk"(vm_or_xc))
+      local File dest_mk(android_path+"/jni/Android.mk")
+      if (src_mk.newer_than(dest_mk.filepath) or mk_type != vm_or_xc)
+        copy( src_mk, dest_mk, Copy.always | Copy.insert_properties )
+        local_properties["LAST_ANDROID_BUILD"] = vm_or_xc
+      endIf
+
+      pushd( ndk )
+      execute( "sudo make APP=$" (project_package_id) )
+      popd
+ 
+      mkdir( "platforms/android/libs/armeabi" )
+      copy( File( ndk + "/out/apps/procopio/armeabi/libprocopio.so" ), Directory( "platforms/android/libs/armeabi" ) )
+
+      pushd( "platforms/android" )
+      execute( "ant debug" )
+      execute( "ant installd" )
+      popd
+
+
+    method build_android_vm:
+      android_check
+
+      build_properties["SVM_TYPE"] = "vm"
+      compile_images
+      copy_images_to_assets
+      update_sounds("platforms/android/assets/sounds")
+      update_data("platforms/android/assets")
+      compile_vm( "platforms/android/assets" )
+      android_build( "vm" )
+
+
+    method build_android_xc:
+      android_check
+
+      local File file("platforms/android/assets/game.etc")
+      if (file.exists) file.delete
+
+      build_properties["SVM_TYPE"] = "xc"
+      mkdir( "build/android-xc" )
+      compile_images
+      copy_images_to_assets
+      update_sounds("platforms/android/assets/sounds")
+      update_data("platforms/android/assets")
+      compile_xc( "build/android-xc", true )
+      android_build( "xc" )
+
+
+    method build_ios_common:
+      if (not File("platforms/ios").exists)
+        throw Error(//The iOS module is not installed.  Type "./gogo install ios".//)
+      endIf
+
+      set_platform("ios")
+
+      if (File("platforms/ios").exists)
+        copy( File("platforms/ios/defaults/Default.png"), Directory("platforms/ios"), Copy.missing_only )
+        copy( File("platforms/ios/defaults/Default-Portrait.png"), Directory("platforms/ios"), Copy.missing_only )
+        copy( File("platforms/ios/defaults/Icon.png"), Directory("platforms/ios"), Copy.missing_only )
+        copy( File("platforms/ios/defaults/Icon72x72.png"), Directory("platforms/ios"), Copy.missing_only )
+        copy( File("platforms/ios/defaults/Info.plist"), Directory("platforms/ios"), Copy.missing_only )
+        copy( File("platforms/ios/defaults/plasmacore_ios.xcodeproj/project.pbxproj"), 
+          Directory("platforms/ios/plasmacore_ios.xcodeproj"), Copy.missing_only )
+        copy( File("platforms/ios/defaults/main.mm"), Directory("platforms/ios"), Copy.missing_only )
+        copy( File("platforms/ios/defaults/plasmacore_Prefix.pch"), 
+          Directory("platforms/ios"), Copy.missing_only )
+      endIf
+
+    method build_ios_vm:
+      build_properties["SVM_TYPE"] = "vm"
+
+      build_ios_common
+
+      local var res = "build/ios"
+      mkdir( res )
+      update_images_zip( res )
+      update_data_zip( res )
+
+      compile_vm( "build/ios" )
+
+      println
+      println( "-------------------------------------------------------------------------------" )
+      println( "Open platforms/ios/plasmacore_ios.xcodeproj in xcode.  Add all sound and media" )
+      println( "files as bundle resources to both plasmacore-vm and plasmacore-xc." )
+      println
+      println( "Run your game from the xcode project:" )
+      println( "  Simulator - set target to iOS Simulator 3.1.2+ | Release | plasmacore-vm." )
+      println( "  Device:   - set target to Base SDK | Release | plasmacore-vm." )
+      println( "-------------------------------------------------------------------------------" )
+      println
+
+    method build_ios_xc:
+      build_properties["SVM_TYPE"] = "xc"
+
+      build_ios_common
+
+      local var res = "build/ios"
+      mkdir( res )
+      update_images_zip( res )
+      update_data_zip( res )
+
+      compile_xc( "build/ios" )
+
+      println
+      println( "-------------------------------------------------------------------------------" )
+      println( "Open platforms/ios/plasmacore_ios.xcodeproj in xcode.  Add all sound and media" )
+      println( "files as bundle resources to both plasmacore-vm and plasmacore-xc." )
+      println
+      println( "Run your game from the xcode project:" )
+      println( "  Simulator - set target to iOS Simulator 3.1.2+ | Release | plasmacore-xc." )
+      println( "  Device:   - set target to Base SDK | Release | plasmacore-xc." )
+      println( "-------------------------------------------------------------------------------" )
+      println
+
+    method build_wp7_xc:
+      build_properties["SVM_TYPE"] = "xc"
+
+      if (not File("platforms/wp7").exists)
+        throw Error(//The Windows Phone 7 module is not installed.  Type "./gogo install wp7".//)
+      endIf
+
+      set_platform("wp7")
+
+      mkdir( "platforms/wp7/sounds" )
+      mkdir( "platforms/wp7/plasmacore_wp7/Properties" )
+
+      local String defaults = "platforms/wp7/defaults"
+      local String dest = "platforms/wp7"
+      local Directory dest_dir(dest+"/plasmacore_wp7")
+      local Directory props_dir(dest+"/plasmacore_wp7/Properties")
+      local var flags = Copy.missing_only
+
+      copy( File(defaults+"/PlasmacoreWP7.sln"), Directory(dest), flags )
+
+      copy( File(defaults+"/Sounds.contentproj"), Directory(dest+"/sounds"), flags )
+
+      copy( File(defaults+"/PlasmacoreWP7.csproj"), dest_dir, flags )
+      copy( File(defaults+"/PlasmacoreSettings.cs"), dest_dir, flags )
+      copy( File(defaults+"/GameThumbnail.png"), dest_dir, flags )
+      copy( File(defaults+"/GameTile.png"), dest_dir, flags )
+      copy( File(defaults+"/Game.ico"), dest_dir, flags )
+
+      copy( File(defaults+"/AppManifest.xml"), props_dir, flags )
+      copy( File(defaults+"/AssemblyInfo.cs"), props_dir, flags )
+      copy( File(defaults+"/WMAppManifest.xml"), props_dir, flags )
+
+      local var res = "build/wp7"
+      mkdir( res )
+      update_images_zip( res, false )
+      update_data_zip( res )
+
+      local var project_id = build_properties["PROJECT_ID"]
+      local FileSet src_files( "src" )
+      forEach (dir in source_dirs) src_files.add( FileSet(dir,"*.slag") )
+
+      println( "> Compiling Slag source code" )
+      if (src_files.newer_than("build/wp7/GameXC.cs"))
+        println( "CROSS-COMPILING TO C#" )
+        execute( //$ -platform WP7 -define PLASMACORE -src_path "src;libraries;libraries/slag;libraries/slag/standard;libraries/slag/plasmacore" "$.slag" -include "plasmacore.slag" //
+          //-dest_path "build/wp7" -cs -output GameXC// ...
+        (slagc_exe,project_id) )
+      else
+        println( "C# build is up to date." )
+      endIf
+
+      println
+      println( "----------------------------------------------------------------------" )
+      println( "Open platforms/wp7/PlasmacoreWP7.sln in MS Visual Studio 2010+XNA 4.0." )
+      println
+      println( "First build: open project properties, Assembly Info, and generate a " )
+      println( "new GUID using a tool like http://guid.codeplex.com/ ." )
+      println
+      println( "Select Build->Configuration Manager.  Click the checkboxes 'Build' and" )
+      println( "'Deploy' to turn them on.  Click 'Close' and ensure that the drop-down" )
+      println( "box containing 'Windows Phone 7 Device' or 'Windows Phone 7 Emulator'" )
+      println( "is at the desired setting." )
+      println
+      println( "Add contents of data/ and build/wp7/images folders to data/ and images/" )
+      println( "project folders.  Add them as links (arrow next to Add button in" )
+      println( "dialog) with Build Action \"None\" and \"Copy if newer\"." )
+      println 
+      println( "Add all sound files to the \"Sounds\" content project.  Add the sounds" )
+      println( "as links with Build Action \"Compile\" and \"Do Not Copy\"." )
+      println
+      println( "Remember to adjust data, image, and sound files in the WP7 project " )
+      println( "to reflect changes in the main project." )
+      println( "----------------------------------------------------------------------" )
+      println
+
+
+    method show_logfile:
+      which (System.os)
+        case "windows": 
+          execute( //type "dist/windows\\$\\save\\log.txt"// (project_properties["PROJECT_NAME"]) )
+        case "mac":
+          execute( //cat "dist/mac/$.app/Contents/Resources/save/log.txt"// ...
+          (project_properties["PROJECT_NAME"]) )
+        others:
+          throw Error( //no logfile for platform $.// (platform) )
+      endWhich
+
+    method clean:
+      delete( "dist" )
+      delete( "platforms/mac/build" )
+      delete( "platforms/ios/build" )
+      delete( "platforms/windows/Release" )
+      delete( "platforms/windows/Debug" )
+
+      delete( "platforms/android/assets/game.etc" )
+      delete( "platforms/android/assets/images" )
+      delete( "platforms/android/assets/sounds" )
+      delete( "platforms/android/assets/data" )
+      delete( "platforms/android/assets/media" )
+
+      delete( "build" )
+      delete( "build.etc" )
+
+      if (File("platforms/linux/build").exists)
+        pushd( "platforms/linux" )
+        execute( "make clean" )
+        popd
+      endIf
+
+      if (local_properties.contains("ANDROID_NDK"))
+        local var project_package_id = format_jni_id(project_properties["PROJECT_NAME"])
+        local var ndk = local_properties["ANDROID_NDK"]
+        if (File(ndk+"/apps/"+project_package_id).exists)
+          pushd( ndk )
+          try
+            execute( "make clean APP=$" (project_package_id) )
+          catch (Error err)
+            println(
+[string]
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+Error cleaning Android NDK folder, possibly from changing a project's
+absolute path.  Type "$ android-vm" to start building an Android
+project, then "$ clean" again.  The second clean command should work 
+even if an error occurs while building android-vm.
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+[endString] )
+            delete( ndk+"/apps/" + project_package_id )
+            throw err
+          endTry
+          popd
+        endIf
+      endIf
+      delete( "platforms/android/bin" )
+      delete( "platforms/android/gen" )
+      #delete( "platforms/android/libs" )
+      delete( "platforms/android/assets/game.etc" )
+      delete( "platforms/android/local.properties" )
+
+
+      #{
+        block
+          local var updated = false
+          local FileSet android_files( "plasmacore_android", null )
+          android_files.include( "Application.mk", false ).include("project/*")
+          updated |= copy(android_files, Directory(ndk+"/apps/plasmacore"))
+
+          local var local_props = ndk + "/apps/plasmacore/project/local.properties"
+
+          local var sdk = local_properties["ANDROID_SDK"]
+          if (sdk? and sdk != "null")
+            updated |= create_file( File(local_props), "sdk-location=" + sdk )
+          else
+            println( "ANDROID_SDK must be set in local.properties (download if necessary)." )
+          endIf
+        endBlock
+        }#
+
+    method finish_upgrade.Logical:
+      if (not File("upgrade/new_project").exists) return false
+
+      clean
+      println( "> Upgrading Plasmacore" ) 
+      local FileSet upgrade_files( "upgrade/new_project" )
+      copy( upgrade_files, Directory("."), Copy.quiet )
+      delete( "upgrade/new_project" )
+
+      println( "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *" )
+      println( "                          PROJECT UPGRADED                           " )
+      println( "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *" )
+      return true
+
+    method copy_and_insert_values( String filename, String src_dir, String dest_dir ):
+      if (copy(File("$/$"(src_dir,filename)),Directory(dest_dir)))
+        insert_properties("$/$"(dest_dir,filename))
+      endIf
+
+    method download_manifest.Manifest:
+      return Manifest(String.create_from(...
+        download("http://plasmaworks.github.io/files/plasmacore/archive/" MANIFEST_FILENAME)))
+
+    method check_upgrade( String libid=null ).Logical:
+      if (manifest is null)
+        manifest = Manifest(File(MANIFEST_FILENAME))
+        if (manifest.libraries.count == 0)
+          manifest.libraries.add( LibraryInfo() )
+          manifest.libraries.last["id"] = "plasmacore"
+          manifest.libraries.last["date"] = "0"
+          manifest.libraries.last["version"] = "0"
+        endIf
+      endIf
+
+      if (online_manifest is null)
+        online_manifest = download_manifest
+        if (online_manifest is null) 
+          println( "Online manifest not available." )
+          return false
+        endIf
+      endIf
+
+      if (online_manifest.plasmacore_version > manifest.plasmacore_version)
+        if (not checked_for_core_upgrade)
+          checked_for_core_upgrade = true
+          println( "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *" )
+          println( "A new version of Plasmacore is available!" )
+          println
+          println( "Your version:" )
+          println( manifest.find_by_id("plasmacore") )
+          println
+          println( "Newer version:" )
+          println( online_manifest.find_by_id("plasmacore") )
+          println
+          if (choose("Upgrade to the new version? "))
+            local_properties["UPGRADE_MODULES"] = "true"
+            install_module( online_manifest.find_by_id("plasmacore") )
+            return false
+          endIf
+        endIf
+      endIf
+
+      local var count = manifest.check_for_updates_in(online_manifest,libid)
+      if (count?)
+        local String choice
+        
+        if (libid?)
+          choice = "all"
+        else
+          choice = menu( "", 
+            "$ available." ("One update is/# updates are".pluralize(count)),
+            {"all::Update all libraries","individual::Confirm individual updates","cancel"} )
+          if (choice is null or choice == "cancel") return false
+        endIf
+
+        if (choice == "all")
+          loop::lp
+            forEach (library in manifest.libraries)
+              if (library.updates? and (libid is null or libid==library["id"]))
+                install_module(library.updates.first)
+                nextIteration lp
+              endIf
+            endForEach
+            escapeLoop
+          endLoop
+        elseIf (choice == "individual")
+          forEach (library in manifest.libraries)
+            if (library.updates?)
+              local String[] options()
+              forEach (update in library.updates) options.add(update.to_String)
+              local var libname = menu( "", "An update to $ is available.  "
+                "Type the number of the update to install or '0' to skip." (library["id"]),
+                options )
+
+              if (libname?) install_module( online_manifest.find_by_name(libname) )
+              else println( "$ skipped." (library["id"]) )
+            endIf
+          endForEach
+        endIf
+
+        require_gogo = true
+        return true
+
+      else
+        return false
+      endIf
+
+
+    method install_module( String module_id ):
+      if (check_upgrade) 
+        println( "Skipping module installation due to upgrade - try again." )
+        return
+      endIf
+
+      if (manifest is null) manifest = Manifest(File(MANIFEST_FILENAME))
+
+      if (online_manifest is null)
+        online_manifest = download_manifest
+        if (online_manifest is null) return
+      endIf
+
+      local var pcore_version = manifest.plasmacore_version
+
+      local String[] options()
+      local String[] new_ids()
+      forEach (library in online_manifest.libraries)
+        if ((module_id.count==0 or library["id"].contains(module_id)) ...
+            and not manifest.contains(library["id"]) and not new_ids.contains(library["id"]))
+          contingent
+            necessary (library.min_version is null or library.min_version <= pcore_version)
+            necessary (library.max_version is null or library.max_version >= pcore_version)
+          satisfied
+            new_ids.add( library["id"] )
+            options.add( "$::$" (library["id"],library["description"]) )
+          endContingent
+        endIf
+      endForEach
+
+      if (options.count?)
+        local var libid = menu( "",
+          "The following modules are available. Enter a number to install or '0' to cancel.",
+          options )
+        if (libid?)
+          manifest.libraries.add( LibraryInfo() )
+          manifest.libraries.last["id"] = libid
+          manifest.libraries.last["date"] = "0"
+        endIf
+        check_upgrade(libid)
+        require_gogo = true
+      else
+        println( "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *" )
+        if (module_id.count?) println( "No new modules matching that name are available." )
+        else                  println( "No new modules are available." )
+        println( "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *" )
+      endIf
+
+
+    method install_module( LibraryInfo library ):
+      if (library is null) throw Error( "No such library!" )
+
+      try
+        if (library["dependencies"]?)
+          local var added_dependency = false
+          forEach (dependency in library["dependencies"].split(' '))
+            if (not manifest.contains(dependency))
+              println( "> Queueing dependency $" (dependency) )
+              manifest.libraries.add( LibraryInfo() )
+              manifest.libraries.last["id"] = dependency
+              manifest.libraries.last["date"] = "0"
+              check_upgrade(dependency)
+              added_dependency = true
+            endIf
+          endForEach
+          if (added_dependency) return
+        endIf
+
+        println( "\n> Installing $" (library["name"]) )
+        local var url = library["url"]
+        local var bytes = download( url )
+        local var lib = manifest.find_by_id(library["id"])
+        forEach (key in library.values.keys) lib[key] = library[key]
+        lib.updates = null
+
+        if (bytes?) 
+          Directory("upgrade/new_project").create
+          local var install_path = lib["install_path"]
+          if (install_path is null) install_path = ""
+          elseIf (install_path.last != '/' and install_path.last != '\\') install_path += '/'
+
+          if (url.to_lowercase.ends_with(".zip"))
+            File("upgrade/upgrade.zip").save(bytes)
+
+            forEach (entry in ZipArchive("upgrade/upgrade.zip"))
+              local File file( "upgrade/new_project/" + install_path +
+                entry.filename.after_first("new_project/") )
+              Directory(file.path).create
+              if (not (entry.filename.ends_with("/") or entry.filename.ends_with("\\")))
+                file.save(entry.decompress)
+              endIf
+            endForEach
+
+          else
+            File("upgrade/new_project/" + install_path + File(url).filename).save(bytes)
+          endIf
+        else
+          println( "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *" )
+          println( "ERROR DOWNLOADING FILE - ABORTING" )
+          println( "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *" )
+          System.exit( 1 )
+        endIf
+
+        local String actions = lib["install_action-$"(System.os)]
+        if (actions is null) actions = lib["install_action-default"]
+        if (actions?)
+          forEach (action in actions.split(';'))
+            local var words = action.split(' ')
+            if (words.count?)
+              which (words.first)
+                case "copy":
+                  if (File(words[1]).is_directory)
+                    copy( FileSet(words[1]), Directory(words[2]) )
+                  else
+                    if (File(words[2]).is_directory)
+                      copy( File(words[1]), Directory(words[2]) )
+                    else
+                      copy( File(words[1]), File(words[2]) )
+                    endIf
+                  endIf
+
+                others:
+                  println( "Warning: unrecognized install action " + action )
+              endWhich
+            endIf
+          endForEach
+        endIf
+
+        manifest.save
+        delete("upgrade/upgrade.zip")
+        return
+
+      catch (Error err)
+        println( err )
+        println( "Error installing $ - skipping." (library["name"]) )
+      endTry
+
+    method reinstall_module( String module_id ):
+      if (check_upgrade) 
+        println( "Skipping module installation due to upgrade - try again." )
+        return
+      endIf
+
+      if (manifest is null) manifest = Manifest(File(MANIFEST_FILENAME))
+
+      local var pcore_version = manifest.plasmacore_version
+
+      local String[] options()
+      local String[] new_ids()
+      forEach (library in manifest.libraries)
+        if ((module_id.count==0 or library["id"].contains(module_id)) and library["url"]?)
+          options.add( "$::$" (library["id"],library["description"]) )
+        endIf
+      endForEach
+
+      if (options.count?)
+        local var libid = menu( "",
+          "The following modules are installed. Enter a number to reinstall or '0' to cancel.",
+          options )
+        if (libid?)
+          install_module( manifest.find_by_id(libid) )
+        endIf
+        require_gogo = true
+      else
+        println( "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *" )
+        println( "No installed modules matching that name are available." )
+        println( "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *" )
+      endIf
+
+
+endClass
+
+
+class Manifest
+  PROPERTIES
+    file    : File
+    libraries() : LibraryInfo[]
+
+  METHODS
+    method init( file ):
+      if (file.exists()) init( LineReader(file) )
+
+    method init( String data ):
+      init( LineReader(data) )
+
+    method init( LineReader reader ):
+      local LibraryInfo library
+      forEach (line in reader)
+        line .= trim
+        if (line.count?)
+          if (line.first == '#') nextIteration
+          if (library is null) library = LibraryInfo()
+          library[line.before_first(':')] = line.after_first(':').trim
+
+        elseIf (library?)
+          libraries.add(library)
+          library = null
+        endIf
+      endForEach
+
+      if (library?) libraries.add(library)
+
+    method save:
+      local var writer = file.create_writer
+      forEach (library in libraries)
+        forEach (key in library.values.keys)
+          writer.println( "$: $" (key,library[key]) )
+        endForEach
+        writer.println
+      endForEach
+      writer.close
+
+    method plasmacore_version.Version:
+      local var pcore = find_by_id("plasmacore")
+      if (pcore?) return pcore.version
+      else return Version("0")
+
+    method contains( String id ).Logical:
+      forEach (library in libraries)
+        if (library["id"] == id) return true
+      endForEach
+      return false
+
+    method find_by_id( String id ).LibraryInfo:
+      local LibraryInfo result = null
+      forEach (library in libraries)
+        if (library["id"] == id)
+          if (result is null or result["date"] < library["date"]) result = library
+        endIf
+      endForEach
+      return result
+
+    method find_by_name( String libname ).LibraryInfo:
+      forEach (library in libraries)
+        if (library["name"] == libname) return library
+      endForEach
+      return null
+
+    method find_updates_for( LibraryInfo existing, Version pcore_version ).LibraryInfo[]:
+      local LibraryInfo[] results
+      forEach (library in libraries)
+        if (library["id"] == existing["id"] and library["date"] > existing["date"])
+          contingent
+            necessary (library.min_version is null or library.min_version <= pcore_version)
+            necessary (library.max_version is null or library.max_version >= pcore_version)
+          satisfied
+            if (results is null) results = LibraryInfo[](2)
+            results.add(library)
+          endContingent
+        endIf
+      endForEach
+      return results
+
+    method menu_items( String id ).String[]:
+      local String[] results()
+      forEach (library in libraries)
+        if (library["id"] == id) results.add(library.to_String)
+      endForEach
+      return results
+
+    method check_for_updates_in( Manifest other, String libid ).Int32:
+      local var num_updates = 0
+      local var pcore_version = plasmacore_version
+      forEach (library in libraries)
+        if (libid is null or library["id"] == libid)
+          library.updates = other.find_updates_for(library,pcore_version)
+          if (library.updates?) ++num_updates
+        endIf
+      endForEach
+      return num_updates
+endClass
+
+class LibraryInfo()
+  PROPERTIES
+    values() : HashTable<<String,String>>
+    updates  : LibraryInfo[]
+
+  METHODS
+    method to_String.String:
+      return "$::$" (get("name"),get("description"))
+
+    method version.Version:
+      local var v = this["version"]
+      if (v?) return Version(v)
+      else return Version("0")
+
+    method min_version.Version:
+      local var v = this["min_version"]
+      if (v?) return Version(v)
+      v = this["version"]
+      if (v?) return Version(v)
+      else return null
+
+    method max_version.Version:
+      local var v = this["max_version"]
+      if (v?) return Version(v)
+      v = this["version"]
+      if (v?) return Version(v)
+      else return null
+
+    method set( String key, String value ):
+      values[key] = value
+
+    method get( String key ).String:
+      if (values.contains(key)) return values[key]
+      else return null
+endClass
+
+class Version( String code )
+  METHODS
+    method op==( Version other ).Logical:
+      return code == other.code
+
+    method op<>( Version other ).Int32:
+      if (code == other.code) return eq
+
+      local var result = major <> other.major
+      if (result != eq) return result
+
+      result = minor <> other.minor
+      if (result != eq) return result
+
+      return patch <> other.patch
+      
+    method major.Int32:
+      return code.split('.').first.to_Int32
+
+    method minor.Int32:
+      local var codes = code.split('.')
+      if (codes.count > 1) return codes[1].to_Int32
+      else return 0
+
+    method patch.Int32:
+      local var codes = code.split('.')
+      if (codes.count > 2) return codes[2].to_Int32
+      else return 0
+endClass
+
+

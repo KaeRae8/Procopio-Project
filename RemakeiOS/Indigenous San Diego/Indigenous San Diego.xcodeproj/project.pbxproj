@@ -1,0 +1,1061 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		B955D4741BEBF4630086D84C /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B955D4731BEBF4630086D84C /* AppDelegate.swift */; };
+		B955D4761BEBF4630086D84C /* MainViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B955D4751BEBF4630086D84C /* MainViewController.swift */; };
+		B955D4791BEBF4630086D84C /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = B955D4771BEBF4630086D84C /* Main.storyboard */; };
+		B955D47C1BEBF4630086D84C /* Indigenous_San_Diego.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = B955D47A1BEBF4630086D84C /* Indigenous_San_Diego.xcdatamodeld */; };
+		B955D47E1BEBF4630086D84C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B955D47D1BEBF4630086D84C /* Assets.xcassets */; };
+		B955D4811BEBF4630086D84C /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = B955D47F1BEBF4630086D84C /* LaunchScreen.storyboard */; };
+		B955D48C1BEBF4840086D84C /* Button.png in Resources */ = {isa = PBXBuildFile; fileRef = B955D4881BEBF4840086D84C /* Button.png */; };
+		B955D48D1BEBF4840086D84C /* BG.png in Resources */ = {isa = PBXBuildFile; fileRef = B955D4891BEBF4840086D84C /* BG.png */; };
+		B955D4921BEBF7B10086D84C /* MenuButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = B955D4911BEBF7B10086D84C /* MenuButton.swift */; };
+		B955D4951BEBFB1D0086D84C /* MenuButton.xib in Resources */ = {isa = PBXBuildFile; fileRef = B955D4931BEBF8840086D84C /* MenuButton.xib */; };
+		B955D4981BED43D50086D84C /* SiteCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = B955D4961BED43D50086D84C /* SiteCell.swift */; };
+		B955D4991BED43D50086D84C /* SiteCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = B955D4971BED43D50086D84C /* SiteCell.xib */; };
+		B955D49B1BED72BC0086D84C /* SiteTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = B955D49A1BED72BC0086D84C /* SiteTable.swift */; };
+		B955D49D1BED824A0086D84C /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B955D49C1BED824A0086D84C /* QuartzCore.framework */; };
+		B9675AB41C6683F20012ED90 /* sound-off.png in Resources */ = {isa = PBXBuildFile; fileRef = B9675AB21C6683F20012ED90 /* sound-off.png */; };
+		B9675AB51C6683F20012ED90 /* sound-on.png in Resources */ = {isa = PBXBuildFile; fileRef = B9675AB31C6683F20012ED90 /* sound-on.png */; };
+		B9675AB71C66861C0012ED90 /* Back-Arrow.png in Resources */ = {isa = PBXBuildFile; fileRef = B9675AB61C66861C0012ED90 /* Back-Arrow.png */; };
+		B9675ACF1C6687120012ED90 /* Contents.json in Resources */ = {isa = PBXBuildFile; fileRef = B9675ABA1C6687120012ED90 /* Contents.json */; };
+		B9675AD01C6687120012ED90 /* Icon-40.png in Resources */ = {isa = PBXBuildFile; fileRef = B9675ABB1C6687120012ED90 /* Icon-40.png */; };
+		B9675AD11C6687120012ED90 /* Icon-40@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = B9675ABC1C6687120012ED90 /* Icon-40@2x.png */; };
+		B9675AD21C6687120012ED90 /* Icon-40@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = B9675ABD1C6687120012ED90 /* Icon-40@3x.png */; };
+		B9675AD31C6687120012ED90 /* Icon-60@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = B9675ABE1C6687120012ED90 /* Icon-60@2x.png */; };
+		B9675AD41C6687120012ED90 /* Icon-60@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = B9675ABF1C6687120012ED90 /* Icon-60@3x.png */; };
+		B9675AD51C6687120012ED90 /* Icon-76.png in Resources */ = {isa = PBXBuildFile; fileRef = B9675AC01C6687120012ED90 /* Icon-76.png */; };
+		B9675AD61C6687120012ED90 /* Icon-76@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = B9675AC11C6687120012ED90 /* Icon-76@2x.png */; };
+		B9675AD71C6687120012ED90 /* Icon-Small.png in Resources */ = {isa = PBXBuildFile; fileRef = B9675AC21C6687120012ED90 /* Icon-Small.png */; };
+		B9675AD81C6687120012ED90 /* Icon-Small@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = B9675AC31C6687120012ED90 /* Icon-Small@2x.png */; };
+		B9675AD91C6687120012ED90 /* Icon-Small@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = B9675AC41C6687120012ED90 /* Icon-Small@3x.png */; };
+		B9675ADA1C6687120012ED90 /* Icon-60.png in Resources */ = {isa = PBXBuildFile; fileRef = B9675AC51C6687120012ED90 /* Icon-60.png */; };
+		B9675ADB1C6687120012ED90 /* Icon-72.png in Resources */ = {isa = PBXBuildFile; fileRef = B9675AC61C6687120012ED90 /* Icon-72.png */; };
+		B9675ADC1C6687120012ED90 /* Icon-72@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = B9675AC71C6687120012ED90 /* Icon-72@2x.png */; };
+		B9675ADD1C6687120012ED90 /* Icon-Small-50.png in Resources */ = {isa = PBXBuildFile; fileRef = B9675AC81C6687120012ED90 /* Icon-Small-50.png */; };
+		B9675ADE1C6687120012ED90 /* Icon-Small-50@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = B9675AC91C6687120012ED90 /* Icon-Small-50@2x.png */; };
+		B9675ADF1C6687120012ED90 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = B9675ACA1C6687120012ED90 /* Icon.png */; };
+		B9675AE01C6687120012ED90 /* Icon@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = B9675ACB1C6687120012ED90 /* Icon@2x.png */; };
+		B9675AE11C6687120012ED90 /* iTunesArtwork.png in Resources */ = {isa = PBXBuildFile; fileRef = B9675ACC1C6687120012ED90 /* iTunesArtwork.png */; };
+		B9675AE21C6687120012ED90 /* iTunesArtwork@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = B9675ACD1C6687120012ED90 /* iTunesArtwork@2x.png */; };
+		B9675AE31C6687120012ED90 /* README.md in Sources */ = {isa = PBXBuildFile; fileRef = B9675ACE1C6687120012ED90 /* README.md */; };
+		B9675AE71C669D4B0012ED90 /* FXBlurView.m in Sources */ = {isa = PBXBuildFile; fileRef = B9675AE61C669D4B0012ED90 /* FXBlurView.m */; };
+		B9675AE91C669E660012ED90 /* d-arrow.png in Resources */ = {isa = PBXBuildFile; fileRef = B9675AE81C669E660012ED90 /* d-arrow.png */; };
+		B9675AEB1C66A1400012ED90 /* SitePageViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9675AEA1C66A1400012ED90 /* SitePageViewController.swift */; };
+		B9675AEE1C66AB830012ED90 /* RightSlideAnimator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9675AEC1C66AB830012ED90 /* RightSlideAnimator.swift */; };
+		B9675AEF1C66AB830012ED90 /* RightSlideTransition.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9675AED1C66AB830012ED90 /* RightSlideTransition.swift */; };
+		B9675AF21C66B20B0012ED90 /* TribalMuseums.plist in Resources */ = {isa = PBXBuildFile; fileRef = B9675AF11C66B20B0012ED90 /* TribalMuseums.plist */; };
+		B9675AF61C66B96A0012ED90 /* CulturalTrails.plist in Resources */ = {isa = PBXBuildFile; fileRef = B9675AF51C66B96A0012ED90 /* CulturalTrails.plist */; };
+		B9675AF81C66B9DC0012ED90 /* HigherEducation.plist in Resources */ = {isa = PBXBuildFile; fileRef = B9675AF71C66B9DC0012ED90 /* HigherEducation.plist */; };
+		B9675AFA1C66BA210012ED90 /* OtherNativeBusinesses.plist in Resources */ = {isa = PBXBuildFile; fileRef = B9675AF91C66BA200012ED90 /* OtherNativeBusinesses.plist */; };
+		B9675AFC1C66BA640012ED90 /* PublicMuseums.plist in Resources */ = {isa = PBXBuildFile; fileRef = B9675AFB1C66BA640012ED90 /* PublicMuseums.plist */; };
+		B9675AFE1C66BA9D0012ED90 /* SpanishMuseums.plist in Resources */ = {isa = PBXBuildFile; fileRef = B9675AFD1C66BA9D0012ED90 /* SpanishMuseums.plist */; };
+		B9675B001C66BADF0012ED90 /* TribalLands.plist in Resources */ = {isa = PBXBuildFile; fileRef = B9675AFF1C66BADF0012ED90 /* TribalLands.plist */; };
+		B9675B021C66BB260012ED90 /* TribalOwnedBusinesses.plist in Resources */ = {isa = PBXBuildFile; fileRef = B9675B011C66BB260012ED90 /* TribalOwnedBusinesses.plist */; };
+		B9675B041C66BCE40012ED90 /* SiteData.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9675B031C66BCE40012ED90 /* SiteData.swift */; };
+		B9675B7B1C66D0CB0012ED90 /* American Indian Studies at SDSU.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B061C66D0CB0012ED90 /* American Indian Studies at SDSU.jpeg */; };
+		B9675B7C1C66D0CB0012ED90 /* Anza-Borrego Desert State Park.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B071C66D0CB0012ED90 /* Anza-Borrego Desert State Park.jpeg */; };
+		B9675B7E1C66D0CB0012ED90 /* Barona Band of Mission Indians Reservation.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B091C66D0CB0012ED90 /* Barona Band of Mission Indians Reservation.jpeg */; };
+		B9675B7F1C66D0CB0012ED90 /* Barona Creek Golf Club.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B0A1C66D0CB0012ED90 /* Barona Creek Golf Club.jpeg */; };
+		B9675B801C66D0CB0012ED90 /* Barona Cultural Center & Museum.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B0B1C66D0CB0012ED90 /* Barona Cultural Center & Museum.jpeg */; };
+		B9675B811C66D0CB0012ED90 /* Barona Resort & Casino.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B0C1C66D0CB0012ED90 /* Barona Resort & Casino.jpeg */; };
+		B9675B821C66D0CB0012ED90 /* Best Western Marina Gateway Hotel.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B0D1C66D0CB0012ED90 /* Best Western Marina Gateway Hotel.jpeg */; };
+		B9675B841C66D0CB0012ED90 /* Bonita Museum and Cultural Center.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B0F1C66D0CB0012ED90 /* Bonita Museum and Cultural Center.jpeg */; };
+		B9675B851C66D0CB0012ED90 /* CA Indian Culture and Sovereignty Center at CSUSM.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B101C66D0CB0012ED90 /* CA Indian Culture and Sovereignty Center at CSUSM.jpeg */; };
+		B9675B861C66D0CB0012ED90 /* Cabrillo National Monument.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B111C66D0CB0012ED90 /* Cabrillo National Monument.jpeg */; };
+		B9675B871C66D0CB0012ED90 /* California Indian Culture and Sovereignty Center at CSUSM.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B121C66D0CB0012ED90 /* California Indian Culture and Sovereignty Center at CSUSM.jpeg */; };
+		B9675B881C66D0CB0012ED90 /* Campo Band of Kumeyaay Indians Reservation.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B131C66D0CB0012ED90 /* Campo Band of Kumeyaay Indians Reservation.jpeg */; };
+		B9675B891C66D0CB0012ED90 /* Casino Pauma.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B141C66D0CB0012ED90 /* Casino Pauma.jpeg */; };
+		B9675B8A1C66D0CB0012ED90 /* Centro Cultural de la Raza.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B151C66D0CB0012ED90 /* Centro Cultural de la Raza.jpeg */; };
+		B9675B8B1C66D0CB0012ED90 /* Chicano Park.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B161C66D0CB0012ED90 /* Chicano Park.jpeg */; };
+		B9675B8C1C66D0CB0012ED90 /* Chokla (Gregory Mountain) .jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B171C66D0CB0012ED90 /* Chokla (Gregory Mountain) .jpeg */; };
+		B9675B8E1C66D0CB0012ED90 /* Cupa Cultural Center.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B191C66D0CB0012ED90 /* Cupa Cultural Center.jpeg */; };
+		B9675B901C66D0CB0012ED90 /* Cuyamaca Rancho State Park.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B1B1C66D0CB0012ED90 /* Cuyamaca Rancho State Park.jpeg */; };
+		B9675B921C66D0CB0012ED90 /* Ethnic Studies at UCSD.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B1D1C66D0CB0012ED90 /* Ethnic Studies at UCSD.jpeg */; };
+		B9675B931C66D0CB0012ED90 /* Ewiiaapaayp Band of Kumeyaay Indians Reservation.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B1E1C66D0CB0012ED90 /* Ewiiaapaayp Band of Kumeyaay Indians Reservation.jpeg */; };
+		B9675B941C66D0CB0012ED90 /* Felicita County Park.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B1F1C66D0CB0012ED90 /* Felicita County Park.jpeg */; };
+		B9675B971C66D0CB0012ED90 /* Golden Acorn Casino & Travel Center.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B221C66D0CB0012ED90 /* Golden Acorn Casino & Travel Center.jpeg */; };
+		B9675B9B1C66D0CB0012ED90 /* Harrah's Resort Southern California.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B261C66D0CB0012ED90 /* Harrah's Resort Southern California.jpeg */; };
+		B9675B9C1C66D0CB0012ED90 /* Heritage of the Americas Museum at Cuyamaca College.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B271C66D0CB0012ED90 /* Heritage of the Americas Museum at Cuyamaca College.jpeg */; };
+		B9675B9D1C66D0CB0012ED90 /* Iipay Nation of Santa Ysabel Reservation.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B281C66D0CB0012ED90 /* Iipay Nation of Santa Ysabel Reservation.jpeg */; };
+		B9675B9E1C66D0CB0012ED90 /* Jamul Indian Village Reservation.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B291C66D0CB0012ED90 /* Jamul Indian Village Reservation.jpeg */; };
+		B9675B9F1C66D0CB0012ED90 /* Kumeyaay Community College.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B2A1C66D0CB0012ED90 /* Kumeyaay Community College.jpeg */; };
+		B9675BA01C66D0CB0012ED90 /* Kumeyaay-Ipai Interpretive Center of Pauwai .jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B2B1C66D0CB0012ED90 /* Kumeyaay-Ipai Interpretive Center of Pauwai .jpeg */; };
+		B9675BA11C66D0CB0012ED90 /* Kuuchamaa Mountain.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B2C1C66D0CB0012ED90 /* Kuuchamaa Mountain.jpeg */; };
+		B9675BA21C66D0CB0012ED90 /* La Jolla Band of Luiseno Indians Reservation.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B2D1C66D0CB0012ED90 /* La Jolla Band of Luiseno Indians Reservation.jpeg */; };
+		B9675BA31C66D0CB0012ED90 /* La Jolla Campground.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B2E1C66D0CB0012ED90 /* La Jolla Campground.jpeg */; };
+		B9675BA41C66D0CB0012ED90 /* La Jolla Zip Zoom.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B2F1C66D0CB0012ED90 /* La Jolla Zip Zoom.jpeg */; };
+		B9675BA51C66D0CB0012ED90 /* La Posta Band of Mission Indians Reservation.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B301C66D0CB0012ED90 /* La Posta Band of Mission Indians Reservation.jpeg */; };
+		B9675BA71C66D0CB0012ED90 /* Los Coyotes Band of Cahuilla and Cupeno Indians Reservation.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B321C66D0CB0012ED90 /* Los Coyotes Band of Cahuilla and Cupeno Indians Reservation.jpeg */; };
+		B9675BA81C66D0CB0012ED90 /* Ma-Tar-Awa Recreational Vehicle Park.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B331C66D0CB0012ED90 /* Ma-Tar-Awa Recreational Vehicle Park.jpeg */; };
+		B9675BA91C66D0CB0012ED90 /* Manzanita Band of the Kumeyaay Nation Reservation.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B341C66D0CB0012ED90 /* Manzanita Band of the Kumeyaay Nation Reservation.jpeg */; };
+		B9675BAA1C66D0CB0012ED90 /* Mesa Grande Band of Mission Indians Reservation.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B351C66D0CB0012ED90 /* Mesa Grande Band of Mission Indians Reservation.jpeg */; };
+		B9675BAB1C66D0CB0012ED90 /* Misc1.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B361C66D0CB0012ED90 /* Misc1.jpeg */; };
+		B9675BAC1C66D0CB0012ED90 /* Misc2.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B371C66D0CB0012ED90 /* Misc2.jpeg */; };
+		B9675BAD1C66D0CB0012ED90 /* Misc3.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B381C66D0CB0012ED90 /* Misc3.jpeg */; };
+		B9675BAE1C66D0CB0012ED90 /* Misc4.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B391C66D0CB0012ED90 /* Misc4.jpeg */; };
+		B9675BAF1C66D0CB0012ED90 /* Misc5.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B3A1C66D0CB0012ED90 /* Misc5.jpeg */; };
+		B9675BB01C66D0CB0012ED90 /* Misc6.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B3B1C66D0CB0012ED90 /* Misc6.jpeg */; };
+		B9675BB11C66D0CB0012ED90 /* Mission Basilica San Diego de Alcala (Mission San Diego).jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B3C1C66D0CB0012ED90 /* Mission Basilica San Diego de Alcala (Mission San Diego).jpeg */; };
+		B9675BB21C66D0CB0012ED90 /* Mission San Antonio de Pala Asistencia (Mission Pala).jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B3D1C66D0CB0012ED90 /* Mission San Antonio de Pala Asistencia (Mission Pala).jpeg */; };
+		B9675BB31C66D0CB0012ED90 /* Mission San Luis Rey de Francia.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B3E1C66D0CB0012ED90 /* Mission San Luis Rey de Francia.jpeg */; };
+		B9675BB41C66D0CB0012ED90 /* Native Dreams.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B3F1C66D0CB0012ED90 /* Native Dreams.jpeg */; };
+		B9675BB51C66D0CB0012ED90 /* Pala Band of Mission Indians Reservation.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B401C66D0CB0012ED90 /* Pala Band of Mission Indians Reservation.jpeg */; };
+		B9675BB61C66D0CB0012ED90 /* Pala Casino Spa Resort.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B411C66D0CB0012ED90 /* Pala Casino Spa Resort.jpeg */; };
+		B9675BB71C66D0CB0012ED90 /* Pala Fitness Center & Skate Park.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B421C66D0CB0012ED90 /* Pala Fitness Center & Skate Park.jpeg */; };
+		B9675BB81C66D0CB0012ED90 /* Pala Postal.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B431C66D0CB0012ED90 /* Pala Postal.jpeg */; };
+		B9675BB91C66D0CB0012ED90 /* Pala Raceway.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B441C66D0CB0012ED90 /* Pala Raceway.jpeg */; };
+		B9675BBA1C66D0CB0012ED90 /* Pala Store.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B451C66D0CB0012ED90 /* Pala Store.jpeg */; };
+		B9675BBB1C66D0CB0012ED90 /* Pala Transfer Station.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B461C66D0CB0012ED90 /* Pala Transfer Station.jpeg */; };
+		B9675BBC1C66D0CB0012ED90 /* Pala Tub.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B471C66D0CB0012ED90 /* Pala Tub.jpeg */; };
+		B9675BBD1C66D0CB0012ED90 /* Palomar Community College.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B481C66D0CB0012ED90 /* Palomar Community College.jpeg */; };
+		B9675BBF1C66D0CB0012ED90 /* Pauma Band of Luiseno Indians Reservation.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B4A1C66D0CB0012ED90 /* Pauma Band of Luiseno Indians Reservation.jpeg */; };
+		B9675BC01C66D0CB0012ED90 /* Piedras Pintadas Trail.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B4B1C66D0CB0012ED90 /* Piedras Pintadas Trail.jpeg */; };
+		B9675BC11C66D0CB0012ED90 /* ProcopioLogo.png in Resources */ = {isa = PBXBuildFile; fileRef = B9675B4C1C66D0CB0012ED90 /* ProcopioLogo.png */; };
+		B9675BC21C66D0CB0012ED90 /* ProcopioLogoWhite.jpg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B4D1C66D0CB0012ED90 /* ProcopioLogoWhite.jpg */; };
+		B9675BC31C66D0CB0012ED90 /* Rik Mazzetti & Son Garage .jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B4E1C66D0CB0012ED90 /* Rik Mazzetti & Son Garage .jpeg */; };
+		B9675BC41C66D0CB0012ED90 /* Rincon Band of Luiseno Indians Reservation.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B4F1C66D0CB0012ED90 /* Rincon Band of Luiseno Indians Reservation.jpeg */; };
+		B9675BC51C66D0CB0012ED90 /* Rincon Travel Plaza.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B501C66D0CB0012ED90 /* Rincon Travel Plaza.jpeg */; };
+		B9675BC61C66D0CB0012ED90 /* San Diego Archaeological Center.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B511C66D0CB0012ED90 /* San Diego Archaeological Center.jpeg */; };
+		B9675BC71C66D0CB0012ED90 /* San Diego Botanic Garden.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B521C66D0CB0012ED90 /* San Diego Botanic Garden.jpeg */; };
+		B9675BC81C66D0CB0012ED90 /* San Diego Children's Discovery Museum.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B531C66D0CB0012ED90 /* San Diego Children's Discovery Museum.jpeg */; };
+		B9675BC91C66D0CB0012ED90 /* San Diego History Center.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B541C66D0CB0012ED90 /* San Diego History Center.jpeg */; };
+		B9675BCA1C66D0CB0012ED90 /* San Diego Museum of Art.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B551C66D0CB0012ED90 /* San Diego Museum of Art.jpeg */; };
+		B9675BCB1C66D0CB0012ED90 /* San Diego Museum of Man.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B561C66D0CB0012ED90 /* San Diego Museum of Man.jpeg */; };
+		B9675BCC1C66D0CB0012ED90 /* San Diego Natural History Museum.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B571C66D0CB0012ED90 /* San Diego Natural History Museum.jpeg */; };
+		B9675BCD1C66D0CB0012ED90 /* San Pasqual Band of Indians Reservation.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B581C66D0CB0012ED90 /* San Pasqual Band of Indians Reservation.jpeg */; };
+		B9675BCE1C66D0CB0012ED90 /* Santa Ysabel Asistencia.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B591C66D0CB0012ED90 /* Santa Ysabel Asistencia.jpeg */; };
+		B9675BCF1C66D0CB0012ED90 /* SCTCALogo.png in Resources */ = {isa = PBXBuildFile; fileRef = B9675B5A1C66D0CB0012ED90 /* SCTCALogo.png */; };
+		B9675BD01C66D0CB0012ED90 /* Sloan Canyon (Portion of) .jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B5B1C66D0CB0012ED90 /* Sloan Canyon (Portion of) .jpeg */; };
+		B9675BD21C66D0CB0012ED90 /* Southern Indian Health Council.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B5D1C66D0CB0012ED90 /* Southern Indian Health Council.jpeg */; };
+		B9675BD31C66D0CB0012ED90 /* Sycuan Band of the Kumeyaay Nation Reservation.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B5E1C66D0CB0012ED90 /* Sycuan Band of the Kumeyaay Nation Reservation.jpeg */; };
+		B9675BD41C66D0CB0012ED90 /* Sycuan Casino.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B5F1C66D0CB0012ED90 /* Sycuan Casino.jpeg */; };
+		B9675BD51C66D0CB0012ED90 /* Sycuan Golf Resort.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B601C66D0CB0012ED90 /* Sycuan Golf Resort.jpeg */; };
+		B9675BD61C66D0CB0012ED90 /* Sycuan Institute on Tribal Gaming.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B611C66D0CB0012ED90 /* Sycuan Institute on Tribal Gaming.jpeg */; };
+		B9675BD71C66D0CB0012ED90 /* Tafoya & Son.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B621C66D0CB0012ED90 /* Tafoya & Son.jpeg */; };
+		B9675BDB1C66D0CB0012ED90 /* Tecolote Canyon Natural Park & Tecolote Nature Center.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B661C66D0CB0012ED90 /* Tecolote Canyon Natural Park & Tecolote Nature Center.jpeg */; };
+		B9675BDC1C66D0CB0012ED90 /* The Junipero Serra Museum.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B671C66D0CB0012ED90 /* The Junipero Serra Museum.jpeg */; };
+		B9675BDD1C66D0CB0012ED90 /* The San Diego House.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B681C66D0CB0012ED90 /* The San Diego House.jpeg */; };
+		B9675BDE1C66D0CB0012ED90 /* THE US GRANT.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B691C66D0CB0012ED90 /* THE US GRANT.jpeg */; };
+		B9675BDF1C66D0CB0012ED90 /* The Water Conservation Garden.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B6A1C66D0CB0012ED90 /* The Water Conservation Garden.jpeg */; };
+		B9675BE01C66D0CB0012ED90 /* Trails of the Kumeyaay (Mission Trails).jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B6B1C66D0CB0012ED90 /* Trails of the Kumeyaay (Mission Trails).jpeg */; };
+		B9675BE11C66D0CB0012ED90 /* UP Smoke Shop.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B6C1C66D0CB0012ED90 /* UP Smoke Shop.jpeg */; };
+		B9675BE31C66D0CB0012ED90 /* Valley View Casino.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B6E1C66D0CB0012ED90 /* Valley View Casino.jpeg */; };
+		B9675BE41C66D0CB0012ED90 /* Viejas Band of Kumeyaay Indians Reservation.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B6F1C66D0CB0012ED90 /* Viejas Band of Kumeyaay Indians Reservation.jpeg */; };
+		B9675BE51C66D0CB0012ED90 /* Viejas Bowl.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B701C66D0CB0012ED90 /* Viejas Bowl.jpeg */; };
+		B9675BE61C66D0CB0012ED90 /* Viejas Casino & Resort.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B711C66D0CB0012ED90 /* Viejas Casino & Resort.jpeg */; };
+		B9675BE71C66D0CB0012ED90 /* Viejas Outlet Center.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B721C66D0CB0012ED90 /* Viejas Outlet Center.jpeg */; };
+		B9675BE81C66D0CB0012ED90 /* Warner-Carrillo Ranch House Museum (SOHO).jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B731C66D0CB0012ED90 /* Warner-Carrillo Ranch House Museum (SOHO).jpeg */; };
+		B9675BE91C66D0CB0012ED90 /* Wasxayam Pomki Museum.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B741C66D0CB0012ED90 /* Wasxayam Pomki Museum.jpeg */; };
+		B9675BED1C66D0CB0012ED90 /* Weeping Buffalo Native Arts.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B781C66D0CB0012ED90 /* Weeping Buffalo Native Arts.jpeg */; };
+		B9675BEE1C66D0CB0012ED90 /* Women's Museum of California.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B791C66D0CB0012ED90 /* Women's Museum of California.jpeg */; };
+		B9675BEF1C66D0CB0012ED90 /* Woods Valley Golf Club.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B9675B7A1C66D0CB0012ED90 /* Woods Valley Golf Club.jpeg */; };
+		B9675BF11C66E5590012ED90 /* MapViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9675BF01C66E5590012ED90 /* MapViewController.swift */; };
+		B9675BF31C66E6F40012ED90 /* CulturalSite.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9675BF21C66E6F40012ED90 /* CulturalSite.swift */; };
+		B9675BF51C66E7320012ED90 /* GeoLocation.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9675BF41C66E7320012ED90 /* GeoLocation.swift */; };
+		B9675BF91C67007B0012ED90 /* AboutViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9675BF81C67007B0012ED90 /* AboutViewController.swift */; };
+		B9675BFC1C670D580012ED90 /* SCTCAViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9675BFB1C670D580012ED90 /* SCTCAViewController.swift */; };
+		B9675BFE1C670EF70012ED90 /* ProcopioViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9675BFD1C670EF70012ED90 /* ProcopioViewController.swift */; };
+		B9675C001C670F670012ED90 /* MusicViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9675BFF1C670F670012ED90 /* MusicViewController.swift */; };
+		B9675C021C6715160012ED90 /* BirdSong.m4a in Resources */ = {isa = PBXBuildFile; fileRef = B9675C011C6715160012ED90 /* BirdSong.m4a */; };
+		B9675C111C6726390012ED90 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = B9675C041C6726390012ED90 /* GoogleService-Info.plist */; };
+		B9675C121C6726390012ED90 /* libGoogleAnalyticsServices.a in Frameworks */ = {isa = PBXBuildFile; fileRef = B9675C051C6726390012ED90 /* libGoogleAnalyticsServices.a */; };
+		B9675C131C6726390012ED90 /* libAdIdAccess.a in Frameworks */ = {isa = PBXBuildFile; fileRef = B9675C061C6726390012ED90 /* libAdIdAccess.a */; };
+		B9675C151C6728630012ED90 /* AdSupport.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B9675C141C6728630012ED90 /* AdSupport.framework */; };
+		B9675C171C67286C0012ED90 /* CoreData.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B9675C161C67286C0012ED90 /* CoreData.framework */; };
+		B9675C191C6728730012ED90 /* MapKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B9675C181C6728730012ED90 /* MapKit.framework */; };
+		B9675C1B1C6728790012ED90 /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B9675C1A1C6728790012ED90 /* CoreMedia.framework */; };
+		B9675C1D1C6728800012ED90 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B9675C1C1C6728800012ED90 /* AVFoundation.framework */; };
+		B9675C1F1C67288F0012ED90 /* libz.1.2.5.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = B9675C1E1C67288F0012ED90 /* libz.1.2.5.tbd */; };
+		B9675C211C67289D0012ED90 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = B9675C201C67289D0012ED90 /* libz.tbd */; };
+		B9675C231C6728D90012ED90 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B9675C221C6728D90012ED90 /* SystemConfiguration.framework */; };
+		B9675C251C6728ED0012ED90 /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = B9675C241C6728ED0012ED90 /* libsqlite3.tbd */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		B955D4701BEBF4630086D84C /* Indigenous San Diego.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Indigenous San Diego.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		B955D4731BEBF4630086D84C /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		B955D4751BEBF4630086D84C /* MainViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewController.swift; sourceTree = "<group>"; };
+		B955D4781BEBF4630086D84C /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		B955D47B1BEBF4630086D84C /* Indigenous_San_Diego.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = Indigenous_San_Diego.xcdatamodel; sourceTree = "<group>"; };
+		B955D47D1BEBF4630086D84C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B955D4801BEBF4630086D84C /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		B955D4821BEBF4630086D84C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B955D4881BEBF4840086D84C /* Button.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Button.png; sourceTree = "<group>"; };
+		B955D4891BEBF4840086D84C /* BG.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = BG.png; sourceTree = "<group>"; };
+		B955D4911BEBF7B10086D84C /* MenuButton.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = MenuButton.swift; path = ../MenuButton.swift; sourceTree = "<group>"; };
+		B955D4931BEBF8840086D84C /* MenuButton.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = MenuButton.xib; sourceTree = "<group>"; };
+		B955D4961BED43D50086D84C /* SiteCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SiteCell.swift; sourceTree = "<group>"; };
+		B955D4971BED43D50086D84C /* SiteCell.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = SiteCell.xib; sourceTree = "<group>"; };
+		B955D49A1BED72BC0086D84C /* SiteTable.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SiteTable.swift; sourceTree = "<group>"; };
+		B955D49C1BED824A0086D84C /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
+		B9675AB21C6683F20012ED90 /* sound-off.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "sound-off.png"; sourceTree = "<group>"; };
+		B9675AB31C6683F20012ED90 /* sound-on.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "sound-on.png"; sourceTree = "<group>"; };
+		B9675AB61C66861C0012ED90 /* Back-Arrow.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Back-Arrow.png"; sourceTree = "<group>"; };
+		B9675ABA1C6687120012ED90 /* Contents.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = Contents.json; sourceTree = "<group>"; };
+		B9675ABB1C6687120012ED90 /* Icon-40.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon-40.png"; sourceTree = "<group>"; };
+		B9675ABC1C6687120012ED90 /* Icon-40@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon-40@2x.png"; sourceTree = "<group>"; };
+		B9675ABD1C6687120012ED90 /* Icon-40@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon-40@3x.png"; sourceTree = "<group>"; };
+		B9675ABE1C6687120012ED90 /* Icon-60@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon-60@2x.png"; sourceTree = "<group>"; };
+		B9675ABF1C6687120012ED90 /* Icon-60@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon-60@3x.png"; sourceTree = "<group>"; };
+		B9675AC01C6687120012ED90 /* Icon-76.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon-76.png"; sourceTree = "<group>"; };
+		B9675AC11C6687120012ED90 /* Icon-76@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon-76@2x.png"; sourceTree = "<group>"; };
+		B9675AC21C6687120012ED90 /* Icon-Small.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon-Small.png"; sourceTree = "<group>"; };
+		B9675AC31C6687120012ED90 /* Icon-Small@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon-Small@2x.png"; sourceTree = "<group>"; };
+		B9675AC41C6687120012ED90 /* Icon-Small@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon-Small@3x.png"; sourceTree = "<group>"; };
+		B9675AC51C6687120012ED90 /* Icon-60.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon-60.png"; sourceTree = "<group>"; };
+		B9675AC61C6687120012ED90 /* Icon-72.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon-72.png"; sourceTree = "<group>"; };
+		B9675AC71C6687120012ED90 /* Icon-72@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon-72@2x.png"; sourceTree = "<group>"; };
+		B9675AC81C6687120012ED90 /* Icon-Small-50.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon-Small-50.png"; sourceTree = "<group>"; };
+		B9675AC91C6687120012ED90 /* Icon-Small-50@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon-Small-50@2x.png"; sourceTree = "<group>"; };
+		B9675ACA1C6687120012ED90 /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Icon.png; sourceTree = "<group>"; };
+		B9675ACB1C6687120012ED90 /* Icon@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon@2x.png"; sourceTree = "<group>"; };
+		B9675ACC1C6687120012ED90 /* iTunesArtwork.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = iTunesArtwork.png; sourceTree = "<group>"; };
+		B9675ACD1C6687120012ED90 /* iTunesArtwork@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "iTunesArtwork@2x.png"; sourceTree = "<group>"; };
+		B9675ACE1C6687120012ED90 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		B9675AE41C669D4B0012ED90 /* Indigenous San Diego-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Indigenous San Diego-Bridging-Header.h"; sourceTree = "<group>"; };
+		B9675AE51C669D4B0012ED90 /* FXBlurView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FXBlurView.h; sourceTree = "<group>"; };
+		B9675AE61C669D4B0012ED90 /* FXBlurView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FXBlurView.m; sourceTree = "<group>"; };
+		B9675AE81C669E660012ED90 /* d-arrow.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "d-arrow.png"; sourceTree = "<group>"; };
+		B9675AEA1C66A1400012ED90 /* SitePageViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SitePageViewController.swift; sourceTree = "<group>"; };
+		B9675AEC1C66AB830012ED90 /* RightSlideAnimator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RightSlideAnimator.swift; sourceTree = "<group>"; };
+		B9675AED1C66AB830012ED90 /* RightSlideTransition.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RightSlideTransition.swift; sourceTree = "<group>"; };
+		B9675AF11C66B20B0012ED90 /* TribalMuseums.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = TribalMuseums.plist; sourceTree = "<group>"; };
+		B9675AF51C66B96A0012ED90 /* CulturalTrails.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = CulturalTrails.plist; sourceTree = "<group>"; };
+		B9675AF71C66B9DC0012ED90 /* HigherEducation.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = HigherEducation.plist; sourceTree = "<group>"; };
+		B9675AF91C66BA200012ED90 /* OtherNativeBusinesses.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = OtherNativeBusinesses.plist; sourceTree = "<group>"; };
+		B9675AFB1C66BA640012ED90 /* PublicMuseums.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = PublicMuseums.plist; sourceTree = "<group>"; };
+		B9675AFD1C66BA9D0012ED90 /* SpanishMuseums.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = SpanishMuseums.plist; sourceTree = "<group>"; };
+		B9675AFF1C66BADF0012ED90 /* TribalLands.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = TribalLands.plist; sourceTree = "<group>"; };
+		B9675B011C66BB260012ED90 /* TribalOwnedBusinesses.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = TribalOwnedBusinesses.plist; sourceTree = "<group>"; };
+		B9675B031C66BCE40012ED90 /* SiteData.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SiteData.swift; sourceTree = "<group>"; };
+		B9675B061C66D0CB0012ED90 /* American Indian Studies at SDSU.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "American Indian Studies at SDSU.jpeg"; sourceTree = "<group>"; };
+		B9675B071C66D0CB0012ED90 /* Anza-Borrego Desert State Park.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Anza-Borrego Desert State Park.jpeg"; sourceTree = "<group>"; };
+		B9675B091C66D0CB0012ED90 /* Barona Band of Mission Indians Reservation.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Barona Band of Mission Indians Reservation.jpeg"; sourceTree = "<group>"; };
+		B9675B0A1C66D0CB0012ED90 /* Barona Creek Golf Club.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Barona Creek Golf Club.jpeg"; sourceTree = "<group>"; };
+		B9675B0B1C66D0CB0012ED90 /* Barona Cultural Center & Museum.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Barona Cultural Center & Museum.jpeg"; sourceTree = "<group>"; };
+		B9675B0C1C66D0CB0012ED90 /* Barona Resort & Casino.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Barona Resort & Casino.jpeg"; sourceTree = "<group>"; };
+		B9675B0D1C66D0CB0012ED90 /* Best Western Marina Gateway Hotel.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Best Western Marina Gateway Hotel.jpeg"; sourceTree = "<group>"; };
+		B9675B0F1C66D0CB0012ED90 /* Bonita Museum and Cultural Center.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Bonita Museum and Cultural Center.jpeg"; sourceTree = "<group>"; };
+		B9675B101C66D0CB0012ED90 /* CA Indian Culture and Sovereignty Center at CSUSM.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "CA Indian Culture and Sovereignty Center at CSUSM.jpeg"; sourceTree = "<group>"; };
+		B9675B111C66D0CB0012ED90 /* Cabrillo National Monument.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Cabrillo National Monument.jpeg"; sourceTree = "<group>"; };
+		B9675B121C66D0CB0012ED90 /* California Indian Culture and Sovereignty Center at CSUSM.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "California Indian Culture and Sovereignty Center at CSUSM.jpeg"; sourceTree = "<group>"; };
+		B9675B131C66D0CB0012ED90 /* Campo Band of Kumeyaay Indians Reservation.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Campo Band of Kumeyaay Indians Reservation.jpeg"; sourceTree = "<group>"; };
+		B9675B141C66D0CB0012ED90 /* Casino Pauma.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Casino Pauma.jpeg"; sourceTree = "<group>"; };
+		B9675B151C66D0CB0012ED90 /* Centro Cultural de la Raza.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Centro Cultural de la Raza.jpeg"; sourceTree = "<group>"; };
+		B9675B161C66D0CB0012ED90 /* Chicano Park.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Chicano Park.jpeg"; sourceTree = "<group>"; };
+		B9675B171C66D0CB0012ED90 /* Chokla (Gregory Mountain) .jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Chokla (Gregory Mountain) .jpeg"; sourceTree = "<group>"; };
+		B9675B191C66D0CB0012ED90 /* Cupa Cultural Center.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Cupa Cultural Center.jpeg"; sourceTree = "<group>"; };
+		B9675B1B1C66D0CB0012ED90 /* Cuyamaca Rancho State Park.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Cuyamaca Rancho State Park.jpeg"; sourceTree = "<group>"; };
+		B9675B1D1C66D0CB0012ED90 /* Ethnic Studies at UCSD.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Ethnic Studies at UCSD.jpeg"; sourceTree = "<group>"; };
+		B9675B1E1C66D0CB0012ED90 /* Ewiiaapaayp Band of Kumeyaay Indians Reservation.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Ewiiaapaayp Band of Kumeyaay Indians Reservation.jpeg"; sourceTree = "<group>"; };
+		B9675B1F1C66D0CB0012ED90 /* Felicita County Park.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Felicita County Park.jpeg"; sourceTree = "<group>"; };
+		B9675B221C66D0CB0012ED90 /* Golden Acorn Casino & Travel Center.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Golden Acorn Casino & Travel Center.jpeg"; sourceTree = "<group>"; };
+		B9675B261C66D0CB0012ED90 /* Harrah's Resort Southern California.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Harrah's Resort Southern California.jpeg"; sourceTree = "<group>"; };
+		B9675B271C66D0CB0012ED90 /* Heritage of the Americas Museum at Cuyamaca College.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Heritage of the Americas Museum at Cuyamaca College.jpeg"; sourceTree = "<group>"; };
+		B9675B281C66D0CB0012ED90 /* Iipay Nation of Santa Ysabel Reservation.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Iipay Nation of Santa Ysabel Reservation.jpeg"; sourceTree = "<group>"; };
+		B9675B291C66D0CB0012ED90 /* Jamul Indian Village Reservation.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Jamul Indian Village Reservation.jpeg"; sourceTree = "<group>"; };
+		B9675B2A1C66D0CB0012ED90 /* Kumeyaay Community College.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Kumeyaay Community College.jpeg"; sourceTree = "<group>"; };
+		B9675B2B1C66D0CB0012ED90 /* Kumeyaay-Ipai Interpretive Center of Pauwai .jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Kumeyaay-Ipai Interpretive Center of Pauwai .jpeg"; sourceTree = "<group>"; };
+		B9675B2C1C66D0CB0012ED90 /* Kuuchamaa Mountain.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Kuuchamaa Mountain.jpeg"; sourceTree = "<group>"; };
+		B9675B2D1C66D0CB0012ED90 /* La Jolla Band of Luiseno Indians Reservation.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "La Jolla Band of Luiseno Indians Reservation.jpeg"; sourceTree = "<group>"; };
+		B9675B2E1C66D0CB0012ED90 /* La Jolla Campground.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "La Jolla Campground.jpeg"; sourceTree = "<group>"; };
+		B9675B2F1C66D0CB0012ED90 /* La Jolla Zip Zoom.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "La Jolla Zip Zoom.jpeg"; sourceTree = "<group>"; };
+		B9675B301C66D0CB0012ED90 /* La Posta Band of Mission Indians Reservation.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "La Posta Band of Mission Indians Reservation.jpeg"; sourceTree = "<group>"; };
+		B9675B321C66D0CB0012ED90 /* Los Coyotes Band of Cahuilla and Cupeno Indians Reservation.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Los Coyotes Band of Cahuilla and Cupeno Indians Reservation.jpeg"; sourceTree = "<group>"; };
+		B9675B331C66D0CB0012ED90 /* Ma-Tar-Awa Recreational Vehicle Park.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Ma-Tar-Awa Recreational Vehicle Park.jpeg"; sourceTree = "<group>"; };
+		B9675B341C66D0CB0012ED90 /* Manzanita Band of the Kumeyaay Nation Reservation.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Manzanita Band of the Kumeyaay Nation Reservation.jpeg"; sourceTree = "<group>"; };
+		B9675B351C66D0CB0012ED90 /* Mesa Grande Band of Mission Indians Reservation.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Mesa Grande Band of Mission Indians Reservation.jpeg"; sourceTree = "<group>"; };
+		B9675B361C66D0CB0012ED90 /* Misc1.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Misc1.jpeg; sourceTree = "<group>"; };
+		B9675B371C66D0CB0012ED90 /* Misc2.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Misc2.jpeg; sourceTree = "<group>"; };
+		B9675B381C66D0CB0012ED90 /* Misc3.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Misc3.jpeg; sourceTree = "<group>"; };
+		B9675B391C66D0CB0012ED90 /* Misc4.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Misc4.jpeg; sourceTree = "<group>"; };
+		B9675B3A1C66D0CB0012ED90 /* Misc5.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Misc5.jpeg; sourceTree = "<group>"; };
+		B9675B3B1C66D0CB0012ED90 /* Misc6.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Misc6.jpeg; sourceTree = "<group>"; };
+		B9675B3C1C66D0CB0012ED90 /* Mission Basilica San Diego de Alcala (Mission San Diego).jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Mission Basilica San Diego de Alcala (Mission San Diego).jpeg"; sourceTree = "<group>"; };
+		B9675B3D1C66D0CB0012ED90 /* Mission San Antonio de Pala Asistencia (Mission Pala).jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Mission San Antonio de Pala Asistencia (Mission Pala).jpeg"; sourceTree = "<group>"; };
+		B9675B3E1C66D0CB0012ED90 /* Mission San Luis Rey de Francia.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Mission San Luis Rey de Francia.jpeg"; sourceTree = "<group>"; };
+		B9675B3F1C66D0CB0012ED90 /* Native Dreams.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Native Dreams.jpeg"; sourceTree = "<group>"; };
+		B9675B401C66D0CB0012ED90 /* Pala Band of Mission Indians Reservation.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Pala Band of Mission Indians Reservation.jpeg"; sourceTree = "<group>"; };
+		B9675B411C66D0CB0012ED90 /* Pala Casino Spa Resort.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Pala Casino Spa Resort.jpeg"; sourceTree = "<group>"; };
+		B9675B421C66D0CB0012ED90 /* Pala Fitness Center & Skate Park.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Pala Fitness Center & Skate Park.jpeg"; sourceTree = "<group>"; };
+		B9675B431C66D0CB0012ED90 /* Pala Postal.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Pala Postal.jpeg"; sourceTree = "<group>"; };
+		B9675B441C66D0CB0012ED90 /* Pala Raceway.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Pala Raceway.jpeg"; sourceTree = "<group>"; };
+		B9675B451C66D0CB0012ED90 /* Pala Store.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Pala Store.jpeg"; sourceTree = "<group>"; };
+		B9675B461C66D0CB0012ED90 /* Pala Transfer Station.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Pala Transfer Station.jpeg"; sourceTree = "<group>"; };
+		B9675B471C66D0CB0012ED90 /* Pala Tub.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Pala Tub.jpeg"; sourceTree = "<group>"; };
+		B9675B481C66D0CB0012ED90 /* Palomar Community College.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Palomar Community College.jpeg"; sourceTree = "<group>"; };
+		B9675B4A1C66D0CB0012ED90 /* Pauma Band of Luiseno Indians Reservation.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Pauma Band of Luiseno Indians Reservation.jpeg"; sourceTree = "<group>"; };
+		B9675B4B1C66D0CB0012ED90 /* Piedras Pintadas Trail.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Piedras Pintadas Trail.jpeg"; sourceTree = "<group>"; };
+		B9675B4C1C66D0CB0012ED90 /* ProcopioLogo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ProcopioLogo.png; sourceTree = "<group>"; };
+		B9675B4D1C66D0CB0012ED90 /* ProcopioLogoWhite.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = ProcopioLogoWhite.jpg; sourceTree = "<group>"; };
+		B9675B4E1C66D0CB0012ED90 /* Rik Mazzetti & Son Garage .jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Rik Mazzetti & Son Garage .jpeg"; sourceTree = "<group>"; };
+		B9675B4F1C66D0CB0012ED90 /* Rincon Band of Luiseno Indians Reservation.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Rincon Band of Luiseno Indians Reservation.jpeg"; sourceTree = "<group>"; };
+		B9675B501C66D0CB0012ED90 /* Rincon Travel Plaza.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Rincon Travel Plaza.jpeg"; sourceTree = "<group>"; };
+		B9675B511C66D0CB0012ED90 /* San Diego Archaeological Center.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "San Diego Archaeological Center.jpeg"; sourceTree = "<group>"; };
+		B9675B521C66D0CB0012ED90 /* San Diego Botanic Garden.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "San Diego Botanic Garden.jpeg"; sourceTree = "<group>"; };
+		B9675B531C66D0CB0012ED90 /* San Diego Children's Discovery Museum.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "San Diego Children's Discovery Museum.jpeg"; sourceTree = "<group>"; };
+		B9675B541C66D0CB0012ED90 /* San Diego History Center.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "San Diego History Center.jpeg"; sourceTree = "<group>"; };
+		B9675B551C66D0CB0012ED90 /* San Diego Museum of Art.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "San Diego Museum of Art.jpeg"; sourceTree = "<group>"; };
+		B9675B561C66D0CB0012ED90 /* San Diego Museum of Man.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "San Diego Museum of Man.jpeg"; sourceTree = "<group>"; };
+		B9675B571C66D0CB0012ED90 /* San Diego Natural History Museum.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "San Diego Natural History Museum.jpeg"; sourceTree = "<group>"; };
+		B9675B581C66D0CB0012ED90 /* San Pasqual Band of Indians Reservation.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "San Pasqual Band of Indians Reservation.jpeg"; sourceTree = "<group>"; };
+		B9675B591C66D0CB0012ED90 /* Santa Ysabel Asistencia.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Santa Ysabel Asistencia.jpeg"; sourceTree = "<group>"; };
+		B9675B5A1C66D0CB0012ED90 /* SCTCALogo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = SCTCALogo.png; sourceTree = "<group>"; };
+		B9675B5B1C66D0CB0012ED90 /* Sloan Canyon (Portion of) .jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Sloan Canyon (Portion of) .jpeg"; sourceTree = "<group>"; };
+		B9675B5D1C66D0CB0012ED90 /* Southern Indian Health Council.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Southern Indian Health Council.jpeg"; sourceTree = "<group>"; };
+		B9675B5E1C66D0CB0012ED90 /* Sycuan Band of the Kumeyaay Nation Reservation.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Sycuan Band of the Kumeyaay Nation Reservation.jpeg"; sourceTree = "<group>"; };
+		B9675B5F1C66D0CB0012ED90 /* Sycuan Casino.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Sycuan Casino.jpeg"; sourceTree = "<group>"; };
+		B9675B601C66D0CB0012ED90 /* Sycuan Golf Resort.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Sycuan Golf Resort.jpeg"; sourceTree = "<group>"; };
+		B9675B611C66D0CB0012ED90 /* Sycuan Institute on Tribal Gaming.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Sycuan Institute on Tribal Gaming.jpeg"; sourceTree = "<group>"; };
+		B9675B621C66D0CB0012ED90 /* Tafoya & Son.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Tafoya & Son.jpeg"; sourceTree = "<group>"; };
+		B9675B661C66D0CB0012ED90 /* Tecolote Canyon Natural Park & Tecolote Nature Center.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Tecolote Canyon Natural Park & Tecolote Nature Center.jpeg"; sourceTree = "<group>"; };
+		B9675B671C66D0CB0012ED90 /* The Junipero Serra Museum.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "The Junipero Serra Museum.jpeg"; sourceTree = "<group>"; };
+		B9675B681C66D0CB0012ED90 /* The San Diego House.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "The San Diego House.jpeg"; sourceTree = "<group>"; };
+		B9675B691C66D0CB0012ED90 /* THE US GRANT.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "THE US GRANT.jpeg"; sourceTree = "<group>"; };
+		B9675B6A1C66D0CB0012ED90 /* The Water Conservation Garden.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "The Water Conservation Garden.jpeg"; sourceTree = "<group>"; };
+		B9675B6B1C66D0CB0012ED90 /* Trails of the Kumeyaay (Mission Trails).jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Trails of the Kumeyaay (Mission Trails).jpeg"; sourceTree = "<group>"; };
+		B9675B6C1C66D0CB0012ED90 /* UP Smoke Shop.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "UP Smoke Shop.jpeg"; sourceTree = "<group>"; };
+		B9675B6E1C66D0CB0012ED90 /* Valley View Casino.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Valley View Casino.jpeg"; sourceTree = "<group>"; };
+		B9675B6F1C66D0CB0012ED90 /* Viejas Band of Kumeyaay Indians Reservation.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Viejas Band of Kumeyaay Indians Reservation.jpeg"; sourceTree = "<group>"; };
+		B9675B701C66D0CB0012ED90 /* Viejas Bowl.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Viejas Bowl.jpeg"; sourceTree = "<group>"; };
+		B9675B711C66D0CB0012ED90 /* Viejas Casino & Resort.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Viejas Casino & Resort.jpeg"; sourceTree = "<group>"; };
+		B9675B721C66D0CB0012ED90 /* Viejas Outlet Center.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Viejas Outlet Center.jpeg"; sourceTree = "<group>"; };
+		B9675B731C66D0CB0012ED90 /* Warner-Carrillo Ranch House Museum (SOHO).jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Warner-Carrillo Ranch House Museum (SOHO).jpeg"; sourceTree = "<group>"; };
+		B9675B741C66D0CB0012ED90 /* Wasxayam Pomki Museum.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Wasxayam Pomki Museum.jpeg"; sourceTree = "<group>"; };
+		B9675B781C66D0CB0012ED90 /* Weeping Buffalo Native Arts.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Weeping Buffalo Native Arts.jpeg"; sourceTree = "<group>"; };
+		B9675B791C66D0CB0012ED90 /* Women's Museum of California.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Women's Museum of California.jpeg"; sourceTree = "<group>"; };
+		B9675B7A1C66D0CB0012ED90 /* Woods Valley Golf Club.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Woods Valley Golf Club.jpeg"; sourceTree = "<group>"; };
+		B9675BF01C66E5590012ED90 /* MapViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MapViewController.swift; sourceTree = "<group>"; };
+		B9675BF21C66E6F40012ED90 /* CulturalSite.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CulturalSite.swift; sourceTree = "<group>"; };
+		B9675BF41C66E7320012ED90 /* GeoLocation.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GeoLocation.swift; sourceTree = "<group>"; };
+		B9675BF81C67007B0012ED90 /* AboutViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AboutViewController.swift; sourceTree = "<group>"; };
+		B9675BFB1C670D580012ED90 /* SCTCAViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SCTCAViewController.swift; sourceTree = "<group>"; };
+		B9675BFD1C670EF70012ED90 /* ProcopioViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ProcopioViewController.swift; sourceTree = "<group>"; };
+		B9675BFF1C670F670012ED90 /* MusicViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MusicViewController.swift; sourceTree = "<group>"; };
+		B9675C011C6715160012ED90 /* BirdSong.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; path = BirdSong.m4a; sourceTree = "<group>"; };
+		B9675C041C6726390012ED90 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		B9675C051C6726390012ED90 /* libGoogleAnalyticsServices.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libGoogleAnalyticsServices.a; sourceTree = "<group>"; };
+		B9675C061C6726390012ED90 /* libAdIdAccess.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libAdIdAccess.a; sourceTree = "<group>"; };
+		B9675C071C6726390012ED90 /* GAI.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GAI.h; sourceTree = "<group>"; };
+		B9675C081C6726390012ED90 /* GAIDictionaryBuilder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GAIDictionaryBuilder.h; sourceTree = "<group>"; };
+		B9675C091C6726390012ED90 /* GAIEcommerceFields.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GAIEcommerceFields.h; sourceTree = "<group>"; };
+		B9675C0A1C6726390012ED90 /* GAIEcommerceProduct.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GAIEcommerceProduct.h; sourceTree = "<group>"; };
+		B9675C0B1C6726390012ED90 /* GAIEcommerceProductAction.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GAIEcommerceProductAction.h; sourceTree = "<group>"; };
+		B9675C0C1C6726390012ED90 /* GAIEcommercePromotion.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GAIEcommercePromotion.h; sourceTree = "<group>"; };
+		B9675C0D1C6726390012ED90 /* GAIFields.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GAIFields.h; sourceTree = "<group>"; };
+		B9675C0E1C6726390012ED90 /* GAILogger.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GAILogger.h; sourceTree = "<group>"; };
+		B9675C0F1C6726390012ED90 /* GAITrackedViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GAITrackedViewController.h; sourceTree = "<group>"; };
+		B9675C101C6726390012ED90 /* GAITracker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GAITracker.h; sourceTree = "<group>"; };
+		B9675C141C6728630012ED90 /* AdSupport.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AdSupport.framework; path = System/Library/Frameworks/AdSupport.framework; sourceTree = SDKROOT; };
+		B9675C161C67286C0012ED90 /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = System/Library/Frameworks/CoreData.framework; sourceTree = SDKROOT; };
+		B9675C181C6728730012ED90 /* MapKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MapKit.framework; path = System/Library/Frameworks/MapKit.framework; sourceTree = SDKROOT; };
+		B9675C1A1C6728790012ED90 /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
+		B9675C1C1C6728800012ED90 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
+		B9675C1E1C67288F0012ED90 /* libz.1.2.5.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.1.2.5.tbd; path = usr/lib/libz.1.2.5.tbd; sourceTree = SDKROOT; };
+		B9675C201C67289D0012ED90 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
+		B9675C221C6728D90012ED90 /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
+		B9675C241C6728ED0012ED90 /* libsqlite3.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libsqlite3.tbd; path = usr/lib/libsqlite3.tbd; sourceTree = SDKROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		B955D46D1BEBF4630086D84C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B9675C251C6728ED0012ED90 /* libsqlite3.tbd in Frameworks */,
+				B9675C231C6728D90012ED90 /* SystemConfiguration.framework in Frameworks */,
+				B9675C211C67289D0012ED90 /* libz.tbd in Frameworks */,
+				B9675C1F1C67288F0012ED90 /* libz.1.2.5.tbd in Frameworks */,
+				B9675C1D1C6728800012ED90 /* AVFoundation.framework in Frameworks */,
+				B9675C1B1C6728790012ED90 /* CoreMedia.framework in Frameworks */,
+				B9675C191C6728730012ED90 /* MapKit.framework in Frameworks */,
+				B9675C171C67286C0012ED90 /* CoreData.framework in Frameworks */,
+				B9675C151C6728630012ED90 /* AdSupport.framework in Frameworks */,
+				B955D49D1BED824A0086D84C /* QuartzCore.framework in Frameworks */,
+				B9675C131C6726390012ED90 /* libAdIdAccess.a in Frameworks */,
+				B9675C121C6726390012ED90 /* libGoogleAnalyticsServices.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		B955D4671BEBF4630086D84C = {
+			isa = PBXGroup;
+			children = (
+				B9675C241C6728ED0012ED90 /* libsqlite3.tbd */,
+				B9675C221C6728D90012ED90 /* SystemConfiguration.framework */,
+				B9675C201C67289D0012ED90 /* libz.tbd */,
+				B9675C1E1C67288F0012ED90 /* libz.1.2.5.tbd */,
+				B9675C1C1C6728800012ED90 /* AVFoundation.framework */,
+				B9675C1A1C6728790012ED90 /* CoreMedia.framework */,
+				B9675C181C6728730012ED90 /* MapKit.framework */,
+				B9675C161C67286C0012ED90 /* CoreData.framework */,
+				B9675C141C6728630012ED90 /* AdSupport.framework */,
+				B955D49C1BED824A0086D84C /* QuartzCore.framework */,
+				B955D4721BEBF4630086D84C /* Indigenous San Diego */,
+				B955D4711BEBF4630086D84C /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		B955D4711BEBF4630086D84C /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				B955D4701BEBF4630086D84C /* Indigenous San Diego.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		B955D4721BEBF4630086D84C /* Indigenous San Diego */ = {
+			isa = PBXGroup;
+			children = (
+				B9675C031C67261F0012ED90 /* Analytics */,
+				B9675B051C66D0CB0012ED90 /* images */,
+				B9675AF01C66B19B0012ED90 /* Data */,
+				B9675AE51C669D4B0012ED90 /* FXBlurView.h */,
+				B9675AE61C669D4B0012ED90 /* FXBlurView.m */,
+				B9675AB81C6687120012ED90 /* AppIcons */,
+				B9675BFA1C670D360012ED90 /* Splash */,
+				B955D4901BEBF4920086D84C /* WIP */,
+				B955D4731BEBF4630086D84C /* AppDelegate.swift */,
+				B955D4751BEBF4630086D84C /* MainViewController.swift */,
+				B9675AEA1C66A1400012ED90 /* SitePageViewController.swift */,
+				B955D4771BEBF4630086D84C /* Main.storyboard */,
+				B955D47D1BEBF4630086D84C /* Assets.xcassets */,
+				B955D47F1BEBF4630086D84C /* LaunchScreen.storyboard */,
+				B955D4821BEBF4630086D84C /* Info.plist */,
+				B955D47A1BEBF4630086D84C /* Indigenous_San_Diego.xcdatamodeld */,
+				B9675AE41C669D4B0012ED90 /* Indigenous San Diego-Bridging-Header.h */,
+			);
+			path = "Indigenous San Diego";
+			sourceTree = "<group>";
+		};
+		B955D4901BEBF4920086D84C /* WIP */ = {
+			isa = PBXGroup;
+			children = (
+				B955D4881BEBF4840086D84C /* Button.png */,
+				B955D4891BEBF4840086D84C /* BG.png */,
+				B9675AB21C6683F20012ED90 /* sound-off.png */,
+				B9675AB31C6683F20012ED90 /* sound-on.png */,
+				B9675AB61C66861C0012ED90 /* Back-Arrow.png */,
+				B9675AE81C669E660012ED90 /* d-arrow.png */,
+				B9675C011C6715160012ED90 /* BirdSong.m4a */,
+				B9675AEC1C66AB830012ED90 /* RightSlideAnimator.swift */,
+				B9675AED1C66AB830012ED90 /* RightSlideTransition.swift */,
+				B9675BF41C66E7320012ED90 /* GeoLocation.swift */,
+				B9675BF21C66E6F40012ED90 /* CulturalSite.swift */,
+				B9675BF01C66E5590012ED90 /* MapViewController.swift */,
+				B955D4911BEBF7B10086D84C /* MenuButton.swift */,
+				B955D4931BEBF8840086D84C /* MenuButton.xib */,
+				B955D4961BED43D50086D84C /* SiteCell.swift */,
+				B955D4971BED43D50086D84C /* SiteCell.xib */,
+				B955D49A1BED72BC0086D84C /* SiteTable.swift */,
+				B9675BF81C67007B0012ED90 /* AboutViewController.swift */,
+			);
+			name = WIP;
+			sourceTree = "<group>";
+		};
+		B9675AB81C6687120012ED90 /* AppIcons */ = {
+			isa = PBXGroup;
+			children = (
+				B9675AB91C6687120012ED90 /* AppIcon.appiconset */,
+				B9675AC51C6687120012ED90 /* Icon-60.png */,
+				B9675AC61C6687120012ED90 /* Icon-72.png */,
+				B9675AC71C6687120012ED90 /* Icon-72@2x.png */,
+				B9675AC81C6687120012ED90 /* Icon-Small-50.png */,
+				B9675AC91C6687120012ED90 /* Icon-Small-50@2x.png */,
+				B9675ACA1C6687120012ED90 /* Icon.png */,
+				B9675ACB1C6687120012ED90 /* Icon@2x.png */,
+				B9675ACC1C6687120012ED90 /* iTunesArtwork.png */,
+				B9675ACD1C6687120012ED90 /* iTunesArtwork@2x.png */,
+				B9675ACE1C6687120012ED90 /* README.md */,
+			);
+			path = AppIcons;
+			sourceTree = "<group>";
+		};
+		B9675AB91C6687120012ED90 /* AppIcon.appiconset */ = {
+			isa = PBXGroup;
+			children = (
+				B9675ABA1C6687120012ED90 /* Contents.json */,
+				B9675ABB1C6687120012ED90 /* Icon-40.png */,
+				B9675ABC1C6687120012ED90 /* Icon-40@2x.png */,
+				B9675ABD1C6687120012ED90 /* Icon-40@3x.png */,
+				B9675ABE1C6687120012ED90 /* Icon-60@2x.png */,
+				B9675ABF1C6687120012ED90 /* Icon-60@3x.png */,
+				B9675AC01C6687120012ED90 /* Icon-76.png */,
+				B9675AC11C6687120012ED90 /* Icon-76@2x.png */,
+				B9675AC21C6687120012ED90 /* Icon-Small.png */,
+				B9675AC31C6687120012ED90 /* Icon-Small@2x.png */,
+				B9675AC41C6687120012ED90 /* Icon-Small@3x.png */,
+			);
+			path = AppIcon.appiconset;
+			sourceTree = "<group>";
+		};
+		B9675AF01C66B19B0012ED90 /* Data */ = {
+			isa = PBXGroup;
+			children = (
+				B9675AF11C66B20B0012ED90 /* TribalMuseums.plist */,
+				B9675AF51C66B96A0012ED90 /* CulturalTrails.plist */,
+				B9675AF71C66B9DC0012ED90 /* HigherEducation.plist */,
+				B9675AF91C66BA200012ED90 /* OtherNativeBusinesses.plist */,
+				B9675AFB1C66BA640012ED90 /* PublicMuseums.plist */,
+				B9675AFD1C66BA9D0012ED90 /* SpanishMuseums.plist */,
+				B9675AFF1C66BADF0012ED90 /* TribalLands.plist */,
+				B9675B011C66BB260012ED90 /* TribalOwnedBusinesses.plist */,
+				B9675B031C66BCE40012ED90 /* SiteData.swift */,
+			);
+			name = Data;
+			path = ..;
+			sourceTree = "<group>";
+		};
+		B9675B051C66D0CB0012ED90 /* images */ = {
+			isa = PBXGroup;
+			children = (
+				B9675B061C66D0CB0012ED90 /* American Indian Studies at SDSU.jpeg */,
+				B9675B071C66D0CB0012ED90 /* Anza-Borrego Desert State Park.jpeg */,
+				B9675B091C66D0CB0012ED90 /* Barona Band of Mission Indians Reservation.jpeg */,
+				B9675B0A1C66D0CB0012ED90 /* Barona Creek Golf Club.jpeg */,
+				B9675B0B1C66D0CB0012ED90 /* Barona Cultural Center & Museum.jpeg */,
+				B9675B0C1C66D0CB0012ED90 /* Barona Resort & Casino.jpeg */,
+				B9675B0D1C66D0CB0012ED90 /* Best Western Marina Gateway Hotel.jpeg */,
+				B9675B0F1C66D0CB0012ED90 /* Bonita Museum and Cultural Center.jpeg */,
+				B9675B101C66D0CB0012ED90 /* CA Indian Culture and Sovereignty Center at CSUSM.jpeg */,
+				B9675B111C66D0CB0012ED90 /* Cabrillo National Monument.jpeg */,
+				B9675B121C66D0CB0012ED90 /* California Indian Culture and Sovereignty Center at CSUSM.jpeg */,
+				B9675B131C66D0CB0012ED90 /* Campo Band of Kumeyaay Indians Reservation.jpeg */,
+				B9675B141C66D0CB0012ED90 /* Casino Pauma.jpeg */,
+				B9675B151C66D0CB0012ED90 /* Centro Cultural de la Raza.jpeg */,
+				B9675B161C66D0CB0012ED90 /* Chicano Park.jpeg */,
+				B9675B171C66D0CB0012ED90 /* Chokla (Gregory Mountain) .jpeg */,
+				B9675B191C66D0CB0012ED90 /* Cupa Cultural Center.jpeg */,
+				B9675B1B1C66D0CB0012ED90 /* Cuyamaca Rancho State Park.jpeg */,
+				B9675B1D1C66D0CB0012ED90 /* Ethnic Studies at UCSD.jpeg */,
+				B9675B1E1C66D0CB0012ED90 /* Ewiiaapaayp Band of Kumeyaay Indians Reservation.jpeg */,
+				B9675B1F1C66D0CB0012ED90 /* Felicita County Park.jpeg */,
+				B9675B221C66D0CB0012ED90 /* Golden Acorn Casino & Travel Center.jpeg */,
+				B9675B261C66D0CB0012ED90 /* Harrah's Resort Southern California.jpeg */,
+				B9675B271C66D0CB0012ED90 /* Heritage of the Americas Museum at Cuyamaca College.jpeg */,
+				B9675B281C66D0CB0012ED90 /* Iipay Nation of Santa Ysabel Reservation.jpeg */,
+				B9675B291C66D0CB0012ED90 /* Jamul Indian Village Reservation.jpeg */,
+				B9675B2A1C66D0CB0012ED90 /* Kumeyaay Community College.jpeg */,
+				B9675B2B1C66D0CB0012ED90 /* Kumeyaay-Ipai Interpretive Center of Pauwai .jpeg */,
+				B9675B2C1C66D0CB0012ED90 /* Kuuchamaa Mountain.jpeg */,
+				B9675B2D1C66D0CB0012ED90 /* La Jolla Band of Luiseno Indians Reservation.jpeg */,
+				B9675B2E1C66D0CB0012ED90 /* La Jolla Campground.jpeg */,
+				B9675B2F1C66D0CB0012ED90 /* La Jolla Zip Zoom.jpeg */,
+				B9675B301C66D0CB0012ED90 /* La Posta Band of Mission Indians Reservation.jpeg */,
+				B9675B321C66D0CB0012ED90 /* Los Coyotes Band of Cahuilla and Cupeno Indians Reservation.jpeg */,
+				B9675B331C66D0CB0012ED90 /* Ma-Tar-Awa Recreational Vehicle Park.jpeg */,
+				B9675B341C66D0CB0012ED90 /* Manzanita Band of the Kumeyaay Nation Reservation.jpeg */,
+				B9675B351C66D0CB0012ED90 /* Mesa Grande Band of Mission Indians Reservation.jpeg */,
+				B9675B361C66D0CB0012ED90 /* Misc1.jpeg */,
+				B9675B371C66D0CB0012ED90 /* Misc2.jpeg */,
+				B9675B381C66D0CB0012ED90 /* Misc3.jpeg */,
+				B9675B391C66D0CB0012ED90 /* Misc4.jpeg */,
+				B9675B3A1C66D0CB0012ED90 /* Misc5.jpeg */,
+				B9675B3B1C66D0CB0012ED90 /* Misc6.jpeg */,
+				B9675B3C1C66D0CB0012ED90 /* Mission Basilica San Diego de Alcala (Mission San Diego).jpeg */,
+				B9675B3D1C66D0CB0012ED90 /* Mission San Antonio de Pala Asistencia (Mission Pala).jpeg */,
+				B9675B3E1C66D0CB0012ED90 /* Mission San Luis Rey de Francia.jpeg */,
+				B9675B3F1C66D0CB0012ED90 /* Native Dreams.jpeg */,
+				B9675B401C66D0CB0012ED90 /* Pala Band of Mission Indians Reservation.jpeg */,
+				B9675B411C66D0CB0012ED90 /* Pala Casino Spa Resort.jpeg */,
+				B9675B421C66D0CB0012ED90 /* Pala Fitness Center & Skate Park.jpeg */,
+				B9675B431C66D0CB0012ED90 /* Pala Postal.jpeg */,
+				B9675B441C66D0CB0012ED90 /* Pala Raceway.jpeg */,
+				B9675B451C66D0CB0012ED90 /* Pala Store.jpeg */,
+				B9675B461C66D0CB0012ED90 /* Pala Transfer Station.jpeg */,
+				B9675B471C66D0CB0012ED90 /* Pala Tub.jpeg */,
+				B9675B481C66D0CB0012ED90 /* Palomar Community College.jpeg */,
+				B9675B4A1C66D0CB0012ED90 /* Pauma Band of Luiseno Indians Reservation.jpeg */,
+				B9675B4B1C66D0CB0012ED90 /* Piedras Pintadas Trail.jpeg */,
+				B9675B4C1C66D0CB0012ED90 /* ProcopioLogo.png */,
+				B9675B4D1C66D0CB0012ED90 /* ProcopioLogoWhite.jpg */,
+				B9675B4E1C66D0CB0012ED90 /* Rik Mazzetti & Son Garage .jpeg */,
+				B9675B4F1C66D0CB0012ED90 /* Rincon Band of Luiseno Indians Reservation.jpeg */,
+				B9675B501C66D0CB0012ED90 /* Rincon Travel Plaza.jpeg */,
+				B9675B511C66D0CB0012ED90 /* San Diego Archaeological Center.jpeg */,
+				B9675B521C66D0CB0012ED90 /* San Diego Botanic Garden.jpeg */,
+				B9675B531C66D0CB0012ED90 /* San Diego Children's Discovery Museum.jpeg */,
+				B9675B541C66D0CB0012ED90 /* San Diego History Center.jpeg */,
+				B9675B551C66D0CB0012ED90 /* San Diego Museum of Art.jpeg */,
+				B9675B561C66D0CB0012ED90 /* San Diego Museum of Man.jpeg */,
+				B9675B571C66D0CB0012ED90 /* San Diego Natural History Museum.jpeg */,
+				B9675B581C66D0CB0012ED90 /* San Pasqual Band of Indians Reservation.jpeg */,
+				B9675B591C66D0CB0012ED90 /* Santa Ysabel Asistencia.jpeg */,
+				B9675B5A1C66D0CB0012ED90 /* SCTCALogo.png */,
+				B9675B5B1C66D0CB0012ED90 /* Sloan Canyon (Portion of) .jpeg */,
+				B9675B5D1C66D0CB0012ED90 /* Southern Indian Health Council.jpeg */,
+				B9675B5E1C66D0CB0012ED90 /* Sycuan Band of the Kumeyaay Nation Reservation.jpeg */,
+				B9675B5F1C66D0CB0012ED90 /* Sycuan Casino.jpeg */,
+				B9675B601C66D0CB0012ED90 /* Sycuan Golf Resort.jpeg */,
+				B9675B611C66D0CB0012ED90 /* Sycuan Institute on Tribal Gaming.jpeg */,
+				B9675B621C66D0CB0012ED90 /* Tafoya & Son.jpeg */,
+				B9675B661C66D0CB0012ED90 /* Tecolote Canyon Natural Park & Tecolote Nature Center.jpeg */,
+				B9675B671C66D0CB0012ED90 /* The Junipero Serra Museum.jpeg */,
+				B9675B681C66D0CB0012ED90 /* The San Diego House.jpeg */,
+				B9675B691C66D0CB0012ED90 /* THE US GRANT.jpeg */,
+				B9675B6A1C66D0CB0012ED90 /* The Water Conservation Garden.jpeg */,
+				B9675B6B1C66D0CB0012ED90 /* Trails of the Kumeyaay (Mission Trails).jpeg */,
+				B9675B6C1C66D0CB0012ED90 /* UP Smoke Shop.jpeg */,
+				B9675B6E1C66D0CB0012ED90 /* Valley View Casino.jpeg */,
+				B9675B6F1C66D0CB0012ED90 /* Viejas Band of Kumeyaay Indians Reservation.jpeg */,
+				B9675B701C66D0CB0012ED90 /* Viejas Bowl.jpeg */,
+				B9675B711C66D0CB0012ED90 /* Viejas Casino & Resort.jpeg */,
+				B9675B721C66D0CB0012ED90 /* Viejas Outlet Center.jpeg */,
+				B9675B731C66D0CB0012ED90 /* Warner-Carrillo Ranch House Museum (SOHO).jpeg */,
+				B9675B741C66D0CB0012ED90 /* Wasxayam Pomki Museum.jpeg */,
+				B9675B781C66D0CB0012ED90 /* Weeping Buffalo Native Arts.jpeg */,
+				B9675B791C66D0CB0012ED90 /* Women's Museum of California.jpeg */,
+				B9675B7A1C66D0CB0012ED90 /* Woods Valley Golf Club.jpeg */,
+			);
+			path = images;
+			sourceTree = "<group>";
+		};
+		B9675BFA1C670D360012ED90 /* Splash */ = {
+			isa = PBXGroup;
+			children = (
+				B9675BFB1C670D580012ED90 /* SCTCAViewController.swift */,
+				B9675BFD1C670EF70012ED90 /* ProcopioViewController.swift */,
+				B9675BFF1C670F670012ED90 /* MusicViewController.swift */,
+			);
+			name = Splash;
+			sourceTree = "<group>";
+		};
+		B9675C031C67261F0012ED90 /* Analytics */ = {
+			isa = PBXGroup;
+			children = (
+				B9675C041C6726390012ED90 /* GoogleService-Info.plist */,
+				B9675C051C6726390012ED90 /* libGoogleAnalyticsServices.a */,
+				B9675C061C6726390012ED90 /* libAdIdAccess.a */,
+				B9675C071C6726390012ED90 /* GAI.h */,
+				B9675C081C6726390012ED90 /* GAIDictionaryBuilder.h */,
+				B9675C091C6726390012ED90 /* GAIEcommerceFields.h */,
+				B9675C0A1C6726390012ED90 /* GAIEcommerceProduct.h */,
+				B9675C0B1C6726390012ED90 /* GAIEcommerceProductAction.h */,
+				B9675C0C1C6726390012ED90 /* GAIEcommercePromotion.h */,
+				B9675C0D1C6726390012ED90 /* GAIFields.h */,
+				B9675C0E1C6726390012ED90 /* GAILogger.h */,
+				B9675C0F1C6726390012ED90 /* GAITrackedViewController.h */,
+				B9675C101C6726390012ED90 /* GAITracker.h */,
+			);
+			name = Analytics;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		B955D46F1BEBF4630086D84C /* Indigenous San Diego */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B955D4851BEBF4630086D84C /* Build configuration list for PBXNativeTarget "Indigenous San Diego" */;
+			buildPhases = (
+				B955D46C1BEBF4630086D84C /* Sources */,
+				B955D46D1BEBF4630086D84C /* Frameworks */,
+				B955D46E1BEBF4630086D84C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "Indigenous San Diego";
+			productName = "Indigenous San Diego";
+			productReference = B955D4701BEBF4630086D84C /* Indigenous San Diego.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		B955D4681BEBF4630086D84C /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastSwiftUpdateCheck = 0720;
+				LastUpgradeCheck = 0710;
+				ORGANIZATIONNAME = Procopio;
+				TargetAttributes = {
+					B955D46F1BEBF4630086D84C = {
+						CreatedOnToolsVersion = 7.1;
+					};
+				};
+			};
+			buildConfigurationList = B955D46B1BEBF4630086D84C /* Build configuration list for PBXProject "Indigenous San Diego" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = B955D4671BEBF4630086D84C;
+			productRefGroup = B955D4711BEBF4630086D84C /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				B955D46F1BEBF4630086D84C /* Indigenous San Diego */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		B955D46E1BEBF4630086D84C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B9675B8B1C66D0CB0012ED90 /* Chicano Park.jpeg in Resources */,
+				B9675ADE1C6687120012ED90 /* Icon-Small-50@2x.png in Resources */,
+				B9675AE01C6687120012ED90 /* Icon@2x.png in Resources */,
+				B9675B881C66D0CB0012ED90 /* Campo Band of Kumeyaay Indians Reservation.jpeg in Resources */,
+				B9675BA71C66D0CB0012ED90 /* Los Coyotes Band of Cahuilla and Cupeno Indians Reservation.jpeg in Resources */,
+				B9675BE71C66D0CB0012ED90 /* Viejas Outlet Center.jpeg in Resources */,
+				B9675BB41C66D0CB0012ED90 /* Native Dreams.jpeg in Resources */,
+				B9675BDC1C66D0CB0012ED90 /* The Junipero Serra Museum.jpeg in Resources */,
+				B9675BD31C66D0CB0012ED90 /* Sycuan Band of the Kumeyaay Nation Reservation.jpeg in Resources */,
+				B9675BB31C66D0CB0012ED90 /* Mission San Luis Rey de Francia.jpeg in Resources */,
+				B9675B821C66D0CB0012ED90 /* Best Western Marina Gateway Hotel.jpeg in Resources */,
+				B9675AE91C669E660012ED90 /* d-arrow.png in Resources */,
+				B9675BB91C66D0CB0012ED90 /* Pala Raceway.jpeg in Resources */,
+				B9675B7E1C66D0CB0012ED90 /* Barona Band of Mission Indians Reservation.jpeg in Resources */,
+				B9675BC81C66D0CB0012ED90 /* San Diego Children's Discovery Museum.jpeg in Resources */,
+				B9675BA21C66D0CB0012ED90 /* La Jolla Band of Luiseno Indians Reservation.jpeg in Resources */,
+				B9675BAF1C66D0CB0012ED90 /* Misc5.jpeg in Resources */,
+				B9675BBC1C66D0CB0012ED90 /* Pala Tub.jpeg in Resources */,
+				B9675B7C1C66D0CB0012ED90 /* Anza-Borrego Desert State Park.jpeg in Resources */,
+				B9675AD91C6687120012ED90 /* Icon-Small@3x.png in Resources */,
+				B9675AB41C6683F20012ED90 /* sound-off.png in Resources */,
+				B9675B8A1C66D0CB0012ED90 /* Centro Cultural de la Raza.jpeg in Resources */,
+				B9675B9F1C66D0CB0012ED90 /* Kumeyaay Community College.jpeg in Resources */,
+				B955D4951BEBFB1D0086D84C /* MenuButton.xib in Resources */,
+				B9675BDD1C66D0CB0012ED90 /* The San Diego House.jpeg in Resources */,
+				B9675AD61C6687120012ED90 /* Icon-76@2x.png in Resources */,
+				B9675B941C66D0CB0012ED90 /* Felicita County Park.jpeg in Resources */,
+				B9675BE91C66D0CB0012ED90 /* Wasxayam Pomki Museum.jpeg in Resources */,
+				B9675AB51C6683F20012ED90 /* sound-on.png in Resources */,
+				B9675B7F1C66D0CB0012ED90 /* Barona Creek Golf Club.jpeg in Resources */,
+				B9675B8C1C66D0CB0012ED90 /* Chokla (Gregory Mountain) .jpeg in Resources */,
+				B9675BBD1C66D0CB0012ED90 /* Palomar Community College.jpeg in Resources */,
+				B9675BB61C66D0CB0012ED90 /* Pala Casino Spa Resort.jpeg in Resources */,
+				B9675BAC1C66D0CB0012ED90 /* Misc2.jpeg in Resources */,
+				B9675BE51C66D0CB0012ED90 /* Viejas Bowl.jpeg in Resources */,
+				B9675BBF1C66D0CB0012ED90 /* Pauma Band of Luiseno Indians Reservation.jpeg in Resources */,
+				B9675ADB1C6687120012ED90 /* Icon-72.png in Resources */,
+				B9675BC21C66D0CB0012ED90 /* ProcopioLogoWhite.jpg in Resources */,
+				B9675C021C6715160012ED90 /* BirdSong.m4a in Resources */,
+				B9675BA41C66D0CB0012ED90 /* La Jolla Zip Zoom.jpeg in Resources */,
+				B955D48D1BEBF4840086D84C /* BG.png in Resources */,
+				B9675B001C66BADF0012ED90 /* TribalLands.plist in Resources */,
+				B9675ADC1C6687120012ED90 /* Icon-72@2x.png in Resources */,
+				B9675B9C1C66D0CB0012ED90 /* Heritage of the Americas Museum at Cuyamaca College.jpeg in Resources */,
+				B9675BB11C66D0CB0012ED90 /* Mission Basilica San Diego de Alcala (Mission San Diego).jpeg in Resources */,
+				B9675AD21C6687120012ED90 /* Icon-40@3x.png in Resources */,
+				B9675AD81C6687120012ED90 /* Icon-Small@2x.png in Resources */,
+				B9675BE31C66D0CB0012ED90 /* Valley View Casino.jpeg in Resources */,
+				B9675BA51C66D0CB0012ED90 /* La Posta Band of Mission Indians Reservation.jpeg in Resources */,
+				B9675BE61C66D0CB0012ED90 /* Viejas Casino & Resort.jpeg in Resources */,
+				B9675BCE1C66D0CB0012ED90 /* Santa Ysabel Asistencia.jpeg in Resources */,
+				B955D4811BEBF4630086D84C /* LaunchScreen.storyboard in Resources */,
+				B9675B861C66D0CB0012ED90 /* Cabrillo National Monument.jpeg in Resources */,
+				B9675BD61C66D0CB0012ED90 /* Sycuan Institute on Tribal Gaming.jpeg in Resources */,
+				B9675BCB1C66D0CB0012ED90 /* San Diego Museum of Man.jpeg in Resources */,
+				B9675AFA1C66BA210012ED90 /* OtherNativeBusinesses.plist in Resources */,
+				B9675BE11C66D0CB0012ED90 /* UP Smoke Shop.jpeg in Resources */,
+				B9675ADF1C6687120012ED90 /* Icon.png in Resources */,
+				B9675AFC1C66BA640012ED90 /* PublicMuseums.plist in Resources */,
+				B9675BCA1C66D0CB0012ED90 /* San Diego Museum of Art.jpeg in Resources */,
+				B9675BE01C66D0CB0012ED90 /* Trails of the Kumeyaay (Mission Trails).jpeg in Resources */,
+				B955D48C1BEBF4840086D84C /* Button.png in Resources */,
+				B9675BB21C66D0CB0012ED90 /* Mission San Antonio de Pala Asistencia (Mission Pala).jpeg in Resources */,
+				B9675B921C66D0CB0012ED90 /* Ethnic Studies at UCSD.jpeg in Resources */,
+				B9675BB71C66D0CB0012ED90 /* Pala Fitness Center & Skate Park.jpeg in Resources */,
+				B9675C111C6726390012ED90 /* GoogleService-Info.plist in Resources */,
+				B9675B841C66D0CB0012ED90 /* Bonita Museum and Cultural Center.jpeg in Resources */,
+				B9675AE21C6687120012ED90 /* iTunesArtwork@2x.png in Resources */,
+				B9675BC61C66D0CB0012ED90 /* San Diego Archaeological Center.jpeg in Resources */,
+				B9675B021C66BB260012ED90 /* TribalOwnedBusinesses.plist in Resources */,
+				B9675AD71C6687120012ED90 /* Icon-Small.png in Resources */,
+				B9675BED1C66D0CB0012ED90 /* Weeping Buffalo Native Arts.jpeg in Resources */,
+				B9675BA01C66D0CB0012ED90 /* Kumeyaay-Ipai Interpretive Center of Pauwai .jpeg in Resources */,
+				B9675B9D1C66D0CB0012ED90 /* Iipay Nation of Santa Ysabel Reservation.jpeg in Resources */,
+				B9675B851C66D0CB0012ED90 /* CA Indian Culture and Sovereignty Center at CSUSM.jpeg in Resources */,
+				B9675BC41C66D0CB0012ED90 /* Rincon Band of Luiseno Indians Reservation.jpeg in Resources */,
+				B9675BDE1C66D0CB0012ED90 /* THE US GRANT.jpeg in Resources */,
+				B9675BAA1C66D0CB0012ED90 /* Mesa Grande Band of Mission Indians Reservation.jpeg in Resources */,
+				B9675BEE1C66D0CB0012ED90 /* Women's Museum of California.jpeg in Resources */,
+				B9675AD31C6687120012ED90 /* Icon-60@2x.png in Resources */,
+				B9675AB71C66861C0012ED90 /* Back-Arrow.png in Resources */,
+				B9675AE11C6687120012ED90 /* iTunesArtwork.png in Resources */,
+				B9675ADA1C6687120012ED90 /* Icon-60.png in Resources */,
+				B9675BD41C66D0CB0012ED90 /* Sycuan Casino.jpeg in Resources */,
+				B955D47E1BEBF4630086D84C /* Assets.xcassets in Resources */,
+				B9675B801C66D0CB0012ED90 /* Barona Cultural Center & Museum.jpeg in Resources */,
+				B9675B871C66D0CB0012ED90 /* California Indian Culture and Sovereignty Center at CSUSM.jpeg in Resources */,
+				B9675BCF1C66D0CB0012ED90 /* SCTCALogo.png in Resources */,
+				B9675AF61C66B96A0012ED90 /* CulturalTrails.plist in Resources */,
+				B9675AD01C6687120012ED90 /* Icon-40.png in Resources */,
+				B9675BC11C66D0CB0012ED90 /* ProcopioLogo.png in Resources */,
+				B9675BAB1C66D0CB0012ED90 /* Misc1.jpeg in Resources */,
+				B955D4791BEBF4630086D84C /* Main.storyboard in Resources */,
+				B955D4991BED43D50086D84C /* SiteCell.xib in Resources */,
+				B9675BAD1C66D0CB0012ED90 /* Misc3.jpeg in Resources */,
+				B9675BA11C66D0CB0012ED90 /* Kuuchamaa Mountain.jpeg in Resources */,
+				B9675BB81C66D0CB0012ED90 /* Pala Postal.jpeg in Resources */,
+				B9675BA31C66D0CB0012ED90 /* La Jolla Campground.jpeg in Resources */,
+				B9675BDB1C66D0CB0012ED90 /* Tecolote Canyon Natural Park & Tecolote Nature Center.jpeg in Resources */,
+				B9675BEF1C66D0CB0012ED90 /* Woods Valley Golf Club.jpeg in Resources */,
+				B9675AF21C66B20B0012ED90 /* TribalMuseums.plist in Resources */,
+				B9675B7B1C66D0CB0012ED90 /* American Indian Studies at SDSU.jpeg in Resources */,
+				B9675BD71C66D0CB0012ED90 /* Tafoya & Son.jpeg in Resources */,
+				B9675BE41C66D0CB0012ED90 /* Viejas Band of Kumeyaay Indians Reservation.jpeg in Resources */,
+				B9675BAE1C66D0CB0012ED90 /* Misc4.jpeg in Resources */,
+				B9675BE81C66D0CB0012ED90 /* Warner-Carrillo Ranch House Museum (SOHO).jpeg in Resources */,
+				B9675AD11C6687120012ED90 /* Icon-40@2x.png in Resources */,
+				B9675BA81C66D0CB0012ED90 /* Ma-Tar-Awa Recreational Vehicle Park.jpeg in Resources */,
+				B9675B811C66D0CB0012ED90 /* Barona Resort & Casino.jpeg in Resources */,
+				B9675ADD1C6687120012ED90 /* Icon-Small-50.png in Resources */,
+				B9675BC51C66D0CB0012ED90 /* Rincon Travel Plaza.jpeg in Resources */,
+				B9675BD51C66D0CB0012ED90 /* Sycuan Golf Resort.jpeg in Resources */,
+				B9675B9E1C66D0CB0012ED90 /* Jamul Indian Village Reservation.jpeg in Resources */,
+				B9675BB51C66D0CB0012ED90 /* Pala Band of Mission Indians Reservation.jpeg in Resources */,
+				B9675AD41C6687120012ED90 /* Icon-60@3x.png in Resources */,
+				B9675BCC1C66D0CB0012ED90 /* San Diego Natural History Museum.jpeg in Resources */,
+				B9675B9B1C66D0CB0012ED90 /* Harrah's Resort Southern California.jpeg in Resources */,
+				B9675BA91C66D0CB0012ED90 /* Manzanita Band of the Kumeyaay Nation Reservation.jpeg in Resources */,
+				B9675BD21C66D0CB0012ED90 /* Southern Indian Health Council.jpeg in Resources */,
+				B9675ACF1C6687120012ED90 /* Contents.json in Resources */,
+				B9675BB01C66D0CB0012ED90 /* Misc6.jpeg in Resources */,
+				B9675BCD1C66D0CB0012ED90 /* San Pasqual Band of Indians Reservation.jpeg in Resources */,
+				B9675BDF1C66D0CB0012ED90 /* The Water Conservation Garden.jpeg in Resources */,
+				B9675AFE1C66BA9D0012ED90 /* SpanishMuseums.plist in Resources */,
+				B9675BBA1C66D0CB0012ED90 /* Pala Store.jpeg in Resources */,
+				B9675BC71C66D0CB0012ED90 /* San Diego Botanic Garden.jpeg in Resources */,
+				B9675B8E1C66D0CB0012ED90 /* Cupa Cultural Center.jpeg in Resources */,
+				B9675BC91C66D0CB0012ED90 /* San Diego History Center.jpeg in Resources */,
+				B9675B971C66D0CB0012ED90 /* Golden Acorn Casino & Travel Center.jpeg in Resources */,
+				B9675BC01C66D0CB0012ED90 /* Piedras Pintadas Trail.jpeg in Resources */,
+				B9675B901C66D0CB0012ED90 /* Cuyamaca Rancho State Park.jpeg in Resources */,
+				B9675BBB1C66D0CB0012ED90 /* Pala Transfer Station.jpeg in Resources */,
+				B9675B931C66D0CB0012ED90 /* Ewiiaapaayp Band of Kumeyaay Indians Reservation.jpeg in Resources */,
+				B9675AD51C6687120012ED90 /* Icon-76.png in Resources */,
+				B9675B891C66D0CB0012ED90 /* Casino Pauma.jpeg in Resources */,
+				B9675BC31C66D0CB0012ED90 /* Rik Mazzetti & Son Garage .jpeg in Resources */,
+				B9675AF81C66B9DC0012ED90 /* HigherEducation.plist in Resources */,
+				B9675BD01C66D0CB0012ED90 /* Sloan Canyon (Portion of) .jpeg in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		B955D46C1BEBF4630086D84C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B9675AEB1C66A1400012ED90 /* SitePageViewController.swift in Sources */,
+				B9675AEE1C66AB830012ED90 /* RightSlideAnimator.swift in Sources */,
+				B9675AEF1C66AB830012ED90 /* RightSlideTransition.swift in Sources */,
+				B9675C001C670F670012ED90 /* MusicViewController.swift in Sources */,
+				B9675B041C66BCE40012ED90 /* SiteData.swift in Sources */,
+				B9675BF31C66E6F40012ED90 /* CulturalSite.swift in Sources */,
+				B955D4921BEBF7B10086D84C /* MenuButton.swift in Sources */,
+				B955D49B1BED72BC0086D84C /* SiteTable.swift in Sources */,
+				B9675BF11C66E5590012ED90 /* MapViewController.swift in Sources */,
+				B955D4761BEBF4630086D84C /* MainViewController.swift in Sources */,
+				B9675AE31C6687120012ED90 /* README.md in Sources */,
+				B955D47C1BEBF4630086D84C /* Indigenous_San_Diego.xcdatamodeld in Sources */,
+				B9675AE71C669D4B0012ED90 /* FXBlurView.m in Sources */,
+				B9675BFC1C670D580012ED90 /* SCTCAViewController.swift in Sources */,
+				B9675BF51C66E7320012ED90 /* GeoLocation.swift in Sources */,
+				B955D4981BED43D50086D84C /* SiteCell.swift in Sources */,
+				B9675BF91C67007B0012ED90 /* AboutViewController.swift in Sources */,
+				B955D4741BEBF4630086D84C /* AppDelegate.swift in Sources */,
+				B9675BFE1C670EF70012ED90 /* ProcopioViewController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		B955D4771BEBF4630086D84C /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				B955D4781BEBF4630086D84C /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+		B955D47F1BEBF4630086D84C /* LaunchScreen.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				B955D4801BEBF4630086D84C /* Base */,
+			);
+			name = LaunchScreen.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		B955D4831BEBF4630086D84C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.1;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		B955D4841BEBF4630086D84C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.1;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		B955D4861BEBF4630086D84C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				INFOPLIST_FILE = "Indigenous San Diego/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Indigenous",
+					San,
+					Diego,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.procopio.indigenous.Indigenous-San-Diego";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "Indigenous San Diego/Indigenous San Diego-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		B955D4871BEBF4630086D84C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				INFOPLIST_FILE = "Indigenous San Diego/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Indigenous",
+					San,
+					Diego,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.procopio.indigenous.Indigenous-San-Diego";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "Indigenous San Diego/Indigenous San Diego-Bridging-Header.h";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		B955D46B1BEBF4630086D84C /* Build configuration list for PBXProject "Indigenous San Diego" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B955D4831BEBF4630086D84C /* Debug */,
+				B955D4841BEBF4630086D84C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B955D4851BEBF4630086D84C /* Build configuration list for PBXNativeTarget "Indigenous San Diego" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B955D4861BEBF4630086D84C /* Debug */,
+				B955D4871BEBF4630086D84C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCVersionGroup section */
+		B955D47A1BEBF4630086D84C /* Indigenous_San_Diego.xcdatamodeld */ = {
+			isa = XCVersionGroup;
+			children = (
+				B955D47B1BEBF4630086D84C /* Indigenous_San_Diego.xcdatamodel */,
+			);
+			currentVersion = B955D47B1BEBF4630086D84C /* Indigenous_San_Diego.xcdatamodel */;
+			path = Indigenous_San_Diego.xcdatamodeld;
+			sourceTree = "<group>";
+			versionGroupType = wrapper.xcdatamodel;
+		};
+/* End XCVersionGroup section */
+	};
+	rootObject = B955D4681BEBF4630086D84C /* Project object */;
+}

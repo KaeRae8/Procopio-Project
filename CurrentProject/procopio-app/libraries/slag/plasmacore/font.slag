@@ -1,0 +1,899 @@
+#=====================================================================
+# font.slag
+#
+# 3.5.0 (2011.06.18)
+#
+# --------------------------------------------------------------------
+#
+# Copyright 2010 Plasmaworks LLC
+#
+#   http://plasmaworks.com/plasmacore
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); 
+# you may not use this file except in compliance with the License. 
+# You may obtain a copy of the License at 
+#
+#   http://www.apache.org/licenses/LICENSE-2.0 
+#
+# Unless required by applicable law or agreed to in writing, 
+# software distributed under the License is distributed on an 
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, 
+# either express or implied. See the License for the specific 
+# language governing permissions and limitations under the License.
+#
+#=====================================================================
+
+[include "resource.slag"]
+
+#====================================================================
+# Font
+#====================================================================
+enum FontStyle : BitFlags<<FontStyle>>
+  # Used to specify different font styles when loading.  The following
+  # styles are available:
+  #
+  #   fixed_width
+  #     Each character in a font strip is the same number of pixels 
+  #     wide.
+  #
+  #   proportional
+  #     Each character in a font strip can have a different pixel 
+  #     width.
+  #
+  #   linear_filter
+  #     Peforms linear filtering on each letter as it's drawn.
+  #
+  #   point_filter
+  #     Draws nearest-neighbor pixels.  If this flag is omitted 
+  #     then linear filtering is used.
+  #
+  #   snug
+  #     Adjusts the logical widths of all characters by -1 pixel
+  #     after loading; often appropriate for fonts with black 
+  #     outlines. Without snug letters, two capital "M" characters 
+  #     in a black-outline font might have two columns of black 
+  #     pixels in-between them.  With snug letters there would only
+  #     be one column.
+  #
+  # Example:
+  #   high_score_font( "somefont.png", 
+  #       FontStyle.fixed_width | FontStyle.snug ) : Font
+  CATEGORIES
+    fixed_width(1), proportional(2)
+    linear_filter(4), point_filter(8)
+    snug(16)
+
+endEnum
+
+
+class Font : ImageProperties
+  # Manages a bitmapped font.  A font loads png or jpeg images 
+  # containing font strips, breaks up the letters, arranges them onto
+  # square textures, and draws the images piece by piece as needed.
+  # 
+  # Fonts can be loaded as proportional or non-proportional.  All
+  # letters in a font must have the same height (though parts of 
+  # that area can be blank/transparent).  The drawing origin of every
+  # character is the top-left corner.
+  # 
+  # The image width of a non-proportional font is divided by the
+  # number of characters in it to determine the character width.
+  # 
+  # A proportional font has a single-pixel-high band of alternating 
+  # colors in the topmost row.  The length of any contiguous patch 
+  # of the same color determines the width of the character 
+  # underneath.  The actual color used does not matter.
+  # 
+  # Since font strips tend to be images that are too long
+  # for texture hardware to support, every font is automatically
+  # broken up and laid out on square textures up to 256x256 in
+  # size.  Any empty pixels around each letter are removed before 
+  # laying out the letter on a texture.
+  # 
+  # Either point filtering or linear filtering can be selected
+  # for a font.  If linear filtering is chosen, an extra outline
+  # of padding is added around each letter before it is laid out
+  # to avoid color bleeding.
+  # 
+  # Copy and paste the following letter strip in Photoshop or
+  # another paint program to get started on a font strip.  Notice
+  # the first character is a space; if you accidentally leave it 
+  # out then all your letters will be one position off.
+  # 
+  #  !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
+
+  PROPERTIES
+    height                       : Int32
+      # The original pixel height of each character in the font.
+
+    characters : FontCharacter[]
+
+    style : FontStyle
+
+    force_integer_coordinates=false : Logical
+      # Force drawing coordinates to be whole numbers to avoid a blurring effect
+      # on centered text, etc.  Defaults to "true".
+
+    status : ImageStatus
+      # Internal use.
+
+    mapping : String
+      # Internal use
+
+      # NOTE: change the copy constructor below if any properties are added!
+
+    width_adjustment : Int32
+
+  METHODS
+    method init( String filename, mapping=String.create_from(' '..'~') )
+      # Intializes this font from characters in the given font strip.
+      #
+      # Parameters:
+      #   filename
+      #     A png or jpeg file containing a strip of characters.
+      #
+      #     A string of characters specifying the Unicode value of
+      #     each character in the font strip.  The default is a
+      #     string of 95 characters ranging from ' ' (space) to
+      #     '~'.
+      init( filename, FontStyle.proportional, mapping )
+
+    method init( String filename, style, mapping=String.create_from(' '..'~') ):
+      # Intializes this font from characters in the given font strip.
+      #
+      # Parameters:
+      #   filename
+      #     A png or jpeg file containing a strip of characters.
+      #
+      #   style
+      #     Any combination of FontStyle categories.  ''fixed_width'' and
+      #     ''proportional'' are ignored in this initializer and their
+      #     value determined from the image data manifest.  However,
+      #     ''snug'' and others still take effect.
+      #
+      #   mapping
+      #     A string of characters specifying the Unicode value of
+      #     each character in the font strip.  The default is a
+      #     string of 95 characters ranging from ' ' (space) to
+      #     '~'.
+      #
+      # If you want to create a single font out of several different
+      # font strips, use a FontBuilder instead.
+      if (style.includes(FontStyle.snug))
+        width_adjustment = -1
+        style &= !FontStyle.snug
+      endIf
+
+      local var max_ch = 0
+      forEach (ch in mapping) max_ch = max( max_ch, ch )
+      characters = ListOf<<FontCharacter>>[max_ch+1]
+
+      ImageManager.load(filename,this)
+
+    method init( Bitmap bitmap, style=FontStyle.fixed_width,
+      mapping=String.create_from(' '..'~') ):
+
+      local FontBuilder builder( bitmap, style, mapping )
+      init( builder.create_letter_map, builder.font_height )
+
+    method init( characters, height )
+      # Initializes this font with an existing FontCharacter list
+      # and a font height.
+
+    method init( Font existing )
+      # Creates a duplicate font that shares the same image data but has
+      # its own color, scale, handle, etc.
+      this.scale = existing.scale
+      this.&handle = existing.&handle
+      this.render_flags = existing.render_flags
+      this.blend = existing.blend
+      this.color = existing.color
+      this.height = existing.height
+      this.characters = ListOf<<FontCharacter>>[existing.characters.count]
+      forEach (index of existing.characters)
+        this.characters[index] = duplicate(existing.characters[index])
+      endForEach
+      this.style = existing.style
+      this.force_integer_coordinates = existing.force_integer_coordinates
+      this.status = existing.status
+      this.mapping = existing.mapping
+      this.width_adjustment = existing.width_adjustment
+
+    method create_duplicate.Font:
+      return Font(this)
+
+    method height.Real64:
+      # Height property-get.  Returns the original pixel height
+      # times the y-scale value.
+      return &height * scale.y
+
+    method draw( String st, Real64 x, Real64 y ):
+      # Draws the given string of characters to the screen with the
+      # top-left corner of the first character at the given position.
+      draw( st, Vector2(x,y) )
+
+    method draw( String st, Vector2 pos ):
+      # Draws the given string of characters to the screen with the
+      # top-left corner of the first character at the given position.
+      local Vector2 line_advance( 0, height )
+      local Int32 num_lines = 1
+      local var   prior_is_cr = false
+
+      forEach (ch in st)
+        if (prior_is_cr) num_lines++; prior_is_cr = false
+        if (ch == '\n') prior_is_cr = true
+      endForEach
+
+      forEach (line in LineReader(st))
+        local var offset = &handle.adjusted_for_size(Vector2(text_width_of(line),height*num_lines)).offset
+        if (force_integer_coordinates) draw_line( line, (pos - offset).floor )
+        else                           draw_line( line, (pos - offset) )
+        pos += line_advance
+      endForEach
+
+    method draw( String st, Vector2 pos, Degrees angle):
+      # Draws the given string of characters to the screen with the
+      # top-left corner of the first character at the given position.
+      local Vector2 line_advance( 0, height )
+      local Int32 num_lines = 1
+      local var   prior_is_cr = false
+
+      forEach (ch in st)
+        if (prior_is_cr) num_lines++; prior_is_cr = false
+        if (ch == '\n') prior_is_cr = true
+      endForEach
+
+      forEach (line in LineReader(st))
+        local var offset = &handle.adjusted_for_size(Vector2(text_width_of(line),height*num_lines)).offset
+        if (force_integer_coordinates) draw_line_with_angle( line, (pos - offset).floor, angle )
+        else                           draw_line_with_angle( line, (pos), angle )
+        pos += line_advance
+      endForEach
+
+    method draw( String st, Box box ):
+      # Draws the given string in the box at a positon corresponding to
+      # the font handle.  For example, if the handle is Handle.center,
+      # the text is drawn in the center of the box.
+      local Vector2 pos
+      which (&handle.relative_position)
+        case Handle.absolute:      draw( st, box.position - &handle.offset )
+        case Handle.top_left:      draw( st, box.top_left )
+        case Handle.top_right:     draw( st, box.top_right )
+        case Handle.bottom_left:   draw( st, box.bottom_left )
+        case Handle.bottom_right:  draw( st, box.bottom_right )
+        case Handle.left_center:   draw( st, box.top_left + Vector2(0,box.size.y/2) )
+        case Handle.right_center:  draw( st, box.top_right + Vector2(0,box.size.y/2) )
+        case Handle.top_center:    draw( st, box.top_left + Vector2(box.size.x/2,0) )
+        case Handle.bottom_center: draw( st, box.bottom_left + Vector2(box.size.x/2,0) )
+        case Handle.center:        draw( st, box.center )
+        others: throw InvalidOperandError()
+      endWhich
+
+    method draw( String st, Box box, Degrees angle):
+      # Draws the given string in the box at a positon corresponding to
+      # the font handle.  For example, if the handle is Handle.center,
+      # the text is drawn in the center of the box.
+      local Vector2 pos
+      which (&handle.relative_position)
+        case Handle.absolute:      draw( st, box.position - &handle.offset, angle )
+        case Handle.top_left:      draw( st, box.top_left, angle )
+        case Handle.top_right:     draw( st, box.top_right, angle )
+        case Handle.bottom_left:   draw( st, box.bottom_left, angle )
+        case Handle.bottom_right:  draw( st, box.bottom_right, angle )
+        case Handle.left_center:   draw( st, box.top_left + Vector2(0,box.size.y/2), angle )
+        case Handle.right_center:  draw( st, box.top_right + Vector2(0,box.size.y/2), angle )
+        case Handle.top_center:    draw( st, box.top_left + Vector2(box.size.x/2,0), angle )
+        case Handle.bottom_center: draw( st, box.bottom_left + Vector2(box.size.x/2,0), angle )
+        case Handle.center:        draw( st, box.center, angle )
+        others: throw InvalidOperandError()
+      endWhich
+
+    method draw_line( String st, Vector2 pos ):
+      # Internal use.  Draws a single line of text with its top-left
+      # corner at position 'pos'.
+      if (status? and status.lost)
+        status.loader.load(this)
+      endIf
+
+      local var x = pos.x
+      local var y = pos.y
+      local var count = characters.count
+      forEach (ch in st)
+        ch %= count
+        local var letter = characters[ch]
+        if (letter?)
+          local Image img = letter.image
+          img.color = color
+          img.scale = scale
+          img.render_flags = render_flags
+          img.blend = blend
+          img.draw( Vector2(x,y) )
+          x += letter.width * scale.x
+        endIf
+      endForEach
+
+    method draw_line_with_angle( String st, Vector2 pos, Degrees angle ):
+      # Internal use.  Draws a single line of text with its top-left
+      # corner at position 'pos'.
+      if (status? and status.lost)
+        status.loader.load(this)
+      endIf
+
+      local var x = pos.x
+      local var y = pos.y
+      local var count = characters.count
+      forEach (ch in st)
+        ch %= count
+        local var letter = characters[ch]
+        if (letter?)
+          local Image img = letter.image
+          img.color = color
+          img.scale = scale
+          img.render_flags = render_flags
+          img.blend = blend
+          img.angle(angle)
+          img.handle = Handle.center
+          img.draw( Vector2(x,y) )
+          x += letter.width * scale.x
+        endIf
+      endForEach
+
+    method text_width_of( String text ).Real64:
+      # Returns the render width of 'text' in pixels, taking the
+      # current scale into account.
+      local Real64 total_width = 0.0
+      local var count = characters.count
+      forEach (ch in text)
+        ch %= count
+        local var letter = characters[ch]
+        if (letter?) total_width += letter.width
+      endForEach
+      return total_width * scale.x
+
+    method text_width_of( Char ch ).Real64:
+      # Returns the render width of 'ch' in pixels, taking the
+      # current scale into account.
+      local var letter = characters[ ch % characters.count ]
+      if (letter?) return letter.width * scale.x
+      else return 0.0
+      
+    method adjust_character_widths( width_adjustment ):
+      # Adjusts the logical widths of all the characters in this
+      # font.  A positive value will space characters further apart
+      # while a negative value will scoot them closer together.
+      local var amount = width_adjustment
+      forEach (ch in characters)
+        if (ch?)
+          ch.width += amount
+          if (ch.width < 0) ch.width = 0
+        endIf
+      endForEach
+
+    method word_wrap( String st, Int32 pixel_width ).String[]:
+      # Returns a word-wrapped version of this string as a list of lines.
+      # Existing newlines characters will cause a new line to begin
+      # immediately.  Spaces immediately following existing newline 
+      # characters are preserved.
+      local String[] lines()
+      local Int32 i1=0, i2=0
+      local Int32 len = st.count
+      local Real64 w = 0
+
+      if (st == "")
+        lines.add("")
+        return lines
+      endIf
+
+      while (i2 < len)
+
+        # find last space or first \n
+        while (w <= pixel_width and i2 < len and st[i2] != '\n')
+          local var char_w = text_width_of(st[i2])
+          w += char_w
+          i2++
+        endWhile
+
+        local var initial_i2 = i2
+
+        if (w > pixel_width)
+          --i2
+          while (st[i2]!=' ' and st[i2]!='\n' and i2>i1) i2--
+          if (i2 == i1) i2 = initial_i2 - 1
+        endIf
+
+        lines.add( st.substring(i1,i2-1) )
+        w = 0
+
+        if (i2 == len)
+          return lines
+        else
+          which (st[i2])
+            case ' ':
+              while (i2<len and st[i2]==' ') i2++
+              if (i2<len and st[i2]=='\n') i2++
+
+            case '\n':
+              i2++
+          endWhich
+          i1 = i2
+        endIf
+      endWhile
+
+      return lines
+
+endClass
+
+class FontBuilder
+  # Utility class used to load fonts; used by class Font for loading
+  # fonts with single font-strip images.  To load a font with a 
+  # series of font-strip images you can use this class directly.
+  #
+  # Example:
+  #   Say that "letters.png" contains 26 fixed-width letter images
+  #   and "numbers.png" contains 10 fixed-with number images.
+  #
+  #   PROPERTIES
+  #     my_font : Font
+  #   ...
+  #     local FontBuilder builder()
+  #     builder.load( "letters.png", String.create_from('A'..'Z') )
+  #     builder.load( "numbers.png", String.create_from('0'..'9') )
+  #     my_font = builder.to_Font
+  PROPERTIES
+    letters(128)  : HashTable<<Char,Bitmap>>
+    handles(128)  : HashTable<<Char,Vector2>>
+    letter_widths(128) : HashTable<<Char,Int32>>
+    max_unicode : Int32
+
+    max_width    : Int32
+    font_height  : Int32
+    style        : FontStyle
+
+  METHODS
+    method init( style=FontStyle.fixed_width ):
+      # Initializes an empty FontBuilder with the specified font style
+      # applying to future load() calls.
+
+    method init( String filename, style=FontStyle.fixed_width, 
+      String mapping=String.create_from(' '..'~') ):
+      # Initializes the FontBuilder to load the given font strip as
+      # its initial contents.
+      load( filename, mapping )
+
+    method init( Bitmap bitmap, style=FontStyle.fixed_width, 
+      String mapping=String.create_from(' '..'~') ):
+      # Initializes the FontBuilder to load the given font strip as
+      # its initial contents.
+      load( bitmap, mapping )
+
+    method load( String filename, String mapping=String.create_from(' '..'~') ):
+      # Adds the characters from the given font strip to this font.
+      load( Bitmap(filename), mapping )
+
+    method load( Bitmap src, String mapping ):
+      # Adds the characters from the given font strip to this font.
+      if (style.includes(FontStyle.fixed_width))
+        # fixed-width font strip
+        local Int32   pixel_width = src.width / mapping.count
+        local Vector2 pixel_size = Vector2( pixel_width, src.height )
+        font_height = src.height
+        local Vector2 src_pos
+        local Vector2 src_delta( pixel_width, 0 )
+        forEach (ch in mapping)
+          if (ch > max_unicode) max_unicode = ch
+          local Bitmap letter_bmp = Bitmap( src, src_pos, pixel_size )
+          letters[ch] = letter_bmp
+          letter_widths[ch] = pixel_size.x
+          if (pixel_size.x > max_width) max_width = pixel_size.x
+          handles[ch] = adjust_edges( ch, letter_bmp )
+          src_pos += src_delta
+        endForEach
+      else
+        # proportional font strip
+        local Int32 letter_start_x = 0
+        local Int32 letter_height = src.height - 1
+        font_height = letter_height
+        forEach (ch in mapping)
+          if (ch > max_unicode) max_unicode = ch
+          local Int32 letter_width = find_letter_width( src, letter_start_x )
+          local Bitmap letter_bmp = Bitmap( src, Vector2(letter_start_x,1), Vector2(letter_width,letter_height) )
+          letters[ch] = letter_bmp
+          letter_widths[ch] = letter_width
+          handles[ch] = adjust_edges( ch, letter_bmp )
+          letter_start_x += letter_width
+        endForEach
+      endIf
+
+    method find_letter_width( Bitmap bmp, Int32 letter_start_x ).Int32:
+      # Internal use.
+      local var start_color = bmp.data[ letter_start_x ]
+      forEach (x in letter_start_x+1..bmp.width)
+        if (bmp.data[x] != start_color) return (x - letter_start_x)
+      endForEach
+      return bmp.width - letter_start_x
+
+    method adjust_edges( Char ch, Bitmap letter_bmp ).Vector2:
+      # Internal use.
+      local Vector2 handle(0,0)
+      local Box used_region = letter_bmp.non_transparent_region
+      handle = -used_region.position
+      letter_bmp.set( Bitmap( letter_bmp, used_region ) )
+      if (not style.includes(FontStyle.point_filter))
+        letter_bmp.add_transparent_outline
+        return handle + 1
+      endIf
+      return handle
+
+    method to_Font.Font:
+      # Returns a Font containing all the characters that have been
+      # loaded by this FontBuilder.
+      local Font font( create_letter_map, font_height )
+      if (style.includes(FontStyle.snug)) font.adjust_character_widths( -1 )
+      return font
+
+    method create_letter_map.FontCharacter[]:
+      # Internal use.
+
+      local var font_map = ListOf<<FontCharacter>>[max_unicode+1]
+
+      if (max_width <= 256 and font_height <= 256)
+        # pack in the letters
+        local TileLayout<<LetterLayoutInfo>> layout_manager(Vector2(256,256))
+        local Int32 sheet_size = 256
+
+        local LetterLayoutInfo[] tiles( 256 )
+
+        forEach (ch in letters.keys) 
+          tiles.add( LetterLayoutInfo(letters[ch].size, ch) )
+        endForEach
+        local var num_sheets = layout_manager.layout( tiles )
+
+        # create the sheets
+        local Bitmap[] sheets( num_sheets )
+        forEach (index in 0..<num_sheets) sheets.add( Bitmap(sheet_size,sheet_size) )
+
+        # copy each letter to its appropriate spot
+        forEach (tile in tiles)
+          letters[tile.ch].draw_to( sheets[tile.sheet_index], tile.bounds.position, false )
+        endForEach
+
+        # create the font
+        local Image[] images( sheets.count )
+        forEach (bitmap in sheets) images.add( Image(bitmap) )
+        forEach (tile in tiles)
+          local Char ch = tile.ch
+          local Image img( images[tile.sheet_index], tile.bounds )
+          img.handle = handles[ch]
+          if (style.includes(FontStyle.point_filter)) 
+            img.render_flags |= Render.point_filter
+          else
+            img.render_flags &= !Render.point_filter
+          endIf
+          font_map[ch] = FontCharacter( img, letter_widths[ch] )
+        endForEach
+
+      else
+
+        forEach (ch in letters.keys) 
+          local Image img( letters[ch] )
+          img.handle = handles[ch]
+          if (style.includes(FontStyle.point_filter)) 
+            img.render_flags |= Render.point_filter
+          else
+            img.render_flags &= !Render.point_filter
+          endIf
+          font_map[ch] = FontCharacter( img, letter_widths[ch] )
+        endForEach
+
+      endIf
+
+      return font_map
+endClass
+
+
+class FontCharacter
+  # Internal use.  Specifies information about a single font character.
+  PROPERTIES
+    image : Image
+    width : Int32
+
+  METHODS
+    method init
+
+    method init( image, width )
+
+    method create_duplicate.FontCharacter
+      return FontCharacter( image, width )
+endClass
+
+
+#=====================================================================
+# TileLayoutInfo
+# 
+# For use with the TileLayout class.
+#=====================================================================
+class TileLayoutInfo
+  # Base class for all custom TileLayoutInfo variants.
+  PROPERTIES
+    index : Int32
+      # The order in which this TileInfo was fit onto a sheet as set
+      # by TileLayout::layout().  All the TileInfo objects on a 
+      # specific sheet will have a contiguous sequence of index 
+      # values.  This is set by TileLayout.layout().
+
+    sheet_index : Int32
+      # The sheet index (0+) this TileInfo was fit onto.
+
+    priority : Int32
+      # Higher-priority tiles are always layed out before 
+      # lower-priority tiles.
+
+    bounds : Box
+      # The position and size of this tile on its sheet.
+
+  METHODS
+    method init( Vector2 _size ):
+      bounds = Box( _size )
+
+    method size.Vector2:
+      # Size property-get.
+      return bounds.size
+
+    method position( Vector2 pos ):
+      # Position property-get.
+      bounds = Box(pos,bounds.size)
+endClass
+
+class LetterLayoutInfo : TileLayoutInfo
+  # A customized TileLayoutInfo variant that can have up to three
+  # types of user-defined data associated with each object.
+  PROPERTIES
+    ch : Char
+
+  METHODS
+    method init( Vector2 _size, ch ):
+      prior.init(_size)
+endClass
+
+
+#=====================================================================
+# TileLayout
+#=====================================================================
+class TileLayout<<$TileLayoutInfoType>>
+  # Packs a series of rectangles (usually taken from images) into 
+  # a number of logical sheets of a specified size.
+  #
+  # Used by the font loading system in particular.
+  PROPERTIES
+    sheet_size : Vector2
+
+    # About: The next index to assign to a image as it's laid out.
+    next_index : Int32
+
+    tiles          : $TileLayoutInfoType[]
+    tiles_by_index : $TileLayoutInfoType[]
+
+  METHODS
+    method init( sheet_size ):
+      # Creates a layout that will create sheets of the given width
+      # and height.  Pass 0 for either to have that dimension extend
+      # indefinitely.
+      if (sheet_size.x == 0) sheet_size = Vector2( 1000000, sheet_size.y )
+      if (sheet_size.y == 0) sheet_size = Vector2( sheet_size.x, 1000000 )
+
+    method layout( tiles, tiles_by_index=null ).Int32:
+      # Lays out each given tile, stores its position info in
+      # the TileInfo object, and returns the number of sheets created.
+      #  
+      # Parameters:
+      #   tiles
+      #     A list containing a TileInfo object for each box to 
+      #     be laid out.  When this method is over, the index and 
+      #     sheet_number/x/y of each TileInfo will be set.
+      #
+      #   by_index
+      #     A reference to an existing but empty list to be filled by 
+      #     a copy of the original TileInfo objects put into index 
+      #     order.  This can make it easier to create lookup tables.
+      #     All the tiles on a given sheet have a 
+      #     monotonically-increasing set of indices.
+
+      # create a duplicate set of tiles for sorting
+      local $TileLayoutInfoType[] work_list()
+
+      if (tiles_by_index is null) tiles_by_index = ListOf<<$TileLayoutInfoType>>[tiles.count]
+      # add each tile to the work list
+      forEach (tile in tiles)
+        if (tile.size.x > sheet_size.x or tile.size.y > sheet_size.y)
+          return 0  # won't fit
+        endIf
+        work_list.add( tile )
+      endForEach
+
+      # sort the tiles into order based on area first, then height, then width
+      # (largest area is at front of list)
+      forEach (pass in 1..<work_list.count)
+        local Logical is_sorted = true
+
+        forEach (i in 0..<(work_list.count-pass))
+          local var cur  = work_list[i]
+          local var next = work_list[i+1]
+          contingent
+            local var x = cur.size.x
+            local var y = cur.size.y
+            local var cur_mag = (x*y) * (min(x,y) / max(x,y))
+            x = next.size.x
+            y = next.size.y
+            local var next_mag = (x*y) * (min(x,y) / max(x,y))
+            sufficient (cur_mag < next_mag)
+            necessary  (cur_mag == next_mag)
+            sufficient (cur.size.y < next.size.y)
+            necessary  (cur.size.y == next.size.y)
+            necessary  (cur.size.x < next.size.x)
+          satisfied
+            is_sorted = false
+            work_list[i] = next
+            work_list[i+1] = cur
+          endContingent
+        endForEach
+
+        if (is_sorted) escapeForEach
+      endForEach
+
+      # Reassign list of sorted tiles as "tiles" list.  Note that
+      # caller's original list of tiles is unchanged.
+      tiles = work_list
+
+      # Perform the layout.
+      next_index = 0
+      local Int32 cur_sheet = 0
+      while (tiles.count > 0) layout_sheet( cur_sheet ); cur_sheet++
+      return cur_sheet
+
+    
+    method layout_sheet( Int32 sheet ):
+      # Lays out as many tiles on the given logical sheet (0+) as it 
+      # can before returning.  Each TileInfo object is removed from 
+      # the list once processed.
+      fill( sheet, 0, 0, sheet_size.x, sheet_size.y )
+
+    method fill( Int32 sheet, Int32 x, Int32 y, Int32 w, Int32 h ):
+      forEach (i of tiles)
+        local var tile = tiles[i]
+
+        # find the first tile that'll fit
+        if (tile.size.x <= w and tile.size.y <= h)
+          # Position image
+          tile.index = next_index
+          next_index++
+          tile.sheet_index = sheet
+          tile.position = Vector2(x,y)
+          tiles_by_index.add( tile )
+          tiles.remove(i)
+
+          # Recurse
+          if (tile.size.x >= tile.size.y)
+            # wider than high
+            if (tile.size.x < w)
+              fill( sheet, x+tile.size.x, y, w-tile.size.x, tile.size.y )
+            endIf
+            if (tile.size.y < h)
+              fill( sheet, x, y+tile.size.y, w, h-tile.size.y )
+            endIf
+          else
+            # higher than wide
+            if (tile.size.x < w)
+              fill( sheet, x+tile.size.x, y, w-tile.size.x, h )
+            endIf
+            if (tile.size.y < h)
+              fill( sheet, x, y+tile.size.y, tile.size.x, h-tile.size.y )
+            endIf
+          endIf
+
+          return
+         
+        endIf
+      endForEach
+
+    method cut_out( Box cutter, Box region ):
+      if (region.x1 < cutter.x1)
+        # left
+        work_regions.add( Box(region.x1,region.y1,cutter.x1-region.x1,region.height) )
+      endIf
+
+      if (region.x2 > cutter.x2)
+        # right
+        work_regions.add( Box(cutter.x2,region.y1,region.x2-cutter.x2,region.height) )
+      endIf
+
+      if (region.y1 < cutter.y1)
+        # top
+        work_regions.add( Box(region.x1,region.y1,region.width,cutter.y1-region.y1) )
+      endIf
+
+      if (region.y2 > cutter.y2)
+        # bottom
+        work_regions.add( Box(region.x1,cutter.y2,region.width,region.y2-cutter.y2) )
+      endIf
+
+      #{
+    method fill_area( Int32 sheet, Int32 x, Int32 y, Int32 width, 
+        Int32 height ):
+      if (width <= 0 or height <= 0) return 0
+
+      # Find the biggest tile that will fit in this area.
+      forEach (i of tiles)
+        local var tile = tiles[i]
+        if (tile.size.x <= width and tile.size.y <= height)
+          tile.index = next_index
+          next_index++
+          tile.sheet_index = sheet
+          tile.position = Vector2(x,y)
+          tiles_by_index.add( tiles.remove(i) )
+
+          # recursively process the rest of the space
+
+          # In the row underneath this row
+          local Int32 lower_w = fill_area( sheet, x, y+tile.size.y, width, 
+              height-tile.size.y )
+
+          if (lower_w <= tile.size.x)
+            return Int32( tile.size.x + fill_area( sheet, x+tile.size.x, y, 
+                width-tile.size.x, height ) )
+
+          else
+            # Add on tiles to this row until its longer than the one
+            # below me or I run out of room.
+            local Int32 upper_w = tile.size.x
+            local Int32 extent = 0
+            while (upper_w < lower_w and upper_w+extent <= width)
+              local Int32 add_w = fill_area( sheet, x+upper_w, y, extent, tile.size.y )
+              if (add_w == 0) 
+                extent++
+                if (tiles.count == 0) return lower_w
+              else
+                upper_w += add_w
+                extent -= add_w
+              endIf
+            endWhile
+
+            # fill the entire area after the top and bottom row
+            if (upper_w < lower_w) upper_w = lower_w
+            return upper_w + fill_area( sheet, x+upper_w, y, width-upper_w, height )
+          endIf
+        endIf
+      endForEach
+
+      return 0
+      }#
+
+endClass
+
+#=====================================================================
+# SystemFont
+#=====================================================================
+deferred singleton class SystemFont : Font
+  # A monospaced, 17 pixel-high font.
+  METHODS
+    method init:
+      load
+
+    method init( Font existing ):
+      prior.init(existing)
+
+    method create_duplicate.SystemFont:
+      return SystemFont(this)
+
+    method load:
+      try
+        local Font src( Bitmap("internal:font_system_17") )
+        src.adjust_character_widths( -1 )
+        height = src.height
+        color  = src.color
+        scale  = src.scale
+        characters = src.characters
+      catch (FileError err)
+        System.exit_program( 1, "Failed to load image font_system_17" )
+      endTry
+endClass
+

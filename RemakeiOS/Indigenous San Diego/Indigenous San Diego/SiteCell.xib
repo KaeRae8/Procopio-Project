@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="9532" systemVersion="15D21" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES">
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="9530"/>
+    </dependencies>
+    <objects>
+        <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner"/>
+        <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
+        <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" selectionStyle="none" indentationWidth="10" reuseIdentifier="cell" rowHeight="129" id="KGk-i7-Jjw" customClass="SiteCell" customModule="Indigenous_San_Diego" customModuleProvider="target">
+            <rect key="frame" x="0.0" y="0.0" width="320" height="129"/>
+            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+            <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="KGk-i7-Jjw" id="H2p-sc-9uM">
+                <rect key="frame" x="0.0" y="0.0" width="320" height="128.5"/>
+                <autoresizingMask key="autoresizingMask"/>
+                <subviews>
+                    <imageView userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="iVQ-x2-uUM">
+                        <rect key="frame" x="0.0" y="0.0" width="320" height="129"/>
+                    </imageView>
+                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Label" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="3" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="gDg-N3-Ny6">
+                        <rect key="frame" x="0.0" y="0.0" width="320" height="128.5"/>
+                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
+                        <fontDescription key="fontDescription" type="system" weight="heavy" pointSize="20"/>
+                        <color key="textColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                        <nil key="highlightedColor"/>
+                    </label>
+                </subviews>
+                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
+                <constraints>
+                    <constraint firstItem="iVQ-x2-uUM" firstAttribute="top" secondItem="H2p-sc-9uM" secondAttribute="top" id="B9R-Sj-sMx"/>
+                    <constraint firstAttribute="bottom" secondItem="iVQ-x2-uUM" secondAttribute="bottom" id="KM8-fn-3Wp"/>
+                    <constraint firstAttribute="bottom" secondItem="gDg-N3-Ny6" secondAttribute="bottom" id="SRM-3Q-i0k"/>
+                    <constraint firstItem="gDg-N3-Ny6" firstAttribute="leading" secondItem="H2p-sc-9uM" secondAttribute="leading" id="Xj5-5C-DVI"/>
+                    <constraint firstAttribute="trailing" secondItem="iVQ-x2-uUM" secondAttribute="trailing" id="dEy-rQ-ewX"/>
+                    <constraint firstItem="gDg-N3-Ny6" firstAttribute="top" secondItem="H2p-sc-9uM" secondAttribute="top" id="gLr-nN-zJr"/>
+                    <constraint firstItem="iVQ-x2-uUM" firstAttribute="leading" secondItem="H2p-sc-9uM" secondAttribute="leading" id="hNQ-sp-8aA"/>
+                    <constraint firstAttribute="trailing" secondItem="gDg-N3-Ny6" secondAttribute="trailing" id="w7z-ga-5dk"/>
+                </constraints>
+            </tableViewCellContentView>
+            <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
+            <connections>
+                <outlet property="bottomConstraint" destination="KM8-fn-3Wp" id="hkV-Sl-ea9"/>
+                <outlet property="cellImg" destination="iVQ-x2-uUM" id="k7V-bf-3Za"/>
+                <outlet property="title" destination="gDg-N3-Ny6" id="gOU-h0-csF"/>
+                <outlet property="topConstraint" destination="B9R-Sj-sMx" id="4tE-Co-mL7"/>
+            </connections>
+            <point key="canvasLocation" x="387" y="505.5"/>
+        </tableViewCell>
+    </objects>
+</document>

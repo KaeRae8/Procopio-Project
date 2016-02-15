@@ -1,0 +1,262 @@
+#=====================================================================
+# sound.slag
+#
+# 3.5.0 (2011.06.18)
+#
+# --------------------------------------------------------------------
+#
+# Copyright 2008-2011 Plasmaworks LLC
+#
+#   http://plasmaworks.com/plasmacore
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); 
+# you may not use this file except in compliance with the License. 
+# You may obtain a copy of the License at 
+#
+#   http://www.apache.org/licenses/LICENSE-2.0 
+#
+# Unless required by applicable law or agreed to in writing, 
+# software distributed under the License is distributed on an 
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, 
+# either express or implied. See the License for the specific 
+# language governing permissions and limitations under the License.
+#
+#=====================================================================
+
+requisite class NativeSound
+  # Wrapper class for a native-layer sound effect.  Sound objects
+  # don't contain the actual sound data, but instead store an index 
+  # that the native layer uses to identify sounds.
+  PROPERTIES
+    native_data : NativeData
+      # Internal use.
+
+  METHODS
+    method init( String filename ): native
+
+    method init( NativeSound existing ):
+      local var dup = duplicate( existing )
+      native_data = dup.native_data
+      dup.native_data = null
+
+    requisite method init( Byte[] raw_bytes ): native
+
+    method create_duplicate.NativeSound: native
+      # Creates a duplicate of an existing sound that may be played,
+      # paused, etc. separate from the original.  On Windows and Mac 
+      # the actual sample data is shared between the two to make this 
+      # a low-overhead action, but on iPhone the data is duplicated
+      # each time.
+
+    method play:  native
+    method pause: native
+
+    method is_playing.Logical: native
+    method volume( Real64 new_volume ): native
+    method pan( Real64 speaker_pan ):   native
+    method pitch( Real64 new_pitch ):   native
+    method repeats( Logical setting ):  native
+    method current_time().Real64:       native
+    method current_time( Real64 new_time ): native
+    method duration.Real64: native
+
+    method release:
+      # Releases the memory used by the associated native sound data 
+      # in the hardware layer.  If this sound is the original of a 
+      # concurrent sound set, all the associated concurrent sound 
+      # duplicates are released as well.  May be called manually, but 
+      # is also automatically called when this object has no more 
+      # references.
+      if (native_data?)
+        pause
+        native_data.release
+        native_data = null
+      endIf
+endClass
+
+requisite class Sound
+  # Manages a sound with a number of simultaneous channels.
+  #
+  # Example:
+  #   bell_sound : Sound
+  #   ...
+  #   bell_sound = Sound( "bell", 3 )  # play up to three times simultaneously
+  #   ...
+  #   bell_sound.play
+
+  PROPERTIES
+    channels : NativeSound[]
+
+    volume=1.0 : Real64
+      # Per-sound volume setting that is multiplied by the sound group's
+      # master volume to determine the final volume.
+
+    pan=0.0 : Real64
+      # 0.0 [default] plays on both speakers
+      # -1.0 plays on left speaker only.
+      # 1.0 plays on right speaker only.
+      #
+      # Notes:
+      # - Adjusting the pan has no effect on the iPhone.
+
+    pitch=1.0 : Real64
+      # Valid values are 0.5 (half pitch) .. 2.0 (double pitch).
+      #
+      # Notes:
+      # - Adjusting the pitch has no effect on the iPhone.
+
+    repeats : Logical
+
+    #group    : SoundGroup
+      # The sound group that this sound belongs to.  Set to
+      # 'default_group' when the sound is created.
+
+  METHODS
+    method init( String filename, Int32 num_channels=1, Logical unused=false ):
+      # Loads a sound from the given file.  Sounds may be in WAV, OGG, FLAC,
+      # MOD, or AIFF formats.
+      #
+      # Parameters:
+      #   filename
+      #     The file to be loaded.
+      #
+      #     The following variations of 'filename' are checked:
+      #
+      #       filename
+      #       filename.ext  (.ext = [.ogg|.wav|.flac|.mod|.aiff])
+      #       data/filename
+      #       data/filename.ext
+      #
+      #   num_channels
+      #     How many duplicates of this sound can be independently playing
+      #     (default: 1).  On Mac and Windows, duplicates are low overhead 
+      #     because they share the same sample data.  On iPhone every
+      #     additional channel loads a duplicate copy of the sound data.
+      init( NativeSound(filename), num_channels )
+
+    method init( NativeSound snd, Int32 num_channels=1 ):
+[if defined(ANDROID) or defined(WP7)] 
+        # android sound starts screwing up with any file playing more than once
+        num_channels = 1 
+[endIf]
+      channels = NativeSound[](num_channels)
+      channels.add( snd )
+      forEach (2..num_channels) 
+        channels.add( NativeSound(channels.first) )
+      endForEach
+
+      #group = default_group
+      #if (group?) group.add( this )
+      volume = volume # reset the volume to incorporate master volume
+
+    method play:
+      # If this sound has any paused channels those are resumed.
+      # Otherwise if there is an unused channel, the sound is played
+      # on that channel.
+
+      local var found_paused = false
+      forEach (channel in channels)
+        if (not channel.is_playing and channel.current_time > 0) 
+          channel.play
+          found_paused = true
+        endIf
+      endForEach
+
+      if (found_paused) return
+
+      forEach (channel in channels)
+        if (not channel.is_playing and channel.current_time == 0) 
+          channel.play
+          return
+        endIf
+      endForEach
+
+    method pause:
+      # Pauses playback of this sound on all active channels.  
+      # The playback can be resumed with play().
+      forEach (channel in channels) channel.pause
+
+    method stop:
+      # Stops playback of this sound on all active channels.  
+      pause
+      current_time = Real64(0)
+
+    method duration.Real64:
+      # Returns the duration of this sound.
+      return channels.first.duration
+
+    method is_playing.Logical:
+      # Returns "true" if this sound is currently playing any number of
+      # channels or false if all channels are finished or paused.
+      forEach (channel in channels)
+        if (channel.is_playing) return true
+      endForEach
+      return false
+
+    method is_paused.Logical:
+      # Returns "true" if this sound has any paused channels.
+      forEach (channel in channels)
+        if (not channel.is_playing and channel.current_time > 0) return true
+      endForEach
+      return false
+
+    method volume( Real64 new_volume ):
+      # 'volume' property-set.
+      #
+      # No effect on iPhone.
+      &volume = new_volume
+      forEach (channel in channels)
+        channel.volume = new_volume
+      endForEach
+
+    method pan( Real64 speaker_pan ):
+      # 'pan' property-set.  -1.0=left speaker only, 1.0=right speaker only,
+      # 0.0=both speakers.
+      #
+      # No effect on iPhone.
+      &pan = speaker_pan
+      forEach (channel in channels)
+        channel.pan = speaker_pan
+      endForEach
+
+    method pitch( Real64 new_pitch ):
+      # 'pitch' property-set.  Valid values range from 0.5 to 2.0.
+      #
+      # No effect on iPhone.
+      &pitch = new_pitch
+      forEach (channel in channels)
+        channel.pitch = new_pitch
+      endForEach
+
+    method repeats( Logical setting ):
+      # 'repeats' property-set.
+      &repeats = setting
+      forEach (channel in channels)
+        channel.repeats = setting
+      endForEach
+
+    method current_time.Real64:
+      # Returns the current playback position of the sound on
+      # the first channel in seconds.
+      #
+      # No effect on iPhone.
+      return channels.first.current_time
+
+    method current_time( Real64 new_time ):
+      # Resets the current playback position of all channels to the given time
+      # in seconds.
+      #
+      # No effect on iPhone.
+      forEach (channel in channels)
+        channel.current_time = new_time
+      endForEach
+
+    method release:
+      # Releases the memory used by the associated native sound data 
+      # in the hardware layer.
+      forEach (channel in channels)
+        channel.release
+      endForEach
+      channels.clear
+endClass
+

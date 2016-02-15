@@ -1,0 +1,12 @@
+singleton class ObjC
+native method showDialog()
+native method showSpinner()
+native method removeSpinner()
+native method openSite(Int32 site)
+native method showBlurBox(Real64 height)
+native method addSiteForCategory(String cat, String name, Real64 lat, Real64 lon, String website)
+native method exploreAction(Int32 cat, Int32 index)
+native method loadExpansionBitmapData(String fName).Array<<Int32>>
+native method fileExisted(String fName).Int32
+native method subMenuView(String name)
+endClass

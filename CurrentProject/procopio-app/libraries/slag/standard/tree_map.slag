@@ -1,0 +1,556 @@
+#=====================================================================
+# tree_map.slag
+#
+# Slag Standard Library
+# v3.5.0 (2011.06.18)
+#
+# Uses a red-black tree to maintain an ordered map.  Can be used
+# instead of a HashTable for relational elements (implementing op<>).
+#
+# Primary classes:
+#   TreeMap<<$ElementType>>
+#
+# Example:
+#   [include "tree_map.slag"]
+#   ...
+#   local TreeMap<<Int32,String>> letters()
+#   letters[3] = "third"
+#   letters[1] = "first"
+#   letters[2] = "second"
+#   println( letters )
+#     # Prints: {1:first,2:second,3:third}
+# 
+# --------------------------------------------------------------------
+#
+# Copyright 2010 Plasmaworks LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); 
+# you may not use this file except in compliance with the License. 
+# You may obtain a copy of the License at 
+#
+#   http://www.apache.org/licenses/LICENSE-2.0 
+#
+# Unless required by applicable law or agreed to in writing, 
+# software distributed under the License is distributed on an 
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, 
+# either express or implied. See the License for the specific 
+# language governing permissions and limitations under the License.
+#
+#=====================================================================
+class TreeMap<<$KeyType,$ValueType>> : Readable<<$ValueType>>
+  # Provides a red-black tree structure capable of holding values mapped to unique keys.
+  # Unlike a HashTable, a TreeMap stores its values in order.
+  #
+  # Adapted from Corman, Leiserson, and Rivest's "Introduction to Algorithms."
+  #
+  # Example:
+  #   local TreeMap<<Int32,Int32>> my_tree()
+  #   my_tree.put(5,10)
+  #   my_tree.put(18,11)
+  #   my_tree.put(7,10)
+  #   local Int32 recall=my_tree.get(18)  # recall will be assigned the value 11
+  #   forEach(val in my_tree)
+  #     print("$ " (val))
+  #   endForEach
+  #   #prints "10 10 11 ", the iterator returns the values ordered by their respective keys in ascending order
+  #
+  # Primary methods:
+  #   find(key).TreeNode    - returns an actual tree node object, value is in node.value
+  #   contains(key).Logical - tests if the tree contains key in log(n) time
+  #   remove(key)           - removes the value mapped to key in log(n) time
+  #   count.Int32           - returns the number of elements in the tree in constant time
+  #   print                 - prints the tree via println in human readable format in O(n) time
+  #   clear                 - clears the tree int constant time
+  CLASS_PROPERTIES
+    BLACK=1     : Int32
+    RED=0       : Int32
+    nil         : TreeNode<<$KeyType,$ValueType>>
+
+  PROPERTIES
+    private root      : TreeNode<<$KeyType,$ValueType>>
+    private counter=0 : Int32
+
+  METHODS
+    method init:
+      # Must organize it like this to let extended TreeMaps be singletons.
+      if (nil is null) 
+        BLACK = 1
+        RED   = 0
+        nil = TreeNode<<$KeyType,$ValueType>>()
+      endIf
+      root = nil
+
+    method to_String.String:
+      return mappings.to_String
+
+    method create_reader.Reader<<$ValueType>>:
+      # Returns a reader that iterates through all of the values in this TreeMap.
+      #
+      # Example:
+      #   forEach (value in map) println(value)
+      return values
+
+    method keys.Reader<<$KeyType>>:
+      # Returns a reader that iterates through all of the keys in this TreeMap.
+      #
+      # Example:
+      #   forEach (key in map.keys) println(key)
+      return TreeMapKeyReader<<$KeyType,$ValueType>>( root )
+
+    method values.Reader<<$ValueType>>:
+      # Returns a reader that iterates through all of the values in this TreeMap.
+      #
+      # Example:
+      #   forEach (value in map.values) println(value)
+      return TreeMapValueReader<<$KeyType,$ValueType>>( root )
+
+    method mappings.Reader<<Mapping<<$KeyType,$ValueType>>>>:
+      # Returns a reader that iterates through all of the mappings in this TreeMap.
+      #
+      # Example:
+      #   forEach (pair in map.mappings) println( "$ -> $" (pair.key,pair.value) )
+      return TreeMapMappingReader<<$KeyType,$ValueType>>(root)
+
+    method clear:
+      # Removes all mappings.
+      root=nil
+      counter=0
+
+    method count.Int32:
+      # Returns the number of elements in this map.
+      return counter
+
+    method max.$ValueType:
+      # Gets the value tied to the maximum key in log(n) time
+      local TreeNode<<$KeyType,$ValueType>> n = root
+      if(n is nil) throw NoSuchElementError()
+      while (not (n.right is nil))
+        n = n.right
+      endWhile
+      return n.value
+
+    method min.$ValueType:
+      # Gets the value tied to the minimum key in log(n) time.
+      local TreeNode<<$KeyType,$ValueType>> n = root
+      if(n is nil) throw NoSuchElementError()
+      while (not (n.left is nil))
+        n = n.left
+      endWhile
+      return n.value
+
+    method contains($KeyType key).Logical:
+      # Returns "true" if this map contains a mapping for the given key.
+      local TreeNode<<$KeyType,$ValueType>> n = get_node_internal(key)
+      return (n isNot nil)
+
+    method find($KeyType key).TreeNode<<$KeyType,$ValueType>>:
+      # Returns the Mapping (key-value pair) for the given key or null
+      # if it doesn't exist.
+      local TreeNode<<$KeyType,$ValueType>> n = get_node_internal(key)
+      if (n isNot nil)
+        return n
+      else
+        return null
+      endIf
+
+    method get( $KeyType key ).$ValueType:
+      # Returns the value mapped to key in log(n) time.
+      # Throws a NoSuchElementError if the value doesn't exist.
+      #
+      # Example:
+      #   local TreeMap<<String,Int32>> months()
+      #   months["October"] = 10
+      #   println( months["October"] )  # prints: 10
+      local TreeNode<<$KeyType,$ValueType>> n = get_node_internal(key)
+      if(n is nil) throw NoSuchElementError()
+      return n.value
+
+    method set( $KeyType key, $ValueType value ):
+      # Inserts a value, mapping it to a specific key in log(n) time.
+      #
+      # Example:
+      #   local TreeMap<<String,Int32>> months()
+      #   months["October"] = 10
+      #   println( months["October"] )  # prints: 10
+      local TreeNode<<$KeyType,$ValueType>> current = root
+      local TreeNode<<$KeyType,$ValueType>> parent = nil
+      local Int32 comparison=gt
+
+      # Find new node's parent.
+      while (current isNot nil)
+        parent = current
+        comparison=key<>current.key
+        which(comparison)
+          case lt:
+            current = current.left
+          case gt:
+            current = current.right
+          case eq: #Key already in tree
+            current.value = value
+            return
+        endWhich
+      endWhile
+
+      # Set up new node.
+      local var n = TreeNode<<$KeyType,$ValueType>>(key, value, RED)
+      n.parent = parent
+
+      # Insert node in tree.
+      counter++
+
+      if (parent is nil)
+        # Special case inserting into an empty tree.
+        root = n
+        return
+      endIf
+      if (comparison == gt)
+        parent.right = n
+      else
+        parent.left = n
+      endIf
+
+      # Rebalance after insert.
+      insert_fixup(n)
+
+    method remove($KeyType key).$ValueType:
+      local TreeNode<<$KeyType,$ValueType>> node = get_node_internal(key)
+      local $ValueType result
+      if(node is nil) return result #not in the tree
+      result = node.value
+
+      local TreeNode<<$KeyType,$ValueType>> splice
+      local TreeNode<<$KeyType,$ValueType>> child
+      counter--
+      if(node.left is nil)
+        splice=node
+        child=node.right
+      elseIf(node.right is nil)
+        splice=node
+        child=node.left
+      else
+        splice=node.left
+        while(not (splice.right is nil)) splice=splice.right #go to max
+        child=splice.left
+        node.key=splice.key
+        node.value=splice.value
+      endIf
+
+      #unlink splice from the tree
+      local TreeNode<<$KeyType,$ValueType>> parent=splice.parent
+      if(not (child is nil)) child.parent=parent
+
+      if(parent is nil)
+        root=child
+      else
+        if(splice is parent.left)
+          parent.left=child
+        else
+          parent.right=child
+        endIf
+
+        if(splice.color==BLACK)
+          delete_fixup(child,parent)
+        endIf
+      endIf
+
+      return result
+
+    method remove( Reader<<$KeyType>> reader ):
+      forEach (key in reader) remove(key)
+
+    private method insert_fixup(TreeNode<<$KeyType,$ValueType>> n):
+      # Only need to rebalance when parent is a RED node, and while at least
+      # 2 levels deep into the tree (ie: node has a grandparent). Remember
+      # that nil.color == BLACK.
+      while (n.parent.color == RED and (n.parent.parent isNot nil))
+        if (n.parent is n.parent.parent.left)
+          local var uncle = n.parent.parent.right
+          # Uncle may be nil, in which case it is BLACK.
+          if (uncle.color == RED)
+            # Case 1. Uncle is RED: Change colors of parent, uncle,
+            # and grandparent, and move n to grandparent.
+            n.parent.color = BLACK
+            uncle.color = BLACK
+            uncle.parent.color = RED
+            n = uncle.parent
+          else
+            if (n is n.parent.right)
+              # Case 2. Uncle is BLACK and x is right child.
+              # Move n to parent, and rotate n left.
+              n = n.parent
+              rotate_left(n)
+            endIf
+            # Case 3. Uncle is BLACK and x is left child.
+            # Recolor parent, grandparent, and rotate grandparent right.
+            n.parent.color = BLACK
+            n.parent.parent.color = RED
+            rotate_right(n.parent.parent)
+          endIf
+        else
+          # Mirror image of above code.
+          local TreeNode<<$KeyType,$ValueType>> uncle = n.parent.parent.left
+          # Uncle may be nil, in which case it is BLACK.
+          if (uncle.color == RED)
+            # Case 1. Uncle is RED: Change colors of parent, uncle,
+            # and grandparent, and move n to grandparent.
+            n.parent.color = BLACK
+            uncle.color = BLACK
+            uncle.parent.color = RED
+            n = uncle.parent
+          else
+            if (n is n.parent.left)
+              # Case 2. Uncle is BLACK and x is left child.
+              # Move n to parent, and rotate n right.
+              n = n.parent
+              rotate_right(n)
+            endIf
+            # Case 3. Uncle is BLACK and x is right child.
+            # Recolor parent, grandparent, and rotate grandparent left.
+            n.parent.color = BLACK
+            n.parent.parent.color = RED
+            rotate_left(n.parent.parent)
+          endIf
+        endIf
+      endWhile
+      root.color = BLACK
+
+    private method delete_fixup(TreeNode<<$KeyType,$ValueType>> node,TreeNode<<$KeyType,$ValueType>> parent):
+      while ((node isNot root) and node.color == BLACK)
+        if (node is parent.left)
+          # Rebalance left side.
+          local TreeNode<<$KeyType,$ValueType>> sibling = parent.right
+          if (sibling.color == RED)
+            # Case 1: Sibling is red.
+            # Recolor sibling and parent, and rotate parent left.
+            sibling.color = BLACK
+            parent.color = RED
+            rotate_left(parent)
+            sibling = parent.right
+          endIf
+          if (sibling.left.color == BLACK and sibling.right.color == BLACK)
+            # Case 2: Sibling has no red children.
+            # Recolor sibling, and move to parent.
+            sibling.color = RED
+            node = parent
+            parent = parent.parent
+          else
+            if (sibling.right.color == BLACK)
+              # Case 3: Sibling has red left child.
+              # Recolor sibling and left child, rotate sibling right.
+              sibling.left.color = BLACK
+              sibling.color = RED
+              rotate_right(sibling)
+              sibling = parent.right
+            endIf
+            # Case 4: Sibling has red right child. Recolor sibling,
+            # right child, and parent, and rotate parent left.
+            sibling.color = parent.color
+            parent.color = BLACK
+            sibling.right.color = BLACK
+            rotate_left(parent)
+            node = root # Finished.
+          endIf
+        else
+          # Symmetric "mirror" of left-side case.
+          local var sibling = parent.left
+          if (sibling.color == RED)
+            # Case 1: Sibling is red.
+            # Recolor sibling and parent, and rotate parent right.
+            sibling.color = BLACK
+            parent.color = RED
+            rotate_right(parent)
+            sibling = parent.left
+          endIf
+
+          if((sibling.right.color == BLACK) and (sibling.left.color == BLACK))
+            # Case 2: Sibling has no red children.
+            # Recolor sibling, and move to parent.
+            sibling.color = RED
+            node = parent
+            parent = parent.parent
+          else
+            if (sibling.left.color == BLACK)
+              # Case 3: Sibling has red right child.
+              # Recolor sibling and right child, rotate sibling left.
+              sibling.right.color = BLACK
+              sibling.color = RED
+              rotate_left(sibling)
+              sibling = parent.left
+            endIf
+            # Case 4: Sibling has red left child. Recolor sibling,
+            # left child, and parent, and rotate parent right.
+            sibling.color = parent.color
+            parent.color = BLACK
+            sibling.left.color = BLACK
+            rotate_right(parent)
+            node = root # Finished.
+          endIf
+        endIf
+      endWhile
+      node.color = BLACK
+
+    private method rotate_left(TreeNode<<$KeyType,$ValueType>> node): 
+      local TreeNode<<$KeyType,$ValueType>> child = node.right
+
+      # Establish node.right link.
+      node.right = child.left
+      if (not (child.left is nil)) child.left.parent = node
+
+      # Establish child->parent link.
+      child.parent = node.parent
+      if (not (node.parent is nil))
+        if (node is node.parent.left)
+          node.parent.left = child
+        else
+          node.parent.right = child
+        endIf
+      else
+        root = child
+      endIf
+
+      # Link n and child.
+      child.left = node
+      node.parent = child
+
+    private method rotate_right(TreeNode<<$KeyType,$ValueType>> node):
+      local TreeNode<<$KeyType,$ValueType>> child = node.left
+
+      # Establish node.left link.
+      node.left = child.right
+      if (not (child.right is nil)) child.right.parent = node
+
+      # Establish child->parent link.
+      child.parent = node.parent
+      if (not (node.parent is nil))
+        if (node is node.parent.right)
+          node.parent.right = child
+        else
+          node.parent.left = child
+        endIf
+      else
+        root = child
+      endIf
+
+      # Link n and child.
+      child.right = node
+      node.parent = child
+
+    private method get_node_internal($KeyType key).TreeNode<<$KeyType,$ValueType>>:
+      #internal method used by 'get' to get the rb node that maps to a key
+      local var n = root
+      while (n isNot nil)
+        which(key <> n.key)
+          case lt: n=n.left
+          case gt: n=n.right
+          case eq: return n
+        endWhich
+      endWhile
+      return n #this will be nil if it gets here
+
+endClass
+
+class TreeSet<<$DataType>> : Set<<$DataType>>, TreeMap<<$DataType,$DataType>>
+endClass
+
+
+#=====================================================================
+# TreeMap Readers
+#=====================================================================
+class TreeMapKeyReader<<$KeyType,$ValueType>> : Reader<<$KeyType>>
+  # Created by calling TreeMap::keys()
+  PROPERTIES
+    stack() : TreeNode<<$KeyType,$ValueType>>[]
+
+  METHODS
+    method init( TreeNode<<$KeyType,$ValueType>> root ):
+      if(not (root is TreeMap<<$KeyType,$ValueType>>.nil)) drill(root)
+
+    method has_another.Logical:
+      return (stack.count?)
+
+    method peek.$KeyType:
+      return stack.last.key
+
+    method read.$KeyType:
+      local TreeNode<<$KeyType,$ValueType>> tmp=stack.last
+      stack.remove_last
+      if(not (tmp.right is TreeMap<<$KeyType,$ValueType>>.nil)) drill(tmp.right) #populate the stack some more
+      return tmp.key
+
+    private method drill( TreeNode<<$KeyType,$ValueType>> n ):
+      stack.add(n)
+      if(not (n.left is TreeMap<<$KeyType,$ValueType>>.nil)) drill(n.left)
+endClass
+
+class TreeMapValueReader<<$KeyType,$ValueType>> : Reader<<$ValueType>>
+  # Created by calling TreeMap::values()
+  PROPERTIES
+    stack() : TreeNode<<$KeyType,$ValueType>>[]
+
+  METHODS
+    method init( TreeNode<<$KeyType,$ValueType>> root ):
+      if(not (root is TreeMap<<$KeyType,$ValueType>>.nil)) drill(root)
+
+    method has_another.Logical:
+      return (stack.count?)
+
+    method peek.$ValueType:
+      return stack.last.value
+
+    method read.$ValueType:
+      local var tmp=stack.last
+      stack.remove_last
+      if(not (tmp.right is TreeMap<<$KeyType,$ValueType>>.nil)) drill(tmp.right) #populate the stack some more
+      return tmp.value
+
+    private method drill( TreeNode<<$KeyType,$ValueType>> n ):
+      stack.add(n)
+      if(not (n.left is TreeMap<<$KeyType,$ValueType>>.nil)) drill(n.left)
+endClass
+
+class TreeMapMappingReader<<$KeyType,$ValueType>> : Reader<<Mapping<<$KeyType,$ValueType>>>>
+  # Created by calling TreeMap::mappings()
+  PROPERTIES
+    stack() : TreeNode<<$KeyType,$ValueType>>[]
+
+  METHODS
+    method init( TreeNode<<$KeyType,$ValueType>> root ):
+      if(not (root is TreeMap<<$KeyType,$ValueType>>.nil)) drill(root)
+
+    method has_another.Logical:
+      return (stack.count?)
+
+    method peek.Mapping<<$KeyType,$ValueType>>:
+      return stack.last
+
+    method read.Mapping<<$KeyType,$ValueType>>:
+      local var tmp=stack.last
+      stack.remove_last
+      if(not (tmp.right is TreeMap<<$KeyType,$ValueType>>.nil)) drill(tmp.right) #populate the stack some more
+      return tmp
+
+    private method drill( TreeNode<<$KeyType,$ValueType>> n ):
+      stack.add(n)
+      if(not (n.left is TreeMap<<$KeyType,$ValueType>>.nil)) drill(n.left)
+endClass
+
+class TreeNode<<$KeyType,$ValueType>> : Mapping<<$KeyType,$ValueType>>
+  PROPERTIES
+    left, right, parent : TreeNode<<$KeyType,$ValueType>>
+    color               : Int32
+
+  METHODS
+    method init:
+      #nil initializer
+      color=TreeMap<<$KeyType,$ValueType>>.BLACK
+      left=this 
+      right=this
+      parent=this
+
+    method init( key, value, color ):
+      left=TreeMap<<$KeyType,$ValueType>>.nil
+      right=TreeMap<<$KeyType,$ValueType>>.nil
+      parent=TreeMap<<$KeyType,$ValueType>>.nil
+
+endClass
+

@@ -1,0 +1,54 @@
+#==============================================================================
+# android.slag
+#
+# 3.5.0 (2011.06.18)
+#
+# Android-specific classes.
+#
+# -----------------------------------------------------------------------------
+#
+# Copyright 2008-2011 Plasmaworks LLC
+#
+#   http://plasmaworks.com/plasmacore
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); 
+# you may not use this file except in compliance with the License. 
+# You may obtain a copy of the License at 
+#
+#   http://www.apache.org/licenses/LICENSE-2.0 
+#
+# Unless required by applicable law or agreed to in writing, 
+# software distributed under the License is distributed on an 
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, 
+# either express or implied. See the License for the specific 
+# language governing permissions and limitations under the License.
+#
+#==============================================================================
+
+singleton class Android
+  # Contains Android-specific methods.  On non-Android platforms, methods can 
+  # be called but have no effect and/or a placeholder return value.
+  METHODS
+[if defined(ANDROID)]
+    method is_tablet.Logical:  native
+      # Returns true if this Android device is a tablet. The calculation is 
+      # based on having a physical screen size of at least 6". 
+
+    method memory_class.Int32: native
+      # Returns the per-program memory limit in megabytes.  Older Android
+      # devices return 16 and can't support many images, sounds, or
+      # instance of activity switching.
+[else]
+    method is_tablet.Logical
+      # Returns true if this Android device is a tablet. The calculation is 
+      # based on having a physical screen size of at least 6". 
+      return (Display.size.max >= 1024)
+
+    method memory_class.Int32
+      # Returns the per-program memory limit in megabytes.  Older Android
+      # devices return 16 and can't support many images, sounds, or
+      # instance of activity switching.
+      return 64
+[endIf]
+endClass
+

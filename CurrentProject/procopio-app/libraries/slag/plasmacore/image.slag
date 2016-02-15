@@ -1,0 +1,2555 @@
+#=====================================================================
+# image.slag
+#
+# 3.5.0 (2011.06.18)
+#
+# --------------------------------------------------------------------
+#
+# Copyright 2008-2011 Plasmaworks LLC
+#
+#   http://plasmaworks.com/plasmacore
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); 
+# you may not use this file except in compliance with the License. 
+# You may obtain a copy of the License at 
+#
+#   http://www.apache.org/licenses/LICENSE-2.0 
+#
+# Unless required by applicable law or agreed to in writing, 
+# software distributed under the License is distributed on an 
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, 
+# either express or implied. See the License for the specific 
+# language governing permissions and limitations under the License.
+#
+#=====================================================================
+
+[include "color.slag"]
+[include "shape.slag"]
+[include "transform.slag"]
+
+compound Blend( Int32 src_blend, Int32 dest_blend )
+
+singleton class BlendManager
+  PROPERTIES
+    # src and dest blending modes
+    zero               =  0 : Int32
+    one                =  1 : Int32
+    src_alpha          =  2 : Int32
+    inverse_src_alpha  =  3 : Int32
+    dest_alpha         =  4 : Int32
+    inverse_dest_alpha =  5 : Int32
+
+    # src only
+    dest_color         =  6 : Int32
+    inverse_dest_color =  7 : Int32
+    opaque             =  8 : Int32
+
+    # dest only
+    src_color          =  9 : Int32
+    inverse_src_color  = 10 : Int32
+
+    # predefined (src,dest) blending modes
+    normal( one, inverse_src_alpha ) : Blend
+      # Standard drawing with premultiplied alpha.
+
+    overexpose( one, one ) : Blend
+      # Specifies that an image should be drawn in "overexpose" mode,
+      # where color values are added to the destination rather
+      # than being blended with it.
+
+    modulate( src_alpha, inverse_src_alpha ) : Blend
+      # Use this for "regular" drawing with images that don't have
+      # premultiplied alpha (this is the default blend for OffscreenBuffer
+      # objects).
+
+    premultiplied( one, inverse_src_alpha ) : Blend
+      # Same as 'normal'.
+
+    additive( one, one ) : Blend
+      # Same as 'overexpose'.
+
+endClass
+
+
+compound Render( Int32 flags )
+
+singleton class RenderManager
+  # Render constants that can be passed to many of the drawing 
+  # methods and stored with Images as "render_flags".
+  PROPERTIES
+    default = Render(0) : Render
+      # Default render flags
+
+    point_filter = Render(0b00000001) : Render
+      # Specifies that an image should be drawn using point filtering
+      # (no smoothing).  An image without the point_filter flag will
+      # be drawn with linear filtering (smoothing).  
+      #
+      # Images have 'point_filter' and 'linear_filter' convenience 
+      # methods that access this flag.
+
+    tile_mode = Render(0b00000010) : Render
+      # Specifies that the image should be drawn as an orthogonal, opaque 
+      # tile that ignores color and blending modes (texture wrap/clamp
+      # and filter Render flags are still supported).  Provides much
+      # faster drawing on cell phones than normal drawing.
+
+    fixed_color = Render(0b00000100) : Render
+      # Specifies that an image should be drawn with its normal alpha
+      # but using a constant color (specified by the image's 'color'
+      # property).  Good for silhouette effects.
+      #
+      # Images have 'fixed_color' convenience methods that access this flag.
+
+    texture_wrap = Render(0b00001000) : Render
+      # When an image's UV texture coordinates are adjusted to be
+      # larger than actual texture, this flag causes the texture
+      # to wrap.  For example, setting the UV coordinates to (0,0),
+      # (3,2) would cause an image to tile 3 times horizontally and
+      # 2 times vertically within its normal image area when it's
+      # drawn.  The absence of texture_wrap indicates texture clamp
+      # (the image default).
+      #
+      # Images have 'texture_wrap' convenience methods that access this flag.
+
+    opaque = Render(0b00010000) : Render
+      # Disables alpha blending when drawing.
+      #
+      # Images have 'opaque' convenience methods that access this flag.
+
+  METHODS
+    method op|( Render r1, Render r2 ).Render:
+      return Render( r1.flags | r2.flags )
+
+    method op|( Render r1, Int32 flags ).Render:
+      return Render( r1.flags | flags )
+
+    method op|( Int32 flags, Render r2 ).Render:
+      return Render( flags | r2.flags )
+
+    method op+( Render r1, Render r2 ).Render:
+      return Render( r1.flags + r2.flags )
+
+    method op+( Render r1, Int32 flags ).Render:
+      return Render( r1.flags + flags )
+
+    method op+( Int32 flags, Render r2 ).Render:
+      return Render( flags + r2.flags )
+
+    method op&( Render r1, Render r2 ).Render:
+      return Render( r1.flags & r2.flags )
+
+    method op&( Render r1, Int32 flags ).Render:
+      return Render( r1.flags & flags )
+
+    method op&( Int32 flags, Render r2 ).Render:
+      return Render( flags & r2.flags )
+
+    method op!( Render r ).Render:
+      return Render( !r.flags )
+
+    method includes( Render r, Render other ).Logical:
+      return (r.flags & other.flags) != 0
+
+endClass
+
+
+#=====================================================================
+# Bitmap
+#=====================================================================
+
+requisite class Bitmap
+  # Pixel data wrapper for examining and manipulating image data.
+  # Native layer implementations may load textures as Bitmap objects
+  # first and then convert them into hardware-accelerated Images.
+
+  #CLASS_METHODS
+    #method load( String filename ).Bitmap:
+      # Creates a Bitmap containing the pixel data from the specified 
+      # file.  Currently only png and jpg files are supported.
+      #filename = find( filename )
+      #local Bitmap bmp
+      #bmp = create_from( File(filename).to_bytes )
+
+      #if (not bmp?) throw FileError( //Error loading "$".// (filename) )
+      #return bmp
+
+    #method create_from( Byte[] data ).Bitmap: native
+
+  PROPERTIES
+    # Data, width, and height should be left as is - their order is assumed in
+    # the native layer.
+
+    data : Array<<Int32>>
+      # Single-dimensional array of 0xAARRGGBB color values.  Values 
+      # data[0 ..< width] are the first row, data[width ..< width*2]
+      # are the second row, and so on.
+
+    width : Int32
+      # The width of this bitmap, in pixels.
+
+    height : Int32
+      # The height of this bitmap, in pixels.
+
+  METHODS
+    requisite method init( width, height ):
+      # Creates a transparent black bitmap of the given width and
+      # height.
+      if (data is null or data.count != width*height)
+        data = Array<<Int32>>( width * height )
+      endIf
+
+    method init( Vector2 pixel_size ):
+      # Creates a transparent black bitmap of the given size.
+      init( pixel_size.x, pixel_size.y )
+
+    method init( width, height, Color fill_color ):
+      init( width, height )
+      clear( fill_color )
+
+    requisite method init( String filename ): native
+      # Creates a Bitmap containing image data from the given
+      # png or jpeg file.
+
+    method init( Byte[] raw_data ): native
+
+    method init( File file ):
+      init( file.load )
+
+    method init( Bitmap existing ):
+      # Creates a bitmap that's an exact duplicate of an existing bitmap.
+      init( existing, existing.bounding_box )
+
+    method init( Bitmap existing, Box rect ):
+      # Creates a bitmap that's a given subset of an existing bitmap.
+      init( existing, rect.position, rect.size )
+
+    method init( Bitmap existing, Vector2 top_left, Vector2 new_size ):
+      # Creates a bitmap that's a given subset of an existing bitmap.
+      local Box src_region = Box(existing.size).intersection(Box(top_left,new_size))
+      if (src_region.area == 0)
+        init(0,0)
+      else
+        init( src_region.size.x, src_region.size.y )
+        existing.draw_to( this, -src_region.position.x, -src_region.position.y, false )
+      endIf
+
+    method hash_code.Int32:
+      return data.count
+
+    method set( Bitmap existing ):
+      # Sets this bitmap to reference the same data as another 
+      # existing bitmap.  Note that the array of color data is shared
+      # rather than duplicated.
+      data   = existing.data
+      width  = existing.width
+      height = existing.height
+
+    method size.Vector2:
+      # Returns the two-dimensional size of this bitmap, in pixels.
+      return Vector2(width,height)
+
+    method bounding_box.Box:
+      # Returns the rectangular region occupied by this bitmap.
+      # The 'position' of the resulting box is (0,0).
+      return Box(Vector2(width,height))
+
+    method add_padding:
+      # Adds a 1-pixel border that duplicates the original border.
+      # The width and height are each increased by 2 pixels.
+      local Bitmap padded_bmp( width+2, height+2 )
+      draw_column_to( 0, padded_bmp, 0, 1 )
+      draw_column_to(-1, padded_bmp,-1, 1 )
+      draw_row_to( 0, padded_bmp, 1, 0 )
+      draw_row_to(-1, padded_bmp, 1,-1 )
+      padded_bmp.plot( 0, 0, get( 0, 0) )
+      padded_bmp.plot(-1, 0, get(-1, 0) )
+      padded_bmp.plot( 0,-1, get( 0,-1) )
+      padded_bmp.plot(-1,-1, get(-1,-1) )
+      draw_to( padded_bmp, 1, 1, false )
+      width  += 2
+      height += 2
+      data = padded_bmp.data
+
+    method clear( Color color = Color(0,0,0,255) ):
+      # Clears all the pixels of this bitmap to be the given color
+      # or opaque black by default.
+      forEach (i of data) data[i] = color.argb
+
+    method get( Int32 x, Int32 y ).Color:
+      return Color( data[(y%height)*width + (x%width)] )
+
+    method plot( Int32 x, Int32 y, Color c ):
+      data[(y%height)*width+(x%width)] = c.argb
+
+    method clear_channel( Color color, Int32 channel_mask ):
+      # Clears a certain channel of this bitmap to the given color.
+      #
+      # Parameters:
+      #   color
+      #     The color to clear to.  Only the bits of the AARRGGBB 
+      #     'color' that correspond to the set bits in 'channel_mask'
+      #     are copied.
+      #
+      #   channel_mask
+      #     A 32-bit AARRGGBB value where 1 bits indicate the color
+      #     should be copied and 0 bits where it shouldn't.  For
+      #     example, to clear the alpha channel to a:128 without
+      #     affecting the red, green, or blue color values:
+      #
+      #       clear_channel( Color(0,0,0,128), 0xff000000 )
+      #   
+      local Int32 c = color.argb
+      c &= channel_mask
+      channel_mask = !channel_mask
+      forEach (i of data) data[i] = (Color(data[i]).argb & channel_mask) | c
+
+    method draw( Int32 x, Int32 y ):
+      # For native layer debugging purposes.  Performs a slow image 
+      # draw using a draw(Vector2) call per pixel.
+      local Int32 src_pos = 0
+      forEach (j in 0..<height)
+        forEach (i in 0..<width)
+          Vector2(x+i,y+j).draw( data[src_pos] )
+          src_pos++
+        endForEach
+      endForEach
+
+    method draw( Vector2 pos ):
+      # For native layer debugging purposes.  See draw(Int32,Int32).
+      draw(pos.x,pos.y)
+
+    method draw_to( Bitmap dest, Vector2 pos, Logical blend_alpha=true ):
+      # Draws this bitmap to the given destination bitmap.  This is
+      # operation is performed in software and is not intended for
+      # heavy per-frame use.
+      #
+      # Parameters:
+      #   dest 
+      #     A bitmap to draw to.  Edge clipping is performed.
+      #
+      #   pos
+      #     Where to place the top-left corner of this bitmap.
+      #
+      #   blend_alpha (default:true)
+      #     Set to "true" if per-pixel alpha blending should be 
+      #     performed.  Set to "false" to completely overrwrite
+      #     destination pixels.
+      draw_to( dest, pos.x, pos.y, blend_alpha )
+
+    method draw_to( Bitmap dest, Int32 x, Int32 y, Logical blend_alpha=true ):
+      # Draws this bitmap to the given destination bitmap.  This is
+      # operation is performed in software and is not intended for
+      # heavy per-frame use.
+      #
+      # Parameters:
+      #   dest 
+      #     A bitmap to draw to.  Edge clipping is performed.
+      #
+      #   x,y
+      #     Where to place the top-left corner of this bitmap.
+      #
+      #   blend_alpha (default:true)
+      #     Set to "true" if per-pixel alpha blending should be 
+      #     performed.  Set to "false" to completely overrwrite
+      #     destination pixels.
+      local Box    draw_region = Box(x,y,width,height).intersection( dest.bounding_box )
+      local Vector2 dest_pos = draw_region.position
+      copy_pixels_to( ...
+          (dest_pos.x - x), (dest_pos.y - y), 
+          draw_region.width, draw_region.height,
+          dest, 
+          dest_pos.x, dest_pos.y,
+          blend_alpha )
+
+    method copy_pixels_to( Int32 src_x, Int32 src_y, Int32 w, Int32 h, 
+        Bitmap dest, Int32 dest_x, Int32 dest_y, Logical blend_alpha ): native
+      # Internal use.
+
+    method draw_column_to( Int32 column, Bitmap dest, Int32 x, Int32 y ):
+      # Internal use.  Draws the specified column of this bitmap (0..<width) to 
+      # the destination bitmap.
+      column %= width
+      x %= dest.width
+      y %= dest.height
+
+      local Box     draw_region = Box(x,y,1,height).intersection( dest.bounding_box )
+      local Vector2 dest_pos = draw_region.position
+      local Int32 src_i  = (dest_pos.y - y) * width + (dest_pos.x - x) + column
+      local Int32 dest_i = dest_pos.y * dest.width + dest_pos.x
+      local Int32 dest_pitch = dest.width
+      local Int32 src_pitch = width
+      local var dest_data = dest.data
+
+      forEach (1..draw_region.size.y)
+        dest_data[dest_i] = data[src_i]
+        dest_i += dest_pitch
+        src_i += src_pitch
+      endForEach
+
+    method draw_row_to( Int32 row, Bitmap dest, Int32 x, Int32 y ):
+      # Internal use.  Draws the specified row of this bitmap (0..<height) to 
+      # the destination bitmap.
+      row %= height
+      x %= dest.width
+      y %= dest.height
+
+      local Box     draw_region = Box(x,y,width,1).intersection( dest.bounding_box )
+      local Vector2 dest_pos = draw_region.position
+      local Int32 src_i  = ((dest_pos.y - y) + row) * width + (dest_pos.x - x)
+      local Int32 dest_i = dest_pos.y * dest.width + dest_pos.x
+      local var dest_data = dest.data
+
+      forEach (1..draw_region.size.x)
+        dest_data[dest_i] = data[src_i] #& 0x00ffffff
+        dest_i++
+        src_i++
+      endForEach
+
+    method draw_channel_to( Bitmap dest, Int32 x, Int32 y, Int32 channel_mask ):
+      # Draws selected bits of this bitmap to the destination.  No 
+      # alpha blending is performed.
+      #
+      # Parameters:
+      #   dest 
+      #     A bitmap to draw to.  Edge clipping is performed.
+      #
+      #   x,y
+      #     Where to place the top-left corner of this bitmap.
+      #
+      #   channel_mask
+      #     A 32-bit AARRGGBB value where 1 bits indicate the color
+      #     should be copied and 0 bits where it shouldn't.  For
+      #     example, to copy this bitmap's alpha values without
+      #     disturbing the color values of the image:
+      #
+      #       draw_channel_to( dest, 0, 0, 0xff000000 )
+      local Box    draw_region = Box(x,y,width,height).intersection( dest.bounding_box )
+      local Vector2 dest_pos = draw_region.position
+      local Int32 src_i  = (dest_pos.y - y) * width + (dest_pos.x - x)
+      local Int32 dest_i = dest_pos.y * dest.width + dest_pos.x
+      local Int32 copy_width = draw_region.size.x
+      local Int32 dest_skip_width = dest.width - copy_width
+      local Int32 src_skip_width = width - copy_width
+      local var dest_data = dest.data
+
+      local Int32 inverse_channel_mask = !channel_mask
+
+      forEach (1..draw_region.size.y)
+        forEach (1..copy_width)
+          dest_data[dest_i] = (dest_data[dest_i].argb & inverse_channel_mask)...
+              | (data[src_i].argb & channel_mask)
+          dest_i++
+          src_i++
+        endForEach
+        dest_i += dest_skip_width
+        src_i += src_skip_width
+      endForEach
+
+    method non_transparent_region.Box:
+      # Returns a box just large enough to enclose all pixels 
+      # that aren't completely transparent.  If the area of the
+      # resulting box is zero then this bitmap is completely
+      # transparent.
+      #
+      # Invariant:
+      #   result == old.intersection(result)
+      local Int32 x1=0, x2=width-1
+      local Int32 y1=0, y2=height-1
+      while (x1 < x2 and column_transparent(x1)) x1++
+      while (x1 < x2 and column_transparent(x2)) x2--
+      while (y1 < y2 and row_transparent(y1)) y1++
+      while (y1 < y2 and row_transparent(y2)) y2--
+      return Box( Corners(x1,y1,x2+1,y2+1) )
+
+    method column_transparent( Int32 x ).Logical:
+      # Returns "true" if column 'x' (where x is 0 ..< width) 
+      # contains completely transparent pixel values.
+      local Int32 src_pos = x
+      forEach (1..height)
+        if ((data[src_pos] & 0xff000000) != 0) return false
+        src_pos += width
+      endForEach
+      return true
+
+    method row_transparent( Int32 y ).Logical:
+      # Returns "true" if row 'y' (where y is 0 ..< height) 
+      # contains completely transparent pixel values.
+      local Int32 src_pos = y * width
+      forEach (1..width)
+        if ((data[src_pos] & 0xff000000) != 0) return false
+        src_pos++
+      endForEach
+      return true
+
+    method add_transparent_outline:
+      # Adjusts this bitmap's data to include a 1-pixel transparent
+      # black border on each edge.
+
+      # create a new bitmap 1 pixel bigger in each dimension
+      local Bitmap new_bmp( width + 2, height + 2 )
+      draw_to( new_bmp, 1, 1, false )
+
+      # reset my values from the new bitmap
+      data = new_bmp.data
+      width = new_bmp.width
+      height = new_bmp.height
+
+
+    method split_into_tiles( Int32 tiles_wide, Int32 tiles_high ).Bitmap[]:
+      # Splits this Bitmap into an array of separate Bitmap tiles.
+      #
+      # Returns a list of Bitmap objects where index 0 is 
+      # the top-left tile, index[tiles_wide-1] is the top-right 
+      # tile, and so on.
+      local Bitmap[] tiles( tiles_wide * tiles_high )
+
+      local Vector2 tile_size( width / tiles_wide, height / tiles_high )
+
+      forEach (j in 0..<tiles_high)
+        forEach (i in 0..<tiles_wide)
+          tiles.add( Bitmap( this, Vector2(i,j)*tile_size, tile_size ) )
+        endForEach
+      endForEach
+
+      return tiles
+
+    method split_into_image_tiles( Int32 tiles_wide, Int32 tiles_high ).Image[]:
+      # Splits this Bitmap into an array of separate Image tiles.
+      #
+      # Returns a list of Image objects where index 0 is 
+      # the top-left tile, index[tiles_wide-1] is the top-right 
+      # tile, and so on.
+      local Image[] tiles( tiles_wide * tiles_high )
+
+      local Vector2 tile_size( width / tiles_wide, height / tiles_high )
+
+      forEach (j in 0..<tiles_high)
+        forEach (i in 0..<tiles_wide)
+          tiles.add( Image( Bitmap(this, Vector2(i,j)*tile_size, tile_size) ) )
+        endForEach
+      endForEach
+
+      return tiles
+
+    method fill( Box box, Color color, Logical blend_alpha=false ):
+      # Fills the given box with the given color, optionally
+      # performing alpha-blending [default: false].
+      box = box.intersection( this.bounding_box )
+      if (box.area == 0) return
+
+      local Int32 pos = Int32(box.position.y) * width + Int32(box.position.x)
+      local Int32 fill_width = box.size.x
+      local Int32 skip_width = width - fill_width
+
+      if (blend_alpha)
+        forEach (1..box.size.y)
+          forEach (1..fill_width)
+            data[pos] = Color( color, Color(data[pos]) ).argb
+            pos++
+          endForEach
+          pos += skip_width
+        endForEach
+      else
+        forEach (1..box.size.y)
+          forEach (1..fill_width) data[pos] = color.argb; pos++
+          pos += skip_width
+        endForEach
+      endIf
+
+    method draw( Box box, Color color, Logical blend_alpha ):
+      # Draws the outline of the given box in the given color,
+      # optionally performing alpha-blending (default: true).
+      local Int32 x = box.position.x
+      local Int32 y = box.position.y
+      local Int32 w = box.size.x
+      local Int32 h = box.size.y
+      fill( Box( x, y, w, 1 ), color, blend_alpha )
+      fill( Box( x, y+h-1, w, 1 ), color, blend_alpha )
+      fill( Box( x, y+1, 1, h-2 ), color, blend_alpha )
+      fill( Box( x+w-1, y+1, 1, h-2 ), color, blend_alpha )
+
+    method premultiply_alpha:
+      # Multiplies the R,G,B components of each color by their current
+      # alpha value - so Color(255,192,0,127) becomes Color(127,95,0,127).
+      # You will not need to call this method unless you create Bitmap
+      # data from scratch since loaded images are already premultiplied.
+      forEach (i of data)
+        local Color c = data[i]
+        local Int32 a = c.argb.right_shifted(24) & 255
+        local Int32 r = c.argb.right_shifted(16) & 255
+        local Int32 g = c.argb.right_shifted(8) & 255
+        local Int32 b = c.argb & 255
+        r = (r * a) / 255
+        g = (g * a) / 255
+        b = (b * a) / 255
+        data[i] = a.left_shifted(24) | r.left_shifted(16) | g.left_shifted(8) | b
+      endForEach
+
+    method unmultiply_alpha:
+      # Does the opposite of premultiply_alpha().
+      forEach (i of data)
+        local Int32 c = data[i]
+        local Int32 a = c.right_shifted(24) & 255
+        if (a?)
+          local Int32 r = c.right_shifted(16) & 255
+          local Int32 g = c.right_shifted(8) & 255
+          local Int32 b = c & 255
+          r = (r * 255) / a
+          g = (g * 255) / a
+          b = (b * 255) / a
+          data[i] = a.left_shifted(24) | r.left_shifted(16) | g.left_shifted(8) | b
+        endIf
+      endForEach
+
+    method to_png_bytes.Byte[]: native
+      # On iPhone, returns array of bytes representing this bitmap
+      # as a PNG-encoded image.  Support varies by platform.
+
+    method to_jpg_bytes( Real64 quality=0.9 ).Byte[]: native
+      # On iPhone, returns array of bytes representing this bitmap
+      # as a JPG-encoded image. Support varies by platform.
+      #
+      # quality - 1.0 = best quality, 0.0 = max compression
+
+    method rotate_right: native
+      # Alters this bitmap to be rotated 90 degrees to the right.
+
+    method rotate_left:  native
+      # Alters this bitmap to be rotated 90 degrees to the left.
+
+    method rotate_180: native
+      # Alters this bitmap to be rotated 180 degrees.
+
+    method flip_horizontal: native
+      # Alters this bitmap to be flipped (mirrored) horizontally.
+
+    method flip_vertical: native
+      # Alters this bitmap to be flipped (mirrored) vertically.
+
+    method resize_horizontal( Int32 new_width ): native
+      # Performs a horizontal resize. Intented for internal use;
+      # use resize() instead.
+
+    method resize_vertical( Int32 new_height ): native
+      # Performs a vertical resize. Intented for internal use;
+      # use resize() instead.
+
+    method resize( Vector2 new_size ):
+      # Resizes this bitmap using linear resampling.  Does not include
+      # a filter operation, meaning that minification will always look
+      # smooth but magnification to even multiples of the original
+      # size will appear to be simply duplicating pixels.
+      resize( new_size.x, new_size.y )
+
+    method resize( Int32 new_width, Int32 new_height ):
+      # Resizes this bitmap using linear resampling.  Does not include
+      # a filter operation, meaning that minification will always look
+      # smooth but magnification to even multiples of the original
+      # size will appear to be simply duplicating pixels.
+      resize_horizontal( new_width )
+      resize_vertical( new_height )
+
+    method resize_to_fit( Vector2 max_size ):
+      # Performs a resize() operation that maintains aspect ratio
+      # while ensuring that no dimension is larger than the
+      # specified maximum.
+      resize_to_fit( max_size.x, max_size.y )
+
+    method resize_to_fit( Int32 max_width, Int32 max_height ):
+      # Performs a resize() operation that maintains aspect ratio
+      # while ensuring that no dimension is larger than the
+      # specified maximum.
+      local Real64 x_scale = max_width / Real64(width)
+      local Real64 y_scale = max_height / Real64(height)
+      local var new_scale = min(x_scale,y_scale)
+      resize( width * new_scale, height * new_scale ) 
+
+    method resize_to_fill( Vector2 min_size ):
+      # Performs a resize() operation that maintains aspect ratio
+      # while ensuring that no dimension is smaller than the
+      # specified minimum.
+      resize_to_fill( min_size.x, min_size.y )
+
+    method resize_to_fill( Int32 min_width, Int32 min_height ):
+      # Performs a resize() operation that maintains aspect ratio
+      # while ensuring that no dimension is smaller than the
+      # specified minimum.
+      local Real64 x_scale = min_width / Real64(width)
+      local Real64 y_scale = min_height / Real64(height)
+      local var new_scale = max(x_scale,y_scale)
+      resize( width * new_scale, height * new_scale ) 
+endClass
+
+#=====================================================================
+# Image
+#=====================================================================
+compound Handle( Vector2 offset, Int32 relative_position )
+  # Specifies where the drawing origin is for a source image.
+  # You can either create a Handle(Vector2) to specify an absolute
+  # offset or Handle(top_left) (etc.) to specify a relative position.
+
+singleton class HandleManager
+  PROPERTIES
+    absolute      = 0 : Int32
+    top_left      = 1 : Int32
+    top_right     = 2 : Int32
+    bottom_left   = 3 : Int32
+    bottom_right  = 4 : Int32
+    left_center   = 5 : Int32
+    center_left   = 5 : Int32
+    right_center  = 6 : Int32
+    center_right  = 6 : Int32
+    top_center    = 7 : Int32
+    bottom_center = 8 : Int32
+    center        = 9 : Int32
+
+  METHODS
+    method create_from( Vector2 offset ).Handle:
+      return Handle( offset, absolute )
+
+    method create_from( Int32 relative_position ).Handle:
+      return Handle( Vector2(0,0), relative_position )
+
+    method adjusted_for_size( Handle handle, Vector2 size ).Handle:
+      which (handle.relative_position)
+        case absolute:      return handle
+        case top_left:      return Handle( Vector2( 0, 0 ), top_left )
+        case top_right:     return Handle( Vector2( floor(size.x), 0 ), top_right )
+        case bottom_left:   return Handle( Vector2( 0, floor(size.y) ), bottom_left )
+        case bottom_right:  return Handle( Vector2( size.x, size.y ).floor, bottom_right )
+        case left_center:   return Handle( Vector2( 0, floor(size.y/2) ), left_center )
+        case right_center:  return Handle( Vector2( size.x, size.y/2 ).floor, right_center )
+        case top_center:    return Handle( Vector2( floor(size.x/2), 0 ), top_center )
+        case bottom_center: return Handle( Vector2( size.x/2, size.y ).floor, bottom_center )
+        case center:        return Handle( Vector2( size.x/2, size.y/2 ).floor, center )
+        others: throw InvalidOperandError()
+      endWhich
+
+endClass
+
+underlying aspect ImageProperties
+  # Common base class for both GenericImage and Font.
+
+  PROPERTIES
+    scale(1.0,1.0) : Vector2
+      # The size multiplier for rendering, (1.0,1.0) by default.
+      # Setting "scale = Vector2(2.0,0.5)" would cause the image 
+      # or font to render at twice the width and half the height.  
+      # On images, change 'size' instead if you want to achieve 
+      # particular pixel dimensions.
+
+    handle : Handle
+      # Specifies the drawing and rotation origin of this image.  
+      # This can be set to a pixel value relative to the upper-left
+      # of the image (0,0) or a Handle category such as 
+      # "Handle.center" or "Handle.bottom_center".  The handle
+      # is the top-left corner (0,0) by default.
+
+    render_flags : Render
+      # Any combination of Render constants, or 0 for no special
+      # rendering options.
+      #
+      # Example:
+      #   img.render_flags = Render.fixed_color
+
+    blend=Blend.normal : Blend
+      # Blending mode.  See class BlendManager for more examples.
+
+    color(0xffffffff) : Color
+      # The multiplier for each pixel in this image as it's drawn.
+      # The default color of Color(255,255,255,255) ensures that 
+      # the image will appear "normal".  A color of 
+      # Color(255,255,0) would not draw any of the blue channel, 
+      # making a grey-scale image appear to be tinted yellow.  A color
+      # of Color(255,255,255,128) would draw the image halfway
+      # transparent.
+
+      alpha : Int32
+      # Internal use. Prevents 'alpha' from being declared again by mistake
+      # and being intercepted by access methods.
+
+  METHODS
+    method handle( handle ):
+      # Handle property-set.
+
+    method handle( Vector2 offset ):
+      # Handle property-set.
+      &handle = Handle( offset, Handle.absolute )
+
+    method handle( Int32 relative_position ):
+      # Handle property-set.
+      &handle = Handle( Vector2.zero, relative_position )
+
+    method handle.Vector2:
+      return &handle.offset
+
+    method scale( Vector2 new_scale ):
+      # Scale property-set.
+      &scale = new_scale
+      if (&handle.relative_position != Handle.absolute)
+        handle( &handle.relative_position )
+      endIf
+
+    method scale( Real64 uniform_scale ):
+      # Scale property-set.
+      &scale = Vector2(uniform_scale,uniform_scale)
+      if (&handle.relative_position != Handle.absolute)
+        handle( &handle.relative_position )
+      endIf
+
+    method size( Vector2 new_size ):
+      # Size property-set.
+      &size = new_size
+      if (&handle.relative_position != Handle.absolute)
+        handle( &handle.relative_position )
+      endIf
+
+    method point_filter( Logical setting ):
+      # Turns point filtering on or off in the render flags.  "on" 
+      # selects nearest-neighbor point filtering; "off" selects 
+      # linear filtering (the Image default).
+      if (setting) render_flags |= Render.point_filter
+      else render_flags &= !Render.point_filter
+
+    method point_filter.Logical:
+      # Returns "true" if "point_filter" is set in the render flags.
+      return (render_flags & Render.point_filter).flags != 0
+
+    method fixed_color( Logical setting ):
+      # Turns fixed-color drawing on or off in the render flags.
+      if (setting) render_flags |= Render.fixed_color
+      else render_flags &= !Render.fixed_color
+
+    method fixed_color.Logical:
+      # Returns "true" if "fixed_color" is set in the render flags.
+      return (render_flags & Render.fixed_color).flags != 0
+
+    method texture_wrap( Logical setting ):
+      # Turns texture wrapping on or off in the render flags.
+      if (setting) render_flags |= Render.texture_wrap
+      else render_flags &= !Render.texture_wrap
+
+    method texture_wrap.Logical:
+      # Returns "true" if "texture_wrap" is set in the render flags.
+      return (render_flags & Render.texture_wrap).flags != 0
+
+    method opaque( Logical setting ):
+      # Turns opaqueness on or off in the render flags.
+      if (setting) render_flags |= Render.opaque
+      else render_flags &= !Render.opaque
+
+    method opaque.Logical:
+      # Returns "true" if "opaque" is set in the render flags.
+      return (render_flags & Render.opaque).flags != 0
+
+    method alpha.Int32:
+      # Alpha property-get method - returns the alpha component
+      # (0-255) of the current color multiplier.
+      return color.argb.right_shifted(24)
+
+    method alpha( Int32 new_alpha ):
+      # Alpha property-set method - sets the alpha component
+      # of this image's color multiplier.
+      #
+      # new_alpha should be 0 (transparent) through 255 (opaque).
+      local Int32 c = color.argb
+      c &= 0xffffff
+      c |= new_alpha.left_shifted(24)
+      color = Color( c )
+
+endAspect
+
+requisite underlying aspect GenericImage : ImageProperties
+  # Base aspect of both Image and CompositeImage.
+
+  PROPERTIES
+    position : Vector2
+      # Default drawing position.
+
+    size   : Vector2
+      # The nominal size of the given image, in pixels.  Change
+      # 'size' if you want the image's standard size to be a
+      # given number of pixels or change 'scale' if you want the 
+      # image to be proportionally larger or smaller.
+
+    angle  : Radians
+      # The angle property variable.  This may be set to a new
+      # Radians or Degrees value.  
+
+    hflip : Logical
+      # Specifies that an image should be flipped horizontally when
+      # drawn.  This mirroring is applied before the image is rotated
+      # and does not affect the spatial positioning.
+
+    vflip : Logical
+      # Specifies that an image should be flipped vertically when
+      # drawn.  This mirroring is applied before the image is rotated
+      # and does not affect the spatial positioning.
+
+
+  METHODS
+    method handle( Int32 relative_position ):
+      # Handle property-set.
+      which (relative_position)
+        case Handle.absolute:      
+          &handle = Handle(&handle.offset)
+        case Handle.top_left:      
+          &handle = Handle( Vector2( 0, 0 ), Handle.top_left )
+        case Handle.top_right:     
+          &handle = Handle( Vector2( floor(size.x), 0 ), Handle.top_right )
+        case Handle.bottom_left:   
+          &handle = Handle( Vector2( 0, floor(size.y) ), Handle.bottom_left )
+        case Handle.bottom_right:  
+          &handle = Handle( Vector2( size.x, size.y ).floor, Handle.bottom_right )
+        case Handle.left_center:   
+          &handle = Handle( Vector2( 0, floor(size.y/2) ), Handle.left_center )
+        case Handle.right_center:  
+          &handle = Handle( Vector2( size.x, size.y/2 ).floor, Handle.right_center )
+        case Handle.top_center:    
+          &handle = Handle( Vector2( floor(size.x/2), 0 ), Handle.top_center )
+        case Handle.bottom_center: 
+          &handle = Handle( Vector2( size.x/2, size.y ).floor, Handle.bottom_center )
+        case Handle.center:        
+          &handle = Handle( Vector2( size.x/2, size.y/2 ).floor, Handle.center )
+        others: throw InvalidOperandError()
+      endWhich
+
+    method handle( Handle new_handle ):
+      if (new_handle.relative_position != Handle.absolute) 
+        handle( new_handle.relative_position )
+      else
+        &handle = new_handle
+      endIf
+
+    method angle( Radians new_angle ):
+      # Angle property-set.
+      &angle = new_angle
+
+    method angle( Degrees deg ):
+      # Angle property-set.
+      &angle = to_Radians(deg)
+
+    method bounding_box.Box:
+      # Returns the rectangular region nominally occupied by this 
+      # image at its position, size, rotation, and scale.
+      # Because a Box is always ortogonal, if the image's 'angle'
+      # is non-cardinal the Box will be larger than the image
+      # so as to enclose the rotated corners.  bounding_quad()
+      # returns a properly rotated bounding area.
+      if (angle.value?)
+        return bounding_quad.bounding_box
+      else
+        return Box( position, size * scale ) - handle * scale
+      endIf
+
+    method bounding_quad.Quad:
+      # Returns the quadrangular region occupied by this image
+      # at its position, size, rotation, and scale.
+      return Box(-handle*scale,size*scale).rotated(angle) + position
+
+    method bounding_circle.Circle:
+      # Returns the circular region enclosing this 
+      # image at its size and scale.  The 'position' of the 
+      # resulting box is (0,0).
+      return bounding_box.bounding_circle
+
+    method draw: abstract
+
+    method draw( Real64 x, Real64 y ):
+      # Draws this image with its handle (origin) at (x,y).
+      draw( Vector2(x,y) )
+
+    method draw( position ):
+      # Draws this image at the given position.
+      draw
+
+    method clear( Color c=Color.black ):
+      bounding_box.fill(c)
+
+    method release:
+      # Releases the hardware resources associated with this image.
+      # This will be called automatically at some point when the image
+      # is no longer referenced.
+endAspect
+
+singleton class PixelFormat
+  # Specifies one of several possible pixel formats for an image
+  # to be stored in as it's loaded.  This is not related to the original 
+  # file format, but rather suggests how the image may be stored once 
+  # it's loaded into memory.  Native layer implementations may ignore
+  # a PixelFormat hint.
+  #
+  # The following pixel formats are available.
+  #
+  #   rgb32
+  #     Suggests a 32-bit ARGB or RGB format.
+  #   
+  #   rgb16
+  #     Suggests a 16-bit format such as (A1,R5,G5,B5) or
+  #     (R5,G6,B5) - the exact format chosen depends on the image
+  #     data and available hardware support.
+  #
+  #   indexed
+  #     Suggests an indexed color (palettized) format such as
+  #     2-bit, 4-bit, or 8-bit - the exact format chosen depends on 
+  #     the image data and available hardware support.
+  PROPERTIES
+    rgb32(1), rgb16(2), indexed(4) : Int32
+endClass
+
+class Texture : RequiresCleanup
+  # Wrapper class for a native-layer texture.  Most developers will want to use
+  # class Image instead of working with class Texture directly.
+  CLASS_PROPERTIES
+    default_pixel_format=1 : Int32
+      # rgb32 by default
+
+    all_textures() : Texture[]
+
+    loaded_texture_count : Int32
+
+  CLASS_METHODS
+    method on_textures_lost:
+      forEach (texture in all_textures) texture.lost = true
+      all_textures.clear
+
+      TextureSheetManager.on_textures_lost
+      ImageManager.on_images_lost
+
+    method unload_all
+      forEach (texture in all_textures) 
+        texture.lost = true
+        texture.clean_up
+      endForEach
+      all_textures.clear
+
+      loaded_texture_count = 0
+
+      TextureSheetManager.on_textures_lost
+      ImageManager.on_images_lost
+
+
+  PROPERTIES
+    native_data  : NativeData
+    image_size   : readOnly Vector2
+    texture_size : readOnly Vector2
+
+    lost         : Logical
+      # Is set to true when this texture has been lost and should be recreated.
+
+    unique_id=unique_Int32 : Int32
+      # Allows Textures to be used as hashtable keys.
+
+    reference_count : Int32
+      # Internal use.
+
+    filename : String
+
+  METHODS
+    method init_object:
+      all_textures.add( this )
+
+    method init( Bitmap src_bitmap, Int32 pixel_format=default_pixel_format ): native
+      # Creates a texture from the given software bitmap.
+      #
+      # 'pixel_format' is a pixel format suggestion for how the loaded image
+      # should be stored in video memory.  Choices are "rgb32", "rgb16",
+      # and "indexed".
+      #
+      # ''default_pixel_format'' is used if no other pixel format is specified.
+
+    method init( filename )
+      init( filename, default_pixel_format )
+      ++loaded_texture_count
+      #log( "# textures: " + loaded_texture_count )
+
+[if defined(PLATFORM_IOS) or defined(ANDROID)]
+    method init( String _filename, Int32 pixel_format ): native
+      # Creates a texture from the given file.  Note that Image object filenames
+      # are usually just subsets of larger image sheets whereas Texture expects
+      # an actual image sheet name or stand-alone image name.
+      #
+      # 'pixel_format' is a pixel format suggestion for how the loaded image
+      # should be stored in video memory.  Choices are "rgb32", "rgb16",
+      # and "indexed".
+      #
+      # ''default_pixel_format'' is used if no other pixel format is specified.
+[else]
+    method init( String _filename, Int32 pixel_format ):
+      # Creates a texture from the given file.  Note that Image object filenames
+      # are usually just subsets of larger image sheets whereas Texture expects
+      # an actual image sheet name or stand-alone image name.
+      #
+      # 'pixel_format' is a pixel format suggestion for how the loaded image
+      # should be stored in video memory.  Choices are "rgb32", "rgb16",
+      # and "indexed".
+      #
+      # ''default_pixel_format'' is used if no other pixel format is specified.
+      init( Bitmap(_filename), pixel_format )
+[endIf]
+
+    method init( Vector2 size, Int32 pixel_format ): native
+      # Creates a texture of the given size that can be copied into with Texture::set().
+
+    method init( Vector2 size ): native
+      # Creates a texture of the given size that can be rendered onto (used by OffscreenBuffer).
+
+    method clean_up:
+      # Internal use.  Calls release().
+      if (native_data?) --loaded_texture_count
+      native_release
+
+    method retain:
+      ++reference_count
+
+    method release:
+      --reference_count
+      if (reference_count == 0) 
+        all_textures.remove(this)
+        if (native_data?) --loaded_texture_count
+        native_release
+      endIf
+
+    method native_release: native
+      # Releases the video memory used by the associated image in the
+      # hardware layer.  May be called manually, but is also 
+      # automatically called when this object has no more references.
+
+    method set( Bitmap src ): native
+      # Resets this texture to contain data from the specified bitmap.
+      # If this texture is already the same size as the bitmap then
+      # the video memory is rewritten rather than being reallocated.
+
+    method set( Bitmap src, Vector2 pos ): native
+      # Writes the given bitmap data into this texture with its top-left corner
+      # at the given pixel position.
+
+    method hash_code.Int32:
+      return unique_id
+
+    method draw( Corners uv, Vector2 size, Color color, Render render_flags=Render.default, Blend blend_fn=Blend.normal ): native 
+      # Internal use.  Draws a subset of this texture defined by texture
+      # positions 'uv' to the screen from (0,0) to 'size' in local space.
+      # In general an existing transform will cause the texture to be
+      # drawn at various positions and angles on-screen.  'color' is the
+      # color multiplier for all vertices.
+
+    method draw( Corners uv, Vector2 size, Color color, Render render_flags=Render.default, 
+        Blend blend_fn=Blend.normal, Texture alpha_texture, Corners alpha_uv ): native 
+
+    method draw( Corners uv, Quad vertices, ColorGradient colors, Render render_flags=Render.default, Blend blend_fn=Blend.normal ): native 
+      # Internal use.  Draws a subset of this texture defined by texture
+      # positions 'uv' and color values 'colors' to the screen at the given 
+      # vertex positions (which are multiplied by the current transform).
+
+    method draw( Vector2 uv1, Vector2 uv2, Vector2 uv3, Triangle vertices, Color color1, Color color2, Color color3, Render render_flags=Render.default, 
+        Blend blend_fn=Blend.normal ): native 
+      # Internal use.  Draws a subset of this texture defined by texture
+      # positions 'uv' the given color values to the screen at the given 
+      # vertex positions (which are multiplied by the current transform).
+
+    method draw_tile( Corners uv, Vector2 pos, Vector2 size, Int32 render_flags ): native
+      # See RenderManager.tile_mode.
+endClass
+
+singleton class TextureSheetManager
+  PROPERTIES
+    max_texture_size(1024,1024) : Vector2
+    sheets() : TextureSheet[]
+
+  METHODS
+    method init
+  
+    method on_textures_lost
+      # reset everything
+      forEach (sheet in sheets) sheet.on_textures_lost
+      sheets.clear
+
+    method release_all
+      # Marks all loaded image sheets as unused.
+      forEach (sheet in sheets) sheet.release_all
+
+    method unload_all
+      # Marks all loaded image sheets as unused.
+      forEach (sheet in sheets) sheet.release_all
+      sheets.clear
+
+    method load( String filename ).Image
+      forEach (sheet in sheets)
+        local var img = sheet.find_image_sheet(filename)
+        if (img?) return img
+      endForEach
+
+      forEach (sheet in sheets)
+        if (sheet.contains_empty_slot)
+          return sheet.load(filename)
+        endIf
+      endForEach
+
+      forEach (sheet in sheets)
+        if (sheet.contains_unused_slot)
+          return sheet.load(filename)
+        endIf
+      endForEach
+
+      sheets.add( TextureSheet() )
+      return sheets.last.load(filename)
+endClass
+
+class TextureSheet
+  # Internal use.  Manages a single 1024x1024 texture.  Originally
+  # managed four 512x512 image sheets per texture but Plasmacore
+  # has moved on to use 1024x1024 exclusively and so is now
+  # fairly simple.
+
+  PROPERTIES
+    texture  : Texture
+    filename : String
+    active   : Logical
+
+  METHODS
+    method init
+
+    method on_textures_lost
+      if (texture?) texture.release
+
+    method release_all
+      active = false
+
+    method contains_empty_slot.Logical
+      return (filename is null)
+
+    method contains_unused_slot.Logical
+      return (not active)
+
+    method find_image_sheet( String _filename ).Image
+      if (filename? and _filename == filename)
+        active = true  # just to be sure
+        return Image( texture, Corners(0,0,1,1) )
+      endIf
+
+      return null
+
+    method load( String _filename ).Image
+      if (filename? and active)
+        throw Error( "Internal error in TextureSheetManager.load()" )
+      endIf
+
+      filename = _filename
+      #println(filename)
+
+      if (texture?) texture.release
+      texture = Texture( filename )
+      texture.retain
+
+      active = true
+      return Image( texture, Corners(0,0,1,1) )
+
+endClass
+
+requisite class Image : GenericImage, RequiresCleanup
+  # Wrapper class for a hardware-accelerated image.  Image objects
+  # don't contain the actual image data, but instead store an index 
+  # that the native layer uses to identify images.
+  SINGLETONS
+    ImageManager
+
+  PROPERTIES
+    texture : Texture
+      # The index used to identify the associated image to the native layer.
+
+    uv : Corners
+      # The texture (u,v) coordinates, each [0..1].
+
+    alpha_mask : Image
+      # Another image to take alpha values from when this image is drawn.
+      # If "null" (default), both alpha and color values are taken from
+      # this image.
+
+    parent : Image
+      # Internal use.
+
+    subset_bounds : Box
+      # Internal use.
+
+    status : ImageStatus
+      # Internal use.
+      
+  METHODS
+    method init( String filename ):
+      # Creates an image from the given png or jpeg file.  Some platforms may
+      # support additional formats.
+      #
+      # The following variations of 'filename' are checked:
+      #
+      #   filename
+      #   filename.ext  (.ext = [.png|.jpg|.jpeg])
+      #   data/filename
+      #   data/filename.ext
+      #
+      # 'pixel_format' is a pixel format suggestion for how the loaded image
+      # should be stored in video memory.  Choices are "rgb32", "rgb16",
+      # and "indexed".
+      #
+      # Note: if a PNG isn't loading correctly, try running Ken Silverman's 
+      # PNGOUT program on it.  This is a good idea anyways as PNGOUT compression
+      # is generally better and decompresses faster than normal PNG compression.
+      ImageManager.load( filename, this )
+
+    method init( Bitmap src_bitmap ):
+      # Creates an image from the given software bitmap.
+      #
+      # 'pixel_format' is a pixel format suggestion for how the loaded image
+      # should be stored in video memory.  Choices are "rgb32", "rgb16",
+      # and "indexed".
+      texture = Texture( src_bitmap )
+      texture.retain
+      size = texture.image_size
+      uv = Corners( Vector2(0,0), size / texture.texture_size )
+
+    method init( Image existing, Int32 x, Int32 y, Int32 w, Int32 h ):
+      # Creates an image as a subset of an existing image.  The actual
+      # texture is shared with the original image; only a minimal 
+      # amount of additional memory is required.
+      #
+      # Parameters:
+      #   existing
+      #     An existing image to pick a subset of.
+      #
+      #   x,y
+      #     The top-left corner of the image subset relative to the
+      #     top-left corner of the existing image.
+      #
+      #   w,h
+      #     The width and height of the image subset.
+      init( existing, Vector2(x,y), Vector2(w,h) )
+
+    method init( Image existing, Vector2 top_left, size ):
+      # Creates an image as a subset of an existing image.  The actual
+      # texture is shared with the original image; only a minimal 
+      # amount of additional memory is required.
+      #
+      # Parameters:
+      #   existing
+      #     An existing image to pick a subset of.
+      #
+      #   top_left
+      #     The top-left corner of the image subset relative to the
+      #     top-left corner of the existing image.
+      #
+      #   size
+      #     The width and height of the image subset.
+      texture = existing.texture
+      texture.retain
+
+      parent = existing
+      subset_bounds = Box(top_left,size)
+
+      status = existing.status
+
+      local var uv_size = existing.uv.size
+      local var existing_uv1 = existing.uv.top_left;
+      local var existing_size = existing.size
+      local var bottom_right = top_left + size
+      uv = Corners( (top_left / existing_size) * uv_size + existing_uv1,
+                    ((bottom_right) / existing_size) * uv_size + existing_uv1 )
+
+    method init( Image existing, Box box ):
+      # Creates an image as a subset of an existing image.  The actual
+      # texture is shared with the original image; only a minimal 
+      # amount of additional memory is required.
+      #
+      # Parameters:
+      #   existing
+      #     An existing image to pick a subset of.
+      #
+      #   box
+      #     The rectangular region of the desired subset.
+      init( existing, box.position, box.size )
+
+    method init( Image existing ):
+      # Copy initializer.
+      init( existing, Box(existing.size) )
+
+    method init( texture, uv ):
+      # Internal use
+      texture.retain
+      size = (uv * texture.texture_size).size
+
+    method create_duplicate.Image:
+      return Image(this)
+
+    method clean_up:
+      # Internal use.  Calls release().
+      release
+
+    method release:
+      if (texture?) texture.release; texture = null
+
+    method reload:
+      if (parent? and parent.status?)
+        parent.reload
+        local var original_size = size
+        init( parent, subset_bounds )
+        size = original_size
+      else
+        status.loader.load(this)
+      endIf
+
+    method hash_code.Int32:
+      return texture.unique_id
+
+    method alpha_mask( Image new_alpha_mask ):
+      if (new_alpha_mask? and new_alpha_mask.texture is this.texture)
+        throw InvalidOperandError( "new_alpha_mask: an image and its alpha_mask cannot share the same texture - make sure they're not both on the same texture sheet by loading one of them as Image(filename,false)" )
+      endIf
+      &alpha_mask = new_alpha_mask
+
+    method draw:
+
+      if (texture is null) return
+      if (status?)
+        if (status.lost) reload
+      elseIf (texture.lost)
+        return
+      endIf
+
+      local var v = position
+
+      if (render_flags.includes(Render.tile_mode))
+        v -= &handle.offset
+        v *= scale
+        local var display_size = size * scale
+        local var x = v.x
+        local var y = v.y
+        local var w = display_size.x
+        local var h = display_size.y
+        if (hflip) w = -w
+        if (vflip) h = -h
+        texture.draw_tile( uv, Vector2(x,y), Vector2(w,h), render_flags.flags )
+        return
+      endIf
+
+      local var c = color
+      if ((render_flags.flags & Render.fixed_color.flags) == 0) c.=alpha_multiplied
+
+      Transform( size, handle, angle, scale, v, hflip, vflip ).push_object_transform
+      if (alpha_mask?)
+        texture.draw( uv, size, c, render_flags, blend, alpha_mask.texture, alpha_mask.uv )
+      else
+        texture.draw( uv, size, c, render_flags, blend )
+      endIf
+      Transform.pop_object_transform
+
+    method draw_flash( Color flash_color ):
+      # Convenience method to draw a "flashing" image, good for buttons being pressed
+      # and actors taking damage.  The image is drawn twice at the current ''position'':
+      # once normally, and then once again in the solid color of ''flash_color''.
+      # If you send in a flash_color with different alpha values over time the flash 
+      # will fade in or out.
+      draw
+      local var old_flags = render_flags
+      local var old_color = color
+      render_flags |= Render.fixed_color
+      color = flash_color
+      draw
+      render_flags = old_flags
+      color = old_color
+
+    method draw_flash( position, Color flash_color ):
+      # Convenience method to draw a "flashing" image, good for buttons being pressed
+      # and actors taking damage.  The image is drawn twice at the given ''position'':
+      # once normally, and then once again in the solid color of ''flash_color''.
+      # If you send in a flash_color with different alpha values over time the flash 
+      # will fade in or out.
+      draw_flash( flash_color )
+
+    method draw_flash( position, Int32 flash_alpha ):
+      # Convenience method to draw a "flashing" image, good for buttons being pressed
+      # and actors taking damage.  The image is drawn twice at the given ''position'':
+      # once normally, and then once again in a fixed white color with ''flash_alpha''
+      # amount of opacity (0..255).
+      draw_flash( Color(255,255,255,flash_alpha) )
+
+    method draw_flash( Int32 flash_alpha ):
+      # Convenience method to draw a "flashing" image, good for buttons being pressed
+      # and actors taking damage.  The image is drawn twice at the current position:
+      # once normally, and then once again in a fixed white color with ''flash_alpha''
+      # amount of opacity (0..255).
+      draw_flash( Color(255,255,255,flash_alpha) )
+
+    method draw( Box box ):
+      # Draws this image at the specified rectangular coordinates.
+      draw( box, ColorGradient(color) )
+
+    method draw( Box box, ColorGradient colors ):
+      # Draws this image at the specified rectangular coordinates with
+      # the given corner colors.
+      if (hflip)
+        if (vflip)
+          draw( Quad(box.bottom_right,box.bottom_left,box.top_left,box.top_right), colors )
+        else
+          draw( Quad(box.top_right,box.top_left,box.bottom_left,box.bottom_right), colors )
+        endIf
+      elseIf (vflip)
+        draw( Quad(box.bottom_left,box.bottom_right,box.top_right,box.top_left) )
+      else
+        draw( Quad(box), colors )
+      endIf
+
+    method draw( Quad q ):
+      # Draws this image at the specified quadrangular coordinates.
+      draw( q, ColorGradient(color) )
+
+    method draw( Quad q, ColorGradient colors ):
+      # Draws this image at the specified quadrangular coordinates with
+      # the given corner colors.
+      if (texture is null) return
+      if (status?)
+        if (status.lost) reload
+      elseIf (texture.lost) 
+        return
+      endIf
+
+      colors = ColorGradient( colors.top_left.alpha_multiplied,
+          colors.top_right.alpha_multiplied,
+          colors.bottom_right.alpha_multiplied,
+          colors.bottom_left.alpha_multiplied )
+      texture.draw( uv, q, colors, render_flags, blend )
+
+    method crop( Real64 pixels_to_contract ):
+      # Contracts the edge UV texture coordinates by 
+      # 'pixels_to_contract' along each edge and reduces the
+      # 'size' of this image by "2*pixels_to_contract" in each
+      # dimension.
+      #
+      # The existing 'size' is used to calculate how much the
+      # UV coordinates should be adjusted by.
+      local Box box = Box(uv)
+      box = box.cropped( pixels_to_contract * box.size / this.size )
+      uv = Corners( box )
+      size -= pixels_to_contract * 2
+      &handle = &handle.adjusted_for_size( size )
+
+    method crop( Box bounds ):
+      # Adjusts the UV coordinates and size of this image to match
+      # the pixel dimensions of the given 'bounds' box.
+      uv = Corners( (bounds.position / size) * uv.size + uv.top_left,
+                    ((bounds.bottom_right) / size) * uv.size + uv.top_left )
+      size = bounds.size
+      &handle = &handle.adjusted_for_size( size )
+
+    method split_into_tiles( Int32 tiles_wide, Int32 tiles_high ).Image[]:
+      # Splits this Image into a list of separate Image tiles.
+      local Image[] tiles( tiles_wide * tiles_high )
+
+      local Vector2 tile_size( size.x / tiles_wide, size.y / tiles_high )
+
+      forEach (j in 0..<tiles_high)
+        forEach (i in 0..<tiles_wide)
+          tiles.add( Image( this, Vector2(i,j)*tile_size, tile_size ) )
+        endForEach
+      endForEach
+
+      return tiles
+endClass
+
+class OffscreenBuffer : Image
+  # Creates an image that may be drawn as normal or drawn to by calling
+  # "Application.set_draw_target(buffer)", where "buffer" is this buffer.
+
+  METHODS
+    method init( size ): 
+      # Creates an offscreen buffer of the given size.  Note that the size
+      # will internally be adjusted to be a power of 2 in each dimension.
+      texture = Texture( size )
+      texture.retain
+      uv = Corners( Vector2(0,0), size / texture.texture_size )
+      blend = Blend.modulate
+      clear
+
+    method init( Int32 w, Int32 h ):
+      # Creates an offscreen buffer of the given size.  Note that the size
+      # will internally be adjusted to be a power of 2 in each dimension.
+      init( Vector2(w,h) )
+
+    method clear( Color c=Color(0x00000000) ): native
+endClass
+
+class CompositeImage : GenericImage, RequiresCleanup
+  # A composite image allows an image made of individual pieces 
+  # to be treated as a single whole.  There are two primary applications:
+  #
+  # # CompositeImage(img_filename) breaks the given image up into
+  # 256x256 pixel chunks and draws them together as a whole.  This
+  # allows an image to take up less room on a texture sheet as well
+  # as work with smaller-capacity video cards.<br/><br/>
+  # # CompositeImage(w,h) sets up a logical canvas as far as drawing
+  # coordinates are concerned.  You can add() images at various offsets
+  # from the top-left corner of the composite image and you can also
+  # override the draw() method to draw image pieces at various positions.
+  # Using this approach you could have a "ControlPanel" be a CompositeImage
+  # and logically draw it anywhere on screen as a single image, while
+  # internally its components are custom drawn each time.
+  PROPERTIES
+    components(4) : CompositeImageComponent[]
+    status        : ImageStatus
+
+  METHODS
+    method init( String filename ):
+      # Initializes this CompositeImage to draw the given image.
+      ImageManager.load( filename, this )
+
+    method init( Bitmap bmp ):
+      # Initializes this CompositeImage to draw the given bitmap.
+      size = bmp.size
+
+      # A 1 pixel border on all edges will be added when placed on the
+      # texture sheet - compensating for this allows us to pack more
+      # textures on in general.
+      local var chunk_width  = 254
+      local var chunk_height = 254
+
+      local Vector2 chunk_size(chunk_width,chunk_height)
+      forEach (y in 0..<size.y step chunk_height)
+        forEach (x in 0..<size.x step chunk_width)
+          add( Image(Bitmap(bmp, Vector2(x,y), chunk_size)), Vector2(x,y) )
+        endForEach
+      endForEach
+
+    method init( size ):
+      # Initializes this object to an empty image of the given size.
+      # Additional image subparts may be added with the add() method
+      # or custom drawn by overriding draw().
+
+    method init( Int32 w, Int32 h ):
+      # Initializes this object to an empty image of the given size.
+      # Additional image subparts may be added with the add() method
+      # or custom drawn by overriding draw().
+      init(Vector2(w,h))
+
+    method create_duplicate.CompositeImage:
+      local CompositeImage result(size)
+      result.components = duplicate(components)
+      return result
+    
+    method add( GenericImage img, Vector2 offset ):
+      # Adds 'img' to this composite image - 'img' may be an Image or
+      # a CompositeImage object.  It will be drawn with its handle 
+      # at 'offset' relative to the top-left corner of this image.
+      components.add( CompositeImageComponent(img, offset) )
+
+    method add( GenericImage img, Real64 offset_x, Real64 offset_y ):
+      # Adds 'img' to this composite image - 'img' may be an Image or
+      # a CompositeImage object.  It will be drawn with its handle 
+      # at 'offset' relative to the top-left corner of this image.
+      add( img, Vector2(offset_x,offset_y) )
+
+    method draw:
+      Transform( size, handle, angle, scale, position, hflip, vflip ).push_camera_transform
+      if (status? and status.lost)
+        status.loader.load(this)
+      endIf
+      draw_content
+      Transform.pop_camera_transform
+
+    method draw_content:
+      forEach (c in components) 
+        local var img = c.image
+        img.render_flags = render_flags
+        img.color = color
+        img.alpha = alpha
+        img.blend = blend
+        img.draw(c.position)
+      endForEach
+
+    method release:
+      components.clear
+
+    method clean_up:
+      release
+endClass
+
+class CompositeImageComponent( GenericImage image, Vector2 position );
+
+enum Animate
+  CATEGORIES
+    cycle, ping_pong, random, play_once
+endEnum
+
+class Animation : RequiresCleanup
+  # Manages animation frames orginally stored on a tile sheet.
+  # In general you create an Animation, define animation sequences
+  # with ''add_sequence()'', and call ''create_animated_image()'' to
+  # obtain a new AnimatedImage object that can play the animation
+  # with its own state.
+  #
+  # For example, say the original sprite sheet contained the following
+  # 20 frames:
+  #
+  #   A  1  2  3  4
+  #   B  5  6  7  8
+  #   C  9 10 11 12
+  #   D 13 14 15 16
+  #
+  # This code would set up 9 sequences and display random sequences
+  # of animation:
+  #
+  #   PROPERTIES
+  #     anim_img : AnimatedImage
+  #
+  #   method init:
+  #     local Animation anim_img( "sprite_sheet.png", 5, 4 )
+  #
+  #     anim.add_sequence( Box(1,0,4,4), 4, 0.1 )
+  #       # Sets up 4 sequences with 1/10th/sec intervals between frames:
+  #       #   #0 {1,2,3,4}
+  #       #   #1 {5,6,7,8}
+  #       #   #2 {9,10,11,12}
+  #       #   #3 {13,14,15,16}
+  #
+  #     anim.add_sequence( Box(0,0,1,4), 4 )
+  #       # Sets up 4 sequences of a single frame each:
+  #       #   #4 {A}
+  #       #   #5 {B}
+  #       #   #6 {C}
+  #       #   #7 {D}
+  #
+  #     anim.add_sequence( {0,5,10,15} )
+  #       #   #8 {A,B,C,D}
+  #
+  #     anim_img = anim.create_animated_image( random_Int32(anim.sequences.count) )
+  #     anim_img.handle = Handle.center
+  #
+  #   method update:
+  #     if (not anim_img.update) 
+  #       anim_img.play( random_Int32(anim_img.animation.sequences.count) )
+  #     endIf
+  #
+  #   method draw:
+  #     anim_img.draw( mouse_position )
+
+  PROPERTIES
+    frames       : Image[]
+    sequences(1) : FrameSequence[]
+    tiles_wide, tiles_high : Int32
+
+    status : ImageStatus
+
+  METHODS
+    method init( String filename ):
+      # Loads a pre-packaged series of frames.  Animation sequences will still
+      # need to be defined.
+      ImageManager.load( filename, this )
+
+    method init( String filename, tiles_wide, tiles_high )
+      # Loads the named image and creates tiles_wide*tiles_high individual frames from it.
+      frames = Image(filename).split_into_tiles(tiles_wide,tiles_high)
+
+    method init( Image tile_sheet, tiles_wide, tiles_high ):
+      # Creates tiles_wide*tiles_high individual frames from the specified source image.
+      frames = tile_sheet.split_into_tiles(tiles_wide,tiles_high)
+
+    method init( frames, tiles_wide, tiles_high ):
+      # Uses the 1D arraylist ''frames'' as if it were originally from an images
+      # that was ''tiles_wide'' by ''tiles_high''.
+
+    method get( Int32 frame_index ).Image:
+      # Returns the frame at the given index (0+).
+      return frames[frame_index]
+
+    method add_sequence( Box tiles, Int32 num_sets=1, Real64 interval=1.0/6.0, 
+        Animate style=Animate.cycle ):
+      # Defines one or more sequences of animations from the frames
+      # this Animation has available.
+
+      local var x = tiles.position.x
+      local var y = tiles.position.y
+      local var columns = tiles.size.x
+      local var rows    = tiles.size.y / num_sets
+      forEach (1..num_sets)
+        sequences.add( FrameSequence(columns) )
+        forEach (j in 0..<rows)
+          forEach (i in 0..<columns)
+            local var index = (y+j)*tiles_wide + (x+i)
+            sequences.last.add( index, frames[index] )
+          endForEach
+        endForEach
+        sequences.last.set_up( style, interval )
+        y += rows
+      endForEach
+
+    method add_sequence( Reader<<Int32>> frame_numbers, 
+        Real64 interval=1.0/6.0, Animate style=Animate.cycle ):
+      # Defines a sequence of animation from the specific frame numbers.
+      sequences.add( FrameSequence(4) )
+      forEach (frame in frame_numbers)
+        sequences.last.add( frame, frames[frame] )
+      endForEach
+      sequences.last.set_up( style, interval )
+
+    method play( Int32 initial_sequence=0 ).AnimatedImage
+      # Convenience method that calls create_animated_image and returns the result.
+      return create_player(initial_sequence)
+
+    method create_player( Int32 initial_sequence=0 ).AnimatedImage:
+      # Alternate syntax for create_animated_image().
+      return AnimatedImage(this,initial_sequence)
+
+    method create_animated_image( Int32 initial_sequence=0 ).AnimatedImage:
+      # Creates an AnimatedImage object that plays an instance of this
+      # Animation.
+      return AnimatedImage(this,initial_sequence)
+
+    method clean_up:
+      # Internal use.
+
+
+endClass
+
+class FrameSequence : ArrayList<<Image>>
+  # Internal use.  Defines an animation sequence as a list of integer frames.
+  # Used by [[SlagDoc:Animation|Animation].
+  PROPERTIES
+    style   : Animate
+    frame   : Int32  
+    dt      : Real64
+
+    frame_indices() : Int32[]
+      # Needed to regenerate the sequence if textures are lost.
+
+  METHODS
+    method add( Int32 index, Image image ):
+      frame_indices.add(index)
+      prior.add(image)
+
+    method regenerate( Animation anim ):
+      forEach (i of this)
+        this[i] = anim[frame_indices[i]]
+      endForEach
+
+    method set_up( style, Real64 interval ):
+      dt = (1 / interval) / 60
+
+      which (style)
+        case ping_pong:
+          forEach (i in count-2 downTo 1) add( this[i] )
+          style = Animate.cycle
+      endWhich
+
+endClass
+
+class AnimatedImage : GenericImage
+  # Obtained by calling [[SlagDoc:Animation#create_animated_image_int32|Animation::create_animated_image()]].
+  # Behaves like a standard Image with additional animation features: you can 
+  # call [[#play_Int32_Real64|play()] to start playing a
+  PROPERTIES
+    sequence : Int32
+    finished : Logical
+    paused   : Logical
+    frame    : Real64
+
+    dt        : Real64
+    animation : Animation
+    cur_seq   : FrameSequence
+
+  METHODS
+    method init( animation, Int32 initial_sequence=0 ):
+      # Intializes this AnimatedImage and starts playing the specified sequence
+      # (default: 0).
+      size = animation.frames.first.size
+      play(initial_sequence)
+
+      which (cur_seq.style)
+        case random:
+          frame = random_Int32( cur_seq.count )
+      endWhich
+
+    method play( Int32 index, Real64 seconds_duration=-1 ):
+      # Plays a specified animation sequence from the beginning.
+      sequence = index
+      cur_seq = animation.sequences[index]
+      frame = 0
+      if (seconds_duration == -1) dt = cur_seq.dt
+      else duration = seconds_duration
+      finished = false
+      paused = false
+
+    method play:
+      # Resumes play of the current animation sequence.  Only has an
+      # effect after [[#pause|pause()]] has been called.
+      paused = false
+
+    method pause:
+      # Pauses the current animation sequence.
+      paused = true
+
+    method interval( Real64 seconds ):
+      # Sets the animation frame interval in seconds.
+      dt = (1 / seconds) / 60
+
+    method duration( Real64 seconds ):
+      # Sets the overall duration for one repetition of this animation.
+      dt = ((cur_seq.count / seconds) / 60)
+
+    method update.Logical:
+      # Returns "true" if the animation is still playing, "false" otherwise.
+      # If an animation is ''paused'' then "true" is returned.
+      if (paused) return true
+
+      local var old_frame = Int32(frame)
+      frame += dt
+      local var new_frame = Int32(frame)
+
+      if (new_frame != old_frame)
+        which (cur_seq.style)
+          case Animate.cycle:
+            frame %= cur_seq.count
+
+          case Animate.random:
+            if (cur_seq.count > 1)
+              frame -= new_frame  # preserve fraction
+              new_frame = random_Int32( cur_seq.count - 1 )
+              if (new_frame >= old_frame) ++new_frame
+              frame += new_frame
+            else
+              frame = 0.0
+            endIf
+
+          case Animate.play_once:
+            if (new_frame >= cur_seq.count) 
+              frame = cur_seq.count - 1
+              finished = true
+              return false
+            endIf
+
+        endWhich
+      endIf
+
+      return true
+
+    method draw:
+      # Draws the current fram of this animated image to the screen
+      # at its current position.
+      local var img = cur_seq[Int32(frame)]
+
+      if (img.texture.lost)
+        animation.status.loader.load( animation )
+        img = cur_seq[Int32(frame)]
+      endIf
+
+      img.angle = angle
+      img.size = size
+      img.scale = scale
+      img.handle = &handle
+      img.hflip = hflip
+      img.vflip = vflip
+      img.color = color
+      img.blend = blend
+      img.render_flags = render_flags
+      img.draw(position)
+
+endClass
+
+#=====================================================================
+# ColorGradient
+#=====================================================================
+compound ColorGradient( Color top_left, Color top_right, Color bottom_right, Color bottom_left )
+  # Convenience compound that stores the four corner colors of a color gradient.
+
+singleton class ColorGradientManager
+  METHODS
+    method create_from( Int32 color ).ColorGradient:
+      # Creates a color gradient with all four entries containing the same color (given as an 0xAARRGGBB).
+      return ColorGradient( Color(color), Color(color), Color(color), Color(color) )
+
+    method create_from( Int32 c1, Int32 c2, Int32 c3, Int32 c4 ).ColorGradient:
+      # Creates a color gradient with the specified corner colors (given as 0xAARRGGBB integers).
+      return ColorGradient( Color(c1), Color(c2), Color(c3), Color(c4) )
+
+    method create_from( Color color ).ColorGradient:
+      # Creates a color gradient with the specified color in all four corners.
+      return ColorGradient( color, color, color, color )
+
+endClass
+
+#=====================================================================
+#  ImageManager
+#=====================================================================
+deferred singleton class ImageManager
+  PROPERTIES
+    categories()    : ImageSheetCategory[]
+    image_loaders() : HashTable<<String,ImageLoader>>
+    all_status()    : ImageStatus[]
+    permanent_sheet_names() : String[]
+    set_up : Logical
+
+  METHODS
+    method init:
+      contingent
+        necessary (defined(PLASMACORE))
+        necessary (DataFile("image_manifest.txt").exists)
+        necessary (not set_up)
+
+      satisfied
+        set_up = true
+
+        local Scanner scanner(DataFile("image_manifest.txt"))
+        while (scanner.has_another)
+          scanner.consume_ws
+          if (scanner.consume_eol)  nextIteration
+          if (scanner.consume("#")) scanner.scan_line; nextIteration
+
+          if (scanner.consume("[category"))
+            categories.add( ImageSheetCategory(scanner.scan_id) )
+            scanner.scan_line
+          elseIf (scanner.next_is_String)
+            local var item = categories.last.add_file_info( scanner )
+            image_loaders[item.filename] = item
+          else
+            println( "Skipping " + scanner.scan_line )
+          endIf
+        endWhile
+
+        forEach (loader in image_loaders.values)
+          if (loader.permanent)
+            loader.collect_permanent_sheet_names
+          endIf
+        endForEach
+      endContingent
+
+    method on_images_lost:
+      forEach (status in all_status) status.lost = true
+      all_status.clear
+      forEach (sheet_name in permanent_sheet_names) TextureSheetManager.load(sheet_name)
+
+    method load_category( String name ):
+      forEach (category in categories)
+        if (category.name == name) category.cache; return
+      endForEach
+      println( //"$" not found in load_category().// (name) )
+
+    method load_all:
+      forEach (category in categories)
+        category.cache
+      endForEach
+
+    method unload_all:
+      TextureSheetManager.unload_all
+      forEach (status in all_status)
+        status.lost = true
+        status.loader.release
+      endForEach
+      all_status.clear
+      Texture.unload_all
+
+    method release_all:
+      unload_all
+      #TextureSheetManager.release_all
+      #oforEach (status in all_status)
+      #  status.lost = true
+      #  status.loader.release
+      #endForEach
+      #all_status.clear
+      #forEach (sheet_name in permanent_sheet_names) TextureSheetManager.load(sheet_name)
+
+    method find_loader( String filename ).ImageLoader:
+      # Internal use.
+      if (image_loaders.contains(filename))
+        return image_loaders[filename]
+      elseIf (image_loaders.contains(filename+".png"))
+        return image_loaders[filename+".png"]
+      elseIf (image_loaders.contains(filename+".jpg"))
+        return image_loaders[filename+".jpg"]
+      elseIf (image_loaders.contains(filename+".jpeg"))
+        return image_loaders[filename+".jpeg"]
+      else
+        println( //ERROR: "$" not found.// (filename) )
+        return null
+      endIf
+
+    method load( String filename, Image img ):
+      local var loader = find_loader(filename)
+      if (loader?) loader.load(img)
+
+    method load( String filename, Animation anim ):
+      local var loader = find_loader(filename)
+      if (loader?) loader.load(anim)
+
+    method load( String filename, Image[] list ):
+      local var loader = find_loader(filename)
+      if (loader?) loader.load(list)
+
+    method load( String filename, Font font ):
+      local var loader = find_loader(filename)
+      if (loader?) loader.load(font)
+
+    method load( String filename, CompositeImage image ):
+      local var loader = find_loader(filename)
+      if (loader?) loader.load(image)
+
+endClass
+
+class ImageSheetCategory
+  PROPERTIES
+    name          : String
+    image_loaders()  : ImageLoader[]
+    sheet_names() : String[]
+
+  METHODS
+    method init(name):
+
+    method cache:
+      forEach (sheet_name in sheet_names) TextureSheetManager.load(sheet_name)
+
+    method add_file_info( Scanner scanner ).ImageLoader:
+      local var filename = scanner.scan_String
+      if (filename.begins_with("platform-")) filename = filename.after_first('/')
+
+      if (name == "standalone")
+        image_loaders.add( StandaloneImageLoader(filename,this) )
+        if (scanner.consume("permanent")) image_loaders.last.permanent = true
+
+      else
+        if (scanner.consume("split"))
+          local var tiles_w = scanner.scan_Int32
+          scanner.consume("x")
+          local var tiles_h = scanner.scan_Int32
+          local var permanent = scanner.consume("permanent")
+          scanner.consume_eol
+          
+          scanner.consume("size")
+          local var w = scanner.scan_Int32
+          local var h = scanner.scan_Int32
+          scanner.consume_eol
+
+          local var loader = ImageListLoader(filename,tiles_w,tiles_h,this)
+          if (permanent) loader.permanent = true
+          image_loaders.add( loader )
+
+          forEach (1..tiles_w*tiles_h)
+
+            #scanner.must_consume("tile")
+            if (not scanner.consume("tile")) throw Error(scanner.scan_line)
+            local var index = scanner.scan_Int32
+            local var x = scanner.scan_Int32
+            local var y = scanner.scan_Int32
+            scanner.consume_eol
+
+            loader.add_tile( index, x, y, w, h )
+          endForEach
+
+        elseIf (scanner.consume("font"))
+          local var num_chars = scanner.scan_Int32
+          local var permanent = scanner.consume("permanent")
+          scanner.consume_eol
+
+          scanner.must_consume("size")
+          local var w = scanner.scan_Int32
+          local var h = scanner.scan_Int32
+          scanner.consume_eol
+
+          local FontImageLoader loader( filename, h, num_chars, this )
+          if (permanent) loader.permanent = true
+          image_loaders.add(loader)
+
+          forEach (1..num_chars)
+            scanner.must_consume("char")
+            local var index = scanner.scan_Int32
+            local var x = scanner.scan_Int32
+            local var y = scanner.scan_Int32
+            scanner.consume_eol
+            loader.add_char( index, x, y, w )
+          endForEach
+
+        elseIf (scanner.consume("varfont"))
+          local var num_chars = scanner.scan_Int32
+          local var permanent = scanner.consume("permanent")
+          scanner.consume_eol
+
+          scanner.must_consume("height")
+          local var h = scanner.scan_Int32
+          scanner.consume_eol
+
+          local FontImageLoader loader( filename, h, num_chars, this )
+          if (permanent) loader.permanent = true
+          image_loaders.add(loader)
+
+          forEach (1..num_chars)
+            scanner.must_consume("char")
+            local var index = scanner.scan_Int32
+            local var x = scanner.scan_Int32
+            local var y = scanner.scan_Int32
+            local var w = scanner.scan_Int32
+            scanner.consume_eol
+            loader.add_char( index, x, y, w )
+          endForEach
+
+        elseIf (scanner.consume("composite"))
+          local var permanent = scanner.consume("permanent")
+          scanner.consume_eol
+
+          scanner.must_consume("size")
+          local var image_w = scanner.scan_Int32
+          local var image_h = scanner.scan_Int32
+          scanner.consume_eol
+
+          scanner.must_consume("chunk_size")
+          local var chunk_w = scanner.scan_Int32
+          local var chunk_h = scanner.scan_Int32
+          scanner.consume_eol
+
+          local var chunks_wide = (image_w+chunk_w-1) / chunk_w
+          local var chunks_high = (image_h+chunk_h-1) / chunk_h
+
+          local CompositeImageLoader loader( filename, image_w, image_h, this )
+          if (permanent) loader.permanent = true
+          image_loaders.add(loader)
+
+          forEach (j in 0..<chunks_high)
+            local var h = chunk_h
+            if ((j+1)*chunk_h > image_h) h = image_h - j*chunk_h
+            forEach (i in 0..<chunks_wide)
+              scanner.must_consume("tile")
+              local var index = scanner.scan_Int32
+              local var x = scanner.scan_Int32
+              local var y = scanner.scan_Int32
+              local var w = chunk_w
+              if ( (i+1)*chunk_w > image_w ) w = image_w - i*chunk_w
+              scanner.consume_eol
+              loader.add_chunk( index, Vector2(i*chunk_w,j*chunk_h), x, y, w+2, h+2 )
+            endForEach
+          endForEach
+
+        else
+          local var permanent = scanner.consume("permanent")
+          scanner.consume_eol
+          scanner.consume("tile")
+          local var index = scanner.scan_Int32
+          local var x = scanner.scan_Int32
+          local var y = scanner.scan_Int32
+          local var w = scanner.scan_Int32
+          local var h = scanner.scan_Int32
+          image_loaders.add( SingleImageLoader(filename,index,Box(x,y,w,h),this) )
+          if (permanent) image_loaders.last.permanent = true
+
+        endIf
+
+      endIf
+
+      if (name == "permanent") image_loaders.last.permanent = true
+      return image_loaders.last
+endClass
+
+class ImageLoader
+  PROPERTIES
+    category  : ImageSheetCategory
+    filename  : String
+
+    permanent : Logical
+
+    status    : ImageStatus
+      # Current status object to give to all images loaded by this loader.
+
+  METHODS
+    method init(filename,category):
+
+    method collect_permanent_sheet_names:
+
+    method release:
+
+    method load( Image img ):
+      println( //Cannot load "$" as an image.// (filename) )
+
+    method load( Animation anim ):
+      println( //Cannot load "$" as an animation.// (filename) )
+
+    method load( Image[] anim ):
+      println( //Cannot load "$" as an image list.// (filename) )
+
+    method load( Font font ):
+      println( //Cannot load "$" as a font.// (filename) )
+
+    method load( CompositeImage image ):
+      println( //Cannot load "$" as a composite image.// (filename) )
+endClass
+
+class StandaloneImageLoader : ImageLoader
+  PROPERTIES
+    texture : Texture
+
+  METHODS
+    method load( Image img ):
+      if (texture is null or texture.lost)
+        if (texture?) texture.release
+        try
+          texture = Texture( filename )
+        catch (Error err)
+          println( //ERROR: "$" not found.// (filename) )
+          texture = Texture(Bitmap(16,16))
+        endTry
+        texture.retain
+      endIf
+
+      if (status is null or status.lost) status = ImageStatus(this)
+
+      local var reset_size = img.texture?
+      local var size = img.size
+
+      img.status = status
+      img.init( texture, Corners(Vector2(0,0), texture.image_size / texture.texture_size) )
+
+      if (reset_size) 
+        img.size = size
+        if (img.&handle.relative_position?) img.handle = Handle(img.&handle.relative_position)
+      endIf
+
+    method release:
+      if (permanent) return
+      if (texture?) 
+        if (texture.reference_count?)
+          texture.reference_count = 1  # kludge
+          texture.release
+        endIf
+      endIf
+      texture = null
+endClass
+
+class SingleImageLoader : ImageLoader
+  PROPERTIES
+    sheet_name  : String
+    bounds      : Box
+
+  METHODS
+    method init( filename, Int32 sheet_index, bounds, category ):
+      while (sheet_index >= category.sheet_names.count)
+        category.sheet_names.add( "image_sheet_$_$.png" (category.name,category.sheet_names.count) )
+      endWhile
+      sheet_name = category.sheet_names[sheet_index]
+
+    method collect_permanent_sheet_names:
+      if (not ImageManager.permanent_sheet_names.contains(sheet_name))
+        ImageManager.permanent_sheet_names.add(sheet_name)
+      endIf
+
+    method load( Image img ):
+      local var sheet = TextureSheetManager.load( sheet_name )
+
+      local var reset_size = img.texture?
+      local var size = img.size
+
+      img.init( sheet, bounds )
+      img.crop(1)  # adjust uv to remove padding
+
+      if (reset_size) 
+        img.size = size
+        if (img.&handle.relative_position?) img.handle = Handle(img.&handle.relative_position)
+      endIf
+
+      if (status is null or status.lost) status = ImageStatus(this)
+      img.status = status
+endClass
+
+class ImageListLoader : ImageLoader
+  PROPERTIES
+    frame_count   : Int32
+    tiles_wide, tiles_high : Int32
+    sheet_names() : String[]
+    bounds()      : Box[]
+    list_status   : ImageStatus
+
+  METHODS
+    method init( filename, tiles_wide, tiles_high, category ):
+      frame_count = tiles_wide * tiles_high
+
+    method collect_permanent_sheet_names:
+      forEach (sheet_name in sheet_names)
+        if (not ImageManager.permanent_sheet_names.contains(sheet_name))
+          ImageManager.permanent_sheet_names.add(sheet_name)
+        endIf
+      endForEach
+
+    method add_tile( Int32 index, Int32 x, Int32 y, Int32 w, Int32 h ):
+      while (index >= category.sheet_names.count)
+        category.sheet_names.add( "image_sheet_$_$.png" (category.name,category.sheet_names.count) )
+      endWhile
+
+      sheet_names.add( category.sheet_names[index] )
+      bounds.add( Box( x, y, w, h ) )
+
+    method load( Image[] frames ):
+      if (list_status is null or list_status.lost or list_status.frames isNot frames)
+        list_status = ImageStatus(this,frames)
+      endIf
+
+      frames.ensure_capacity(frame_count)
+
+      if (frames.count?)
+        # Already loaded - reload
+        forEach (i in 0..<frame_count)
+          local Image img = frames[i]
+          # Note: If frame is null it must have been set to null on purpose so we
+          #       leave it alone.
+          if (img?)
+            local var sheet = TextureSheetManager.load( sheet_names[i] )
+            local var size = img.size
+            img.init( sheet, bounds[i] )
+            img.crop(1)  # adjust uv to remove padding
+            img.size = size
+            if (img.&handle.relative_position?) img.handle = Handle(img.&handle.relative_position)
+            img.status = list_status
+          endIf
+        endForEach
+
+      else
+        forEach (i in 0..<frame_count)
+          local var sheet = TextureSheetManager.load( sheet_names[i] )
+          local Image img( sheet, bounds[i] )
+          img.crop(1)  # adjust uv to remove padding
+          img.status = list_status
+          frames.add( img )
+        endForEach
+      endIf
+
+    method load( Image single_frame ):
+      load( single_frame.status.frames )
+
+    method load( Animation anim ):
+      if (status is null or status.lost) status = ImageStatus(this)
+      anim.status = status
+
+      anim.tiles_wide = tiles_wide
+      anim.tiles_high = tiles_high
+
+      local Image[] frames(frame_count)
+
+      forEach (i in 0..<frame_count)
+        local var sheet = TextureSheetManager.load( sheet_names[i] )
+        local Image img( sheet, bounds[i] )
+        img.crop(1)  # adjust uv to remove padding
+        frames.add( img )
+      endForEach
+
+      anim.frames = frames
+
+      # regenerate sequences on reload
+      forEach (seq in anim.sequences) seq.regenerate(anim)
+
+endClass
+
+class FontImageLoader : ImageLoader
+  PROPERTIES
+    char_count    : Int32
+    height        : Int32
+    sheet_names() : String[]
+    bounds()      : Box[]
+
+  METHODS
+    method init( filename, height, char_count, category ):
+
+    method add_char( Int32 sheet_index, Int32 x, Int32 y, Int32 w ):
+      while (sheet_index >= category.sheet_names.count)
+        category.sheet_names.add( "image_sheet_$_$.png" (category.name,category.sheet_names.count) )
+      endWhile
+
+      sheet_names.add( category.sheet_names[sheet_index] )
+      bounds.add( Box( x, y, w, height ) )
+
+    method collect_permanent_sheet_names:
+      forEach (sheet_name in sheet_names)
+        if (not ImageManager.permanent_sheet_names.contains(sheet_name))
+          ImageManager.permanent_sheet_names.add(sheet_name)
+        endIf
+      endForEach
+
+    method load( Font font ):
+      if (status is null or status.lost) status = ImageStatus(this)
+      font.status = status
+
+      font.height = height - 2
+
+      local var i = 0
+      forEach (index in font.mapping)
+        local var ch = FontCharacter()
+        font.characters[index] = ch
+        local var sheet = TextureSheetManager.load( sheet_names[i] )
+        local Image img( sheet, bounds[i] )
+        img.crop(1)  # adjust uv to remove padding
+        ch.image = img
+        ch.width = img.size.x
+        ++i
+      endForEach
+
+      if (font.width_adjustment?)
+        font.adjust_character_widths(font.width_adjustment)
+      endIf
+
+      if (font.style.includes(FontStyle.point_filter))
+        forEach (ch in font.characters)
+          if (ch?) ch.image.render_flags |= Render.point_filter
+        endForEach
+      endIf
+
+endClass
+
+class CompositeImageLoader : ImageLoader
+  PROPERTIES
+    width, height : Int32
+    sheet_names() : String[]
+    positions()   : Vector2[]
+    bounds()      : Box[]
+
+  METHODS
+    method init( filename, width, height, category ):
+
+    method collect_permanent_sheet_names:
+      forEach (sheet_name in sheet_names)
+        if (not ImageManager.permanent_sheet_names.contains(sheet_name))
+          ImageManager.permanent_sheet_names.add(sheet_name)
+        endIf
+      endForEach
+
+    method add_chunk( Int32 index, Vector2 pos, Int32 x, Int32 y, Int32 w, Int32 h ):
+      while (index >= category.sheet_names.count)
+        category.sheet_names.add( "image_sheet_$_$.png" (category.name,category.sheet_names.count) )
+      endWhile
+
+      sheet_names.add( category.sheet_names[index] )
+      bounds.add( Box( x, y, w, h ) )
+      positions.add(pos)
+
+    method load( CompositeImage image ):
+      if (status is null or status.lost) status = ImageStatus(this)
+      image.status = status
+
+      image.init( width, height )
+      image.components.clear
+
+      forEach (i in 0..<sheet_names.count)
+        local var sheet = TextureSheetManager.load( sheet_names[i] )
+        local Image img( sheet, bounds[i] )
+        img.crop(1)  # adjust uv to remove padding
+        image.add( img, positions[i] )
+      endForEach
+
+endClass
+
+augment ArrayList<<Image>>
+  METHODS
+    method init( String filename ):
+      init(0)
+      ImageManager.load(filename,this)
+endAugment
+
+class ImageStatus(loader,frames=null)
+  PROPERTIES
+    lost        : Logical
+    loader      : ImageLoader
+    frames      : Image[]
+
+  METHODS
+    method init_object:
+      ImageManager.all_status.add(this)
+endClass
+

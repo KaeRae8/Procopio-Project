@@ -1,0 +1,387 @@
+#=====================================================================
+# linked_list.slag
+#
+# Slag Standard Library
+# v3.5.0 (2011.06.18)
+#
+# A linked list implementation.
+#
+# Primary classes:
+#   LinkedList
+#
+# Example:
+#   local LinkedList<<String>> names()
+#   names.add( "Abe" )
+#   names.add( "Ty" )
+#   names.shuffle
+#   println( names.remove_first )
+# 
+# --------------------------------------------------------------------
+#
+# Copyright 2010 Plasmaworks LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); 
+# you may not use this file except in compliance with the License. 
+# You may obtain a copy of the License at 
+#
+#   http://www.apache.org/licenses/LICENSE-2.0 
+#
+# Unless required by applicable law or agreed to in writing, 
+# software distributed under the License is distributed on an 
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, 
+# either express or implied. See the License for the specific 
+# language governing permissions and limitations under the License.
+#
+#=====================================================================
+class LinkedList<<$DataType>> : ListOperations<<$DataType,LinkedList<<$DataType>>>>
+  # A LinkedList uses a singly-linked node structure to maintain
+  # its list.  On the one hand it uses more memory per item and
+  # retrievals take O(n) time, but on the other hand there is
+  # no "wasted" (unused) memory like there is with ArrayLists
+  # and insertions and removals are O(1) once the proper position
+  # is found.
+  #
+  # Array lists are recommended over linked lists except in
+  # situations where there are many different lists.
+  #
+  # Slag list syntax defaults to ArrayList usage:
+  #
+  #   Int32[] array_list()
+  #
+  # Linked lists must be explicitly created:
+  #
+  #   Int32[] linked_list = LinkedList<<Int32>>()
+  #
+  # or
+  #
+  #   LinkedList<<Int32>> linked_list()
+  #
+  # Invariant:
+  #   count >= 0
+  #   capacity >= count
+  #   data.count == capacity
+  PROPERTIES
+    first_node, last_node : LinkedListNode<<$DataType>>
+      # Links to the head and tail of this list.
+
+    counter   : Int32
+      # Counts how many items are stored in this list.
+
+    modification_count : Int32
+      # The number of times this list has had an element added to or removed from it.
+
+  METHODS
+    method init: 
+      # Creates an empty linked list
+
+    method init( Readable<<$DataType>> readable ):
+      # Initializes this list to contain all the items from the
+      # 'readable' data source.
+      init
+      add( readable )
+
+    method count.Int32:
+      # Returns how many values there are in this list.
+      return counter
+
+    method modification_count.Int32:
+      # Returns the number of times this list has had an element added to
+      # or removed from it.
+      return &modification_count
+
+    method create_reader.Reader<<$DataType>>:
+      # Example:
+      #   local LinkedList<<Int32>> nums()
+      #   nums.add(3,4,5,6)
+      #   forEach (n in nums) println(n)
+      return LinkedListReader<<$DataType>>(first_node)
+
+    method get( Int32 index ).$DataType:
+      # Returns the element at the given zero-based index.
+      #
+      # Requires:
+      #   0 <= index and index < count
+      local var cur = first_node
+      forEach (1..index) cur = cur.next
+      return cur.value
+
+    method set( Int32 index, $DataType value ):
+      # Sets the element at the given zero-based index.
+      #
+      # Requires:
+      #   0 <= index and index < count
+      local var cur = first_node
+      forEach (1..index) cur = cur.next
+      cur.value = value
+
+    requisite method add( $DataType value ).LinkedList<<$DataType>>:
+      # Adds the given 'value' to the end of this list.
+      #
+      # Returns a reference to this list for call chaining.
+      #
+      # Invariant:
+      #   count = old.count + 1
+      #   get[count-1] == value
+      local LinkedListNode<<$DataType>> node(value)
+      if (first_node is null)
+        first_node = node
+        last_node  = node
+      else
+        last_node.next = node
+        last_node = node
+      endIf
+      ++counter
+      ++modification_count
+      return this
+
+    method add( List<<$DataType>> seq ).LinkedList<<$DataType>>:
+      # Adds each item in the given collection of data to this list. 
+      forEach (value in seq) add(value)
+      return this
+
+    method insert( $DataType value, Int32 before_index=0 ).LinkedList<<$DataType>>:
+      # Inserts the 'value' in front of 'before_index'.  Elements
+      # at 'begin_index' and higher are logically shifted up by one.
+      #
+      # Returns:
+      #   A reference to this list for call chaining.
+      # 
+      # Requires: 
+      #   0 <= before_index and before_index <= count
+      #
+      # Invariant:
+      #   this[before_index]   = value
+      #   this[before_index+1] = old[before_index]
+      #   count = old.count + 1
+      if (first_node is null or before_index == counter) return add(value)
+
+      if (before_index == 0)
+        first_node = LinkedListNode<<$DataType>>( value, first_node )
+      else
+        local var cur = first_node
+        forEach (2..before_index) cur = cur.next
+        cur.next = LinkedListNode<<$DataType>>( value, cur.next )
+        if (cur == last_node) last_node = cur.next
+      endIf
+      ++counter
+      ++modification_count
+      return this
+
+
+    method insert( List<<$DataType>> seq, Int32 before_index=0 ).LinkedList<<$DataType>>:
+      # Inserts all the given values in front of 'before_index'.  Elements
+      # at 'begin_index' and higher are logically shifted up by one.
+      #
+      # Returns:
+      #   A reference to this list for call chaining.
+      # 
+      # Requires: 
+      #   0 <= before_index and before_index <= count
+      #
+      # Invariant:
+      #   this[before_index]   = value
+      #   this[before_index+seq.count] = old[before_index]
+      #   count = old.count + seq.count
+      if (first_node is null or before_index == counter) return add(seq)
+
+      local LinkedList<<$DataType>> temp_list( seq )
+
+      if (before_index == 0)
+        temp_list.last_node.next = first_node
+        first_node = temp_list.first_node
+      else
+        local var cur = first_node
+        forEach (2..before_index) cur = cur.next
+        temp_list.last_node.next = cur
+        cur.next = temp_list.first_node
+        if (cur == last_node) last_node = cur.next
+      endIf
+      counter += temp_list.count
+      ++modification_count
+      return this
+
+    method remove( Int32 index ).$DataType:
+      # Removes and returns the element at position 'index'.  All
+      # elements higher than 'index' are logically shifted down by one spot
+      # and the list count is decremented.
+      #
+      # Returns:
+      #   old[index]
+      #
+      # Requires:
+      #   0 <= index and index < count
+      # 
+      # Invariant:
+      #   new[index] = old[index+1]
+      # 
+      local $DataType result
+      if (index == 0)
+        result = first_node.value
+        if (counter == 1)
+          first_node = null
+          last_node = null
+        else
+          first_node = first_node.next
+        endIf
+      else
+        local var prev = first_node
+        forEach (2..index) prev = prev.next
+
+        result = prev.next.value
+        prev.next = prev.next.next
+
+        if (index == counter-1)
+          last_node = prev
+        endIf
+      endIf
+      --counter
+      ++modification_count
+      return result
+
+    method remove( Int32 first_index, Int32 last_index ).LinkedList<<$DataType>>:
+      # Removes and returns the elements in the specified range.
+      #
+      # 'first' and 'last_node' are clipped to be a valid range. 
+      #
+      # Returns:
+      #   The list of elements from old[first] through old[last_node].
+      if (first_index < 0) first_index = 0
+      if (last_index >= counter) last_index = counter - 1
+
+      local var len = (last_index - first_index) + 1
+
+      local $DataType[] results(len)
+
+      if (len <= 0) return results
+
+      if (first_index == 0)
+        forEach (1..len)
+          results.add( first_node.value )
+          first_node = first_node.next
+        endForEach
+        if (last_index == counter-1)
+          last_node = null
+        endIf
+      else
+        local var prev = first_node
+        forEach (2..first_index) prev = prev.next
+        forEach (1..len)
+          local var next = prev.next
+          results.add( next.value )
+          prev.next = next.next
+        endForEach
+        if (last_index == counter-1)
+          last_node = prev
+        endIf
+      endIf
+      counter -= len
+      ++modification_count
+      return results
+
+    method remove_first.$DataType:
+      local var result = first_node.value
+      --counter
+      ++modification_count
+      if (counter == 0)
+        first_node = null
+        last_node = null
+      else
+        first_node .= next
+      endIf
+      return result
+
+    method discard( Int32 first_index, Int32 last_index=-1 ):
+      # Removes the elements in the specified range.  Does not return
+      # the list of removed elements like remove() does.  If only
+      # the 'first' parameter is given, elements from 'first' to the
+      # end of the list are discarded.
+      #
+      # 'first' and 'last_node' are clipped to be a valid range. 
+      if (first_index < 0) first_index = 0
+      if (last_index >= counter) last_index = counter - 1
+
+      local var len = (last_index - first_index) + 1
+
+      if (len <= 0) return
+
+      if (first_index == 0)
+        forEach (1..len)
+          first_node = first_node.next
+        endForEach
+        if (last_index == counter-1)
+          last_node = null
+        endIf
+      else
+        local var prev = first_node
+        forEach (2..first_index) prev = prev.next
+        forEach (1..len)
+          local var next = prev.next
+          prev.next = next.next
+        endForEach
+        if (last_index == counter-1)
+          last_node = prev
+        endIf
+      endIf
+      counter -= len
+      ++modification_count
+
+    method create_duplicate.LinkedList<<$DataType>>:
+      # Creates a duplicate of this list when the "duplicate(list)"
+      # command is given.  If the list element type is a reference 
+      # type, the new list contains a copy of the same references
+      # to the same objects - the objects themeselves are not 
+      # duplicated.
+      local LinkedList<<$DataType>> dup()
+      local var cur = first_node
+      while (cur isNot null)
+        dup.add( cur.value )
+        cur = cur.next
+      endWhile
+      dup.counter = count
+      return dup
+
+    requisite method clear: 
+      # Removes all elements from this list.  The capacity
+      # is unchanged.
+      #
+      # Invariant:
+      #   new.count == 0
+      #   new.capacity == old.capacity
+      if (counter > 0) 
+        first_node = null
+        last_node = null
+        counter = 0
+        ++modification_count
+      endIf
+endClass
+
+class LinkedListNode<<$DataType>>
+  # Internal use - used by LinkedList.
+
+  PROPERTIES
+    value : $DataType
+    next  : LinkedListNode<<$DataType>>
+
+  METHODS
+    method init( value ):
+      # Value initializer.
+
+    method init( value, next ):
+      # Value/link initializer
+endClass
+
+
+class LinkedListReader<<$DataType>>( LinkedListNode<<$DataType>> cur ) : Reader<<$DataType>>
+  METHODS
+    method has_another.Logical:
+      return cur?
+
+    method peek.$DataType:
+      return cur.value
+
+    method read.$DataType:
+      local var result = cur.value
+      cur .= next
+      return result
+endClass
+

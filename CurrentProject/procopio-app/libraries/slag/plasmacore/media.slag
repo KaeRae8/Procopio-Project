@@ -1,0 +1,70 @@
+#==============================================================================
+# media.slag
+#
+# 3.5.0 (2011.06.18)
+#
+# Provides various media services:
+#   - Video playback
+#
+# -----------------------------------------------------------------------------
+#
+# Copyright 2008-2011 Plasmaworks LLC
+#
+#   http://plasmaworks.com/plasmacore
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); 
+# you may not use this file except in compliance with the License. 
+# You may obtain a copy of the License at 
+#
+#   http://www.apache.org/licenses/LICENSE-2.0 
+#
+# Unless required by applicable law or agreed to in writing, 
+# software distributed under the License is distributed on an 
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, 
+# either express or implied. See the License for the specific 
+# language governing permissions and limitations under the License.
+#
+#==============================================================================
+
+[include "web.slag"]
+
+class VideoPlayer : Screen
+  CLASS_PROPERTIES
+    game_music()      : Sound[]
+    active_music()    : Sound[]
+
+  PROPERTIES
+    filepath     : String
+    native_data  : NativeData
+ 
+  METHODS
+    method init( filepath )
+
+    method on_activate
+      active_music.clear
+      forEach (music in game_music)
+        if (music.is_playing)
+          active_music.add(music)
+          music.pause
+        endIf
+      endForEach
+
+[if defined(PLATFORM_IOS) or defined(ANDROID)]
+      native_data = play( filepath )
+[else]
+      log( "Video playback unsupported on $." (System.os) )
+[endIf]
+      
+    method update
+      if (native_data is null or not update(native_data))
+        if (native_data?) native_data.release
+        forEach (music in active_music) music.play
+        active_music.clear
+        pop
+      endIf
+
+    native method play( String _filepath ).NativeData
+    native method update( NativeData data ).Logical
+
+endClass
+

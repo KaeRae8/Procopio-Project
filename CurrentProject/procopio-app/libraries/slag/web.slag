@@ -1,0 +1,1689 @@
+#=====================================================================
+# web.slag
+#
+# Slag web services library
+#
+# v3.5.0 ($DATE)
+#
+# --------------------------------------------------------------------
+#
+# Copyright 2010 Plasmaworks LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); 
+# you may not use this file except in compliance with the License. 
+# You may obtain a copy of the License at 
+#
+#   http://www.apache.org/licenses/LICENSE-2.0 
+#
+# Unless required by applicable law or agreed to in writing, 
+# software distributed under the License is distributed on an 
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, 
+# either express or implied. See the License for the specific 
+# language governing permissions and limitations under the License.
+#
+#=====================================================================
+
+#=====================================================================
+# Usage Example
+# -------------
+#
+# class TestClass : HTTPEventListener
+#   PROPERTIES:
+#     client : HTTPClient
+#
+#   METHODS:
+#     method on_http_done(HTTPResponse response):
+#       println( "Status: "+response.status     )
+#       println( "Header: "+response.headers[0] )
+#       println( "Body:   "+response.body       )
+#
+#     method dostuff:
+#       client = HTTPClient(this,"www.yahoo.com/groups/mygroup.html")
+#            
+#             OR
+#     
+#       client = HTTPClient(this)
+#       client.host = "www.yahoo.com"
+#       client.path = "/groups/mygroup.html?id=123"
+#       client.connect
+#
+#             OR
+#
+#       client = HTTPClient(this)
+#       client.host   = "www.yahoo.com"
+#       client.path   = "/user/login.php"
+#       client.action = HTTPAction.post
+#       client.data   = "username=matt&password=mypass"
+#       client.connect
+#
+# endClass
+#=====================================================================
+
+[include "network.slag"]
+[include "tree_map.slag"]
+
+[if defined(WP7)]
+  [include "windows_phone_7.slag"]
+[endIf]
+
+enum HTTPAction
+  CATEGORIES
+    get, post, put, delete
+endEnum
+
+enum HTTPState
+  CATEGORIES
+    pre, ready, connect_wait, response_wait, closed
+endEnum
+
+class HTTPClient : Task
+  CLASS_PROPERTIES
+    AGENT_NAME="Slag HTTP Client (http://www.plasmaworks.com)" : String
+    
+  PROPERTIES
+    listener : HTTPEventListener
+
+    host    : String    
+    port=80 : Int32
+    path    : String
+    action=HTTPAction.get : HTTPAction
+    data="" : String
+    headers() : String[]
+    response  : HTTPResponse
+    timeout=2 : Real64
+
+    conn : Socket     # Internal use only
+    conn_state=HTTPState.ready : HTTPState  # Internal use only
+    cur_time : Real64
+
+    r_reader : HTTPResponseReader # Internal use only
+
+    cookies() : HTTPCookie[]
+
+    error : Logical # Internal use only
+
+  METHODS
+    method init( listener, String url=null, action=HTTPAction.get ):
+      if (url?)
+        conn_state = HTTPState.pre
+
+        host = url
+        if (host.begins_with("http")) host .= after_first("//")
+
+        if (host.contains('/'))
+          path = host.from_first('/')
+          host .= excluding_rightmost(path.count)
+        else
+          path = "/"
+        endIf
+
+        if (host.contains(':'))
+          port = host.after_first(':').to_Int32
+          host .= before_first(':')
+        endIf
+      endIf
+
+    method add_data( String name, String value ).HTTPClient:
+      if (data.count?) data += "&"
+      data += "$=$" (name.url_encoded,value.url_encoded)
+      return this
+
+    method update:
+      which(conn_state)
+        case HTTPState.ready:
+          # Do nothing
+
+        case HTTPState.pre:
+          conn = Socket(host,port)
+          r_reader   = HTTPResponseReader(conn)
+          conn_state = HTTPState.connect_wait
+
+        case HTTPState.connect_wait:
+          if( not conn.connection_pending and not conn.is_connected ) conn_state = HTTPState.closed
+          elseIf( conn.is_connected ) send_request
+
+        case HTTPState.response_wait:
+          if( r_reader.is_done )
+            response = HTTPResponse(r_reader.status,r_reader.headers,r_reader.body)
+            conn_state = HTTPState.ready
+            process_response(r_reader)
+            listener.on_http_done(response)
+          else
+            r_reader.process
+          endIf
+        
+        case HTTPState.closed:
+          exit
+
+      endWhich
+
+    method connect:
+      if( !is_closed )
+        if( conn isNot null ) conn_state = HTTPState.connect_wait
+        else                  conn_state = HTTPState.pre
+      endIf
+
+    method close:
+      conn.close
+      conn_state = HTTPState.closed
+
+    method is_closed.Logical:
+      return conn_state == HTTPState.closed
+
+    method process_response(HTTPResponseReader resp):
+      # parse and create cookies
+      forEach(line in resp.headers)
+        if( line.to_lowercase.starts_with("set-cookie:") )
+          local HTTPCookie cookie()
+          local var content = line.substring( line.index_of(":")+1 ).tidy
+          cookie.name  = content.split(';')[0].split('=')[0]
+          cookie.value = content.split(';')[0].split('=')[1]
+          forEach(pair in content.split(';'))
+            if( pair != "" )
+              local var key = pair.split('=')[0]
+              local var val = pair.split('=')[1]
+
+              which( key.to_lowercase )
+                case "comment": cookie.comment = val
+                case "domain":  cookie.domain  = val
+                  #case "max-age": cookie.domain  = val
+                case "path":    cookie.path    = val
+                case "version": cookie.version = val
+                case "secure":  cookie.secure  = true
+              endWhich
+            endIf
+          endForEach
+
+          forEach(old_cookie in cookies)
+            if( old_cookie.name == cookie.name ) cookies.remove(old_cookie);escapeForEach
+          endForEach
+          cookies.add( cookie )
+
+        endIf
+      endForEach
+
+    method send_request:
+      local var send_path = path
+      if (action == HTTPAction.get) send_path += data
+      send_line( "$ $ HTTP/1.1" (action.to_String.to_uppercase,send_path) )
+      send_headers
+      if( action == HTTPAction.post or action == HTTPAction.put )
+        conn.writer.print(data)
+      endIf
+
+      conn_state = HTTPState.response_wait
+      r_reader   = HTTPResponseReader(conn)
+      
+    method send_line(String line):
+      conn.writer.println( line+"\r" )
+
+    method send_headers:
+      send_line( "Host: "+host )
+      send_line( "User-Agent: "+AGENT_NAME )
+      forEach( entry in headers ) send_line( entry )
+
+      if( cookies.count > 0 )
+        local var cookie_line = "Cookie: "
+        forEach( cookie in cookies ) cookie_line += cookie.to_String+"; "
+        send_line( cookie_line.substring(0,cookie_line.count-3) )
+      endIf
+
+      which( action )
+        case HTTPAction.get:  
+
+        case HTTPAction.post: 
+          send_line( "Content-Type: application/json" )
+          send_line( "Content-Length: "+data.count )
+      endWhich
+
+      send_line( "" )
+
+endClass
+
+class HTTPCookie
+  PROPERTIES
+    name : String
+    value : String
+    comment : String
+    domain : String
+    max_age : Int32
+    path : String
+    secure : Logical
+    version : String
+  METHODS
+    method init:
+    method init(name,value):
+
+    method to_String.String:
+      return ""+name+"="+value
+endClass
+
+class HTTPResponse
+  PROPERTIES
+    status    : Int32
+    headers() : String[]
+    body      : String
+  METHODS
+    method init:
+    method init(status, headers, body):
+
+[if defined(PLASMACORE)]
+    method to_Image.Image: 
+      forEach( header in headers )
+        local var h = header.to_lowercase
+        if( h.starts_with("content-type") and h.contains("image/png") )
+          return Image( Bitmap(body.to_bytes) )
+        endIf
+      endForEach
+      return null
+[endIf]
+endClass
+
+underlying aspect HTTPEventListener
+  METHODS
+    method init:
+    method on_http_done(HTTPResponse response):
+endAspect
+
+class HTTPResponseReader
+  CLASS_PROPERTIES
+    reading_status=0  : Int32
+    reading_headers=1 : Int32
+    reading_body=2    : Int32
+    done=3            : Int32
+  PROPERTIES
+    conn      : Socket
+
+    state=reading_status : Int32 
+    size_remaining=0     : Int32
+    chunked : Logical
+
+    status_line : String   
+    headers()   : String[]
+    body=""     : String 
+
+    error : Logical
+
+    last_state=-1 : Int32
+  METHODS
+    method init(conn):
+
+    method process:
+      forEach( line in HTMLLineReader(conn.reader) )
+        if(     state == reading_status  ) read_status(line)
+        elseIf( state == reading_headers ) read_header(line)
+        elseIf( state == reading_body    ) read_body(line)
+      endForEach
+      if (state == reading_body and size_remaining <= 0) state = done
+
+    method is_done.Logical: return state == done
+
+    method read_status(String line):
+      line = line.to_lowercase
+      if( valid_status(line) ) 
+        status_line = line
+        state = reading_headers
+      else                     
+        error = true
+      endIf
+
+    method read_header(String line):
+      line = line.trim
+      if( line == "" )
+        state = reading_body
+      elseIf( valid_header(line) )
+        if( line.to_lowercase.starts_with("content-length:") ) 
+          size_remaining = Int32(line.tidy.split(':')[1].trim)
+        elseIf( line.to_lowercase.starts_with("transfer-encoding:") and line.to_lowercase.contains("chunked") )
+          chunked = true
+        elseIf( line.to_lowercase.starts_with("set-cookie:") )
+
+        endIf
+        headers.add( line )
+      endIf
+
+    method read_body(String line):
+      if( size_remaining > 0 ) 
+        body += line
+        size_remaining -= line.count+1
+        if( size_remaining <= 0 and !chunked ) state = done
+      elseIf( size_remaining <= 0 )
+        line = line.trim
+        if( chunked and line != "" )
+          try
+            size_remaining = line.to_Int32(16)
+          catch( InvalidOperandError e )
+            log( "size_remaining=[$]/Error parsing [$]" (size_remaining,line) )
+          endTry
+          if( size_remaining == 0 ) state = done
+        else
+          state = done
+        endIf
+      endIf
+
+    method valid_status(String line).Logical:
+      return true
+
+    method valid_header(String line).Logical:
+      return true
+
+    method status.Int32:
+      return Int32(status_line.tidy.split[1])
+
+endClass
+
+augment String
+  method url_encoded.String:
+    local StringBuilder buffer(count)
+    forEach( ch in this )
+      which( ch )
+        case ' ':  buffer.print('+')
+        case '!':  buffer.print("%21")
+        case '"':  buffer.print("%22")
+        case '#':  buffer.print("%23")
+        case '$':  buffer.print("%24")
+        case '%':  buffer.print("%25")
+        case '&':  buffer.print("%26")
+        case '\'': buffer.print("%27")
+        case '(':  buffer.print("%28")
+        case ')':  buffer.print("%29")
+        case '*':  buffer.print("%2A")
+        case '+':  buffer.print("%2B")
+        case ',':  buffer.print("%2C")
+        case '-':  buffer.print("%2D")
+        case '.':  buffer.print("%2E")
+        case '/':  buffer.print("%2F")
+        case '@':  buffer.print("%40")
+        case '[':  buffer.print("%5B")
+        case '\\': buffer.print("%5C")
+        case ']':  buffer.print("%5D")
+        case '^':  buffer.print("%5E")
+        case '`':  buffer.print("%60")
+        case '{':  buffer.print("%7B")
+        case '|':  buffer.print("%7C")
+        case '}':  buffer.print("%7D")
+        case ';':  buffer.print("%3B")
+        case ':':  buffer.print("%3A")
+        case '=':  buffer.print("%3D")
+        case '?':  buffer.print("%3F")
+          others:  buffer.print(ch)
+      endWhich
+    endForEach
+    return buffer.to_String
+endAugment
+
+#==============================================================================
+# HTTPDownloader
+#==============================================================================
+underlying aspect HTTPDownloadListener
+  METHODS
+    requisite method on_download_finished( HTTPDownloader downloader ): abstract
+      # Called when the associcated HTTPDownloader is finished
+      # downloading.  If "downloader.data" is "null" then an error
+      # occurred; otherwise it contains the requested file as a byte list.
+endAspect
+
+class HTTPDownloader : Task, DataListener
+  # Performs a simple asynchronous HTTP Get of a requested resource.
+  #
+  # Intended for use in Plasmacore.
+  #
+  # Polling Example:
+  #   downloader : HTTPDownloader
+  #   ...
+  #   downloader = HTTPDownloader("http://zombiegod.com:4500/promo/android")
+  #   ...
+  #   if (not downloader.busy)
+  #     if (downloader.data?) println( "File data: " + String(downloader.data)
+  #     else println( "Error" )
+  #   endIf
+  #
+  #
+  # Notification Example:
+  #   class Whatever : HTTPDownloadListener
+  #       ...
+  #       HTTPDownloader( url, this )
+  #
+  #     method on_download_finished( HTTPDownloader downloader ):
+  #       if (downloader.data?) println( "File data: " + String(downloader.data) )
+  #       else println( "Error" )
+  #
+  # Send an optional TextWriter as a third initializer parameter to have the
+  # received bytes written to the designated output instead of buffered in
+  # memory.
+  ENUMERATE
+    waiting_for_connection
+    waiting_for_response
+    waiting_for_data
+    downloading
+    finished
+
+  PROPERTIES
+    data    : Byte[]
+
+    error : Logical
+      # Set to true if an error occurred
+
+    writer  : TextWriter
+
+    url    : String
+      # The original URL, e.g. "http://www.zombiegod.com:4500/promo/android".
+
+    host   : String
+      # The host parsed from the URL, e.g. "www.zombiegod.com".
+
+    path   : String
+      # The resource path parsed from the URL, e.g. "/promo/android".
+
+    port   : Int32
+      # The port used for connection (parsed from the URL), e.g. "4500".
+
+    timeout_seconds = 10.0 : Real64
+      # Set this as desired.
+
+    listener : HTTPDownloadListener
+      # Responds to download completion or failure.
+
+    header_buffer() : StringBuilder
+      # Internal use.
+
+    total_size      : Int32
+      # Internal use.
+
+    state  : Int32
+      # Internal use.
+
+[if not defined(WP7)]
+    socket : Socket
+      # Internal use.
+[endIf]
+
+    timeout_ticks : Int32
+      # Internal use.
+
+    read_count : Int32
+      # Internal use.
+
+
+  METHODS
+    method init( url, listener=null, writer=null ):
+      local var work = url
+      work .= after_first("http://")
+
+      host = work.before_first('/').before_first(':')
+      work .= substring(host.count)
+
+      port = 80
+      if (work.begins_with(":"))
+        try
+          port = work.after_first(':').before_first('/').to_Int32
+          work = work.from_first('/')
+        catch (Error err)
+        endTry
+      endIf
+
+      path = work
+
+[if defined(WP7)]
+      WindowsPhone7.web_request( url, this )
+      state = waiting_for_data
+[else]
+      socket = Socket(host,port)
+      state  = waiting_for_connection
+[endIf]
+      timeout_ticks = Int32(timeout_seconds * 60.0)
+
+    method busy.Logical:
+      return state != finished
+
+    method on( Byte[] response_data )
+      if (response_data?)
+        if (writer?)
+          forEach (ch in response_data) writer.write(ch)
+          writer.close
+        else
+          data = response_data
+        endIf
+      else
+        error = true
+      endIf
+      state = finished
+
+    method update:
+      which (state)
+[if defined(WP7)]
+        case waiting_for_data
+          --timeout_ticks
+          if (timeout_ticks == 0)
+            error = true
+            state = finished
+            log( "Timeout waiting for connection to $." (host) )
+          endIf
+
+[else]
+        case waiting_for_connection:
+          --timeout_ticks
+          if (socket.is_connected)
+            local var request = ...
+              "GET $ HTTP/1.1\r\n"
+              "Host: $\r\n" 
+              "User-Agent: Castle Arcadium More Games\r\n\r\n" (path,host)
+            socket.writer.print(request)
+            state = waiting_for_response
+            timeout_ticks = Int32(timeout_seconds * 60.0)
+          else
+            if (timeout_ticks == 0)
+              log( "Timeout waiting for connection to $." (host) )
+              state = finished
+            endIf
+          endIf
+
+        case waiting_for_response:
+          contingent
+            sufficient (not socket.is_connected)
+
+            forEach (ch in socket.reader) 
+              timeout_ticks = Int32(timeout_seconds * 60.0)
+              header_buffer.print(ch)
+              local var i = header_buffer.count - 4
+              if (i >= 0 and header_buffer[i]=='\r' and header_buffer[i+1]=='\n')
+                sufficient (header_buffer[i+2]=='\r' and header_buffer[i+3]=='\n')
+              endIf
+            endForEach
+
+            escapeContingent
+
+          satisfied
+            local var header = header_buffer.to_String
+            #println("[HEADER $]$[/HEADER]" (url,header))
+            if (LineReader(header).read.contains("200"))
+              local var content_length = header.after_first("Content-Length: ")
+              if (content_length.count != header.count)
+                total_size = content_length.before_first("\r\n").to_Int32
+                if (writer is null) data = Byte[](total_size)
+                state = downloading
+              else
+                total_size = -1
+                if (writer is null) data = Byte[](10*1024)
+                state = downloading
+              endIf
+            else
+              error = true
+              log("Download status not OK")
+              log(header)
+              state = finished
+            endIf
+          endContingent
+
+          --timeout_ticks
+          if (timeout_ticks == 0)
+            error = true
+            state = finished
+            log( "Timeout waiting for connection to $." (host) )
+          endIf
+
+        case downloading:
+          contingent
+            sufficient (not socket.is_connected)
+            forEach (ch in socket.reader)
+              timeout_ticks = Int32(timeout_seconds * 60.0)
+              if (writer?) writer.print(ch)
+              else data.add(ch)
+              ++read_count
+            endForEach
+            sufficient (read_count == total_size)
+            escapeContingent
+
+          satisfied
+            if (socket.is_connected) socket.close
+            if (writer?) writer.close
+            state = finished
+          endContingent
+
+          --timeout_ticks
+          if (timeout_ticks == 0) 
+            log( "Timeout waiting for " + url )
+            error = true
+            state = finished
+            data = null
+            if (writer?) writer.close
+          endIf
+[endIf]  # WP7
+
+        case finished:
+          if (listener?) listener.on_download_finished(this)
+          exit
+      endWhich
+endClass
+
+
+
+#==============================================================================
+# XMLParser
+#==============================================================================
+
+#Quick and reasonably full featured XMLParser
+class XMLParser
+  PROPERTIES
+
+  METHODS
+    method init:
+
+    method parse_xml(String xml):
+      xml = remove_xml_header(xml)
+      local TreeMap<<String,XMLElement>> unfinished_elements()
+      try
+        on_xml_started_document
+        forEach (line in LineReader(xml))
+          local Scanner scanner(line)
+          while(scanner.has_another)
+            scanner.consume_ws
+            if(not scanner.has_another) escapeWhile  #end of line or data
+            scanner.must_consume("<")
+            scanner.consume_ws
+            local Logical terminal=false
+            if(scanner.consume("/"))
+              terminal=true
+            endIf
+            local String tag_name=scanner.scan_id
+            if(terminal)
+              local XMLElement elem
+              try
+                elem = unfinished_elements.remove(tag_name) 
+              catch(Error err)
+                on_xml_error("found unmatched closing tag $" (tag_name)); return;
+              endTry
+              scanner.consume_ws
+              scanner.must_consume(">")
+              on_xml_finished_document_element(elem)
+            else
+              local XMLElement element(tag_name)
+
+              while(scanner.next_is_id)
+                local String attrib_name=scanner.scan_id
+                scanner.must_consume("=")
+                local String attrib_value=scanner.scan_String(true)
+                element.attributes.add(XMLAttribute(attrib_name,attrib_value).fix)
+                scanner.consume_ws
+              endWhile
+              unfinished_elements[element.name]=element
+              on_xml_started_element(element)
+
+              local Logical non_paired=false
+              if(scanner.consume("/"))
+                #end of tag
+                non_paired=true
+              endIf
+              scanner.consume_ws
+              scanner.must_consume(">")
+              if(non_paired?)
+                #we are done with this tag
+                on_xml_finished_document_element(element)
+              else
+                scanner.consume_ws
+                local StringBuilder value(8)
+                while(scanner.has_another and (not (scanner.peek_Char=='<')))
+                  value.add(scanner.scan_Char)
+                endWhile
+                if(value.count>0)
+                  element.value=String.create_from(value.data)
+                  on_xml_element_value(element.fix)
+                endIf
+              endIf
+            endIf
+          endWhile
+        endForEach
+      catch(Error error)
+        on_xml_error("Unknown xml parsing error $" (error.to_String)); 
+        return
+      endTry
+      if(unfinished_elements.count>0) on_xml_error("Reached end with un-closed tags"); return
+      on_xml_finished_document
+
+    method on_xml_started_document: 
+
+    method on_xml_started_element(XMLElement element): #<tag attrib1="example">
+
+    method on_xml_element_value(XMLElement element): #<tag>..value..</tag>
+
+    method on_xml_finished_document_element(XMLElement element):
+
+    method on_xml_error(String error): 
+
+    method on_xml_finished_document:
+
+    method remove_xml_header(String xml).String:
+      local var start = xml.index_of("<?xml")
+      if( start != -1 )
+        local var st = xml.substring(0,start-1)
+        st += xml.substring(xml.index_of("?>",start)+2)
+        return st
+      else
+        return xml
+      endIf
+endClass
+
+class XMLAttribute
+  PROPERTIES
+    name      : String
+    value     : String
+  METHODS
+    method init(name,value):
+
+    method fix.XMLAttribute:
+      #replaces all the escapes with their actual characters
+      #this could be optimized a lot # Ty
+      value=value.replace("&apos;","'")
+      value=value.replace("&lt;","<")
+      value=value.replace("&gt;",">")
+      value=value.replace("&quot;","\"")
+      value=value.replace("&amp;","&")
+      return this
+endClass
+
+class XMLElement
+  PROPERTIES
+    name          : String
+    value = null  : String
+    attributes()  : ArrayList<<XMLAttribute>>
+
+  METHODS
+    method init(name):
+    method op<>( Object other ).Int32
+      return name<>other.(XMLElement).name
+
+    method get_attribute_value(String _name).String:
+      forEach(attrib in attributes)
+        if(attrib.name==_name) return attrib.value
+      endForEach
+      return null
+      
+    method fix.XMLElement:
+      if(value?)
+        #replaces all the escapes with their actual characters
+        #this could be optimized a lot # Ty
+        value=value.replace("&apos;","'")
+        value=value.replace("&lt;","<")
+        value=value.replace("&gt;",">")
+        value=value.replace("&quot;","\"")
+        value=value.replace("&amp;","&")
+      endIf
+      return this
+endClass
+
+#==============================================================================
+# MD5
+#==============================================================================
+
+#/*
+# * A JavaScript implementation of the RSA Data Security, Inc. MD5 Message
+# * Digest Algorithm, as defined in RFC 1321.
+# * Copyright (C) Paul Johnston 1999 - 2000.
+# * Updated by Greg Holt 2000 - 2001.
+# * See http://pajhome.org.uk/site/legal.html for details.
+# *
+# * Ported to Slag by: Matthew Shanker, 2009/12/13
+# */
+
+singleton class MD5
+  PROPERTIES
+    hex_chr="0123456789abcdef" : String
+
+  METHODS
+    method to_md5(String str).String:
+      # Returns the MD5 representation of the given string.
+      local var x = str2blks_MD5(str)
+      local var a =  1732584193
+      local var b = -271733879
+      local var c = -1732584194
+      local var d =  271733878
+
+      forEach(i in Range<<Int32>>(0,x.count-1,16))
+        local var olda = a
+        local var oldb = b
+        local var oldc = c
+        local var oldd = d
+
+        a = ff(a, b, c, d, x[i+ 0], 7 , -680876936)
+        d = ff(d, a, b, c, x[i+ 1], 12, -389564586)
+        c = ff(c, d, a, b, x[i+ 2], 17,  606105819)
+        b = ff(b, c, d, a, x[i+ 3], 22, -1044525330)
+        a = ff(a, b, c, d, x[i+ 4], 7 , -176418897)
+        d = ff(d, a, b, c, x[i+ 5], 12,  1200080426)
+        c = ff(c, d, a, b, x[i+ 6], 17, -1473231341)
+        b = ff(b, c, d, a, x[i+ 7], 22, -45705983)
+        a = ff(a, b, c, d, x[i+ 8], 7 ,  1770035416)
+        d = ff(d, a, b, c, x[i+ 9], 12, -1958414417)
+        c = ff(c, d, a, b, x[i+10], 17, -42063)
+        b = ff(b, c, d, a, x[i+11], 22, -1990404162)
+        a = ff(a, b, c, d, x[i+12], 7 ,  1804603682)
+        d = ff(d, a, b, c, x[i+13], 12, -40341101)
+        c = ff(c, d, a, b, x[i+14], 17, -1502002290)
+        b = ff(b, c, d, a, x[i+15], 22,  1236535329)    
+
+        a = gg(a, b, c, d, x[i+ 1], 5 , -165796510)
+        d = gg(d, a, b, c, x[i+ 6], 9 , -1069501632)
+        c = gg(c, d, a, b, x[i+11], 14,  643717713)
+        b = gg(b, c, d, a, x[i+ 0], 20, -373897302)
+        a = gg(a, b, c, d, x[i+ 5], 5 , -701558691)
+        d = gg(d, a, b, c, x[i+10], 9 ,  38016083)
+        c = gg(c, d, a, b, x[i+15], 14, -660478335)
+        b = gg(b, c, d, a, x[i+ 4], 20, -405537848)
+        a = gg(a, b, c, d, x[i+ 9], 5 ,  568446438)
+        d = gg(d, a, b, c, x[i+14], 9 , -1019803690)
+        c = gg(c, d, a, b, x[i+ 3], 14, -187363961)
+        b = gg(b, c, d, a, x[i+ 8], 20,  1163531501)
+        a = gg(a, b, c, d, x[i+13], 5 , -1444681467)
+        d = gg(d, a, b, c, x[i+ 2], 9 , -51403784)
+        c = gg(c, d, a, b, x[i+ 7], 14,  1735328473)
+        b = gg(b, c, d, a, x[i+12], 20, -1926607734)
+        
+        a = hh(a, b, c, d, x[i+ 5], 4 , -378558)
+        d = hh(d, a, b, c, x[i+ 8], 11, -2022574463)
+        c = hh(c, d, a, b, x[i+11], 16,  1839030562)
+        b = hh(b, c, d, a, x[i+14], 23, -35309556)
+        a = hh(a, b, c, d, x[i+ 1], 4 , -1530992060)
+        d = hh(d, a, b, c, x[i+ 4], 11,  1272893353)
+        c = hh(c, d, a, b, x[i+ 7], 16, -155497632)
+        b = hh(b, c, d, a, x[i+10], 23, -1094730640)
+        a = hh(a, b, c, d, x[i+13], 4 ,  681279174)
+        d = hh(d, a, b, c, x[i+ 0], 11, -358537222)
+        c = hh(c, d, a, b, x[i+ 3], 16, -722521979)
+        b = hh(b, c, d, a, x[i+ 6], 23,  76029189)
+        a = hh(a, b, c, d, x[i+ 9], 4 , -640364487)
+        d = hh(d, a, b, c, x[i+12], 11, -421815835)
+        c = hh(c, d, a, b, x[i+15], 16,  530742520)
+        b = hh(b, c, d, a, x[i+ 2], 23, -995338651)
+
+        a = ii(a, b, c, d, x[i+ 0], 6 , -198630844)
+        d = ii(d, a, b, c, x[i+ 7], 10,  1126891415)
+        c = ii(c, d, a, b, x[i+14], 15, -1416354905)
+        b = ii(b, c, d, a, x[i+ 5], 21, -57434055)
+        a = ii(a, b, c, d, x[i+12], 6 ,  1700485571)
+        d = ii(d, a, b, c, x[i+ 3], 10, -1894986606)
+        c = ii(c, d, a, b, x[i+10], 15, -1051523)
+        b = ii(b, c, d, a, x[i+ 1], 21, -2054922799)
+        a = ii(a, b, c, d, x[i+ 8], 6 ,  1873313359)
+        d = ii(d, a, b, c, x[i+15], 10, -30611744)
+        c = ii(c, d, a, b, x[i+ 6], 15, -1560198380)
+        b = ii(b, c, d, a, x[i+13], 21,  1309151649)
+        a = ii(a, b, c, d, x[i+ 4], 6 , -145523070)
+        d = ii(d, a, b, c, x[i+11], 10, -1120210379)
+        c = ii(c, d, a, b, x[i+ 2], 15,  718787259)
+        b = ii(b, c, d, a, x[i+ 9], 21, -343485551)
+
+        a = add(a, olda)
+        b = add(b, oldb)
+        c = add(c, oldc)
+        d = add(d, oldd)
+      endForEach
+    return rhex(a) + rhex(b) + rhex(c) + rhex(d)
+
+    # Internal use only
+    method rhex(Int32 num).String: # Convert a 32-bit number to a hex string with ls-byte first
+      local var str = ""
+      forEach(j in 0..3)
+        str += ""+hex_chr.get((num.right_shifted(j*8+4))&0x0F)+hex_chr.get((num.right_shifted(j*8))&0x0F)
+      endForEach
+      return str
+
+    # Internal use only
+    method str2blks_MD5(String str).Array<<Int32>>:
+      # Convert a string to a sequence of 16-word blocks, stored as an array.
+      # Append padding bits and the length, as described in the MD5 standard.
+      local var nblk = (str.count + 8).right_shifted(6) + 1
+      local var blks = Array<<Int32>>(nblk * 16)
+      local Int32 index
+      #forEach(i in 0..(nblk*16-1)) blks[i] = 0
+      forEach(i in 0..str.count-1) 
+        blks[i.right_xshifted(2)] |= Int32(str.get(i)).left_shifted((i % 4) * 8)
+        index = i
+      endForEach
+      index += 1
+      blks.get(index.right_xshifted(2)) |= Int32(0x80).left_shifted((index % 4) * 8)
+      blks.get(nblk * 16 - 2) = str.count * 8
+      return blks
+
+    # Internal use only
+    method add(Int32 x, Int32 y).Int32:
+      # Add integers, wrapping at 2^32. This uses 16-bit operations internally 
+      # to work around bugs in some JS interpreters.
+      local var lsw = (x & 0xFFFF) + (y & 0xFFFF)
+      local var msw = x.right_shifted(16) + y.right_shifted(16) + lsw.right_xshifted(16)
+      return msw.left_shifted(16) | (lsw & 0xFFFF)
+
+    method rol(Int32 num, Int32 cnt).Int32:
+      # Bitwise rotate a 32-bit number to the left
+      return num.left_shifted(cnt) | num.right_shifted(32-cnt)
+
+    method cmn(Int32 q, Int32 a, Int32 b, Int32 x, Int32 s, Int32 t).Int32:
+      # These functions implement the basic operation for each round of the algorithm.
+      return add(rol(add(add(a, q), add(x, t)), s), b)
+
+    method ff(Int32 a, Int32 b, Int32 c, Int32 d, Int32 x, Int32 s, Int32 t).Int32:
+      return cmn((b & c) | ((!b) & d), a, b, x, s, t)
+    method gg(Int32 a, Int32 b, Int32 c, Int32 d, Int32 x, Int32 s, Int32 t).Int32:
+      return cmn((b & d) | (c & (!d)), a, b, x, s, t)
+    method hh(Int32 a, Int32 b, Int32 c, Int32 d, Int32 x, Int32 s, Int32 t).Int32:
+      return cmn(b ~ c ~ d, a, b, x, s, t)
+    method ii(Int32 a, Int32 b, Int32 c, Int32 d, Int32 x, Int32 s, Int32 t).Int32:
+      return cmn(c ~ (b | (!d)), a, b, x, s, t)
+
+endClass
+
+class HTMLLineReader : LineReader
+  # Copied from standard.slag line reader.
+  # Same functionality but does NOT discard CRLF characters
+  METHODS
+    method prep_next:
+      if (not src.has_another) next=null; return 
+
+      local StringBuilder buffer()
+      local Logical found_cr
+      forEach (ch in src)
+        if (ch == 10)
+          buffer.print( ch )
+          escapeForEach
+        endIf
+        buffer.print( ch )
+      endForEach
+      next = buffer.to_String
+endClass
+
+
+#==============================================================================
+# JavaScript Object Notation (JSON) classes:
+# - JSON
+# - JSObject
+# - JSArray
+# - JSString
+# - JSNumber
+# - JSLogical
+# - JSNull
+#
+# Example:
+#
+#   # Create a JSObject with different parameters
+#   local JSObject abe( //{first:"Abe",last:"Pralle"}// )
+#   abe["year"] = 1973
+#   abe["company"] = "Plasmaworks"
+#   abe["languages"] = JSArray( //["Slag", "C/C++", "Java"]// )
+#
+#   # Print some values back out
+#   println( abe["first"] )  # prints: Abe
+#   forEach (property_name in abe) println(property_name)  # prints "first", "last", etc.
+#   println( abe["languages"].count )  # prints: 3
+#   println( abe["languages"][0] )  # prints: "Slag"
+#   forEach (language in abe["languages"]) println(language)  # prints "Slag", "C/C++", "Java"
+#
+#   # Convert into JSON encoding
+#   local var json = JSON(abe)
+#
+#   # Print the JSON string
+#   println( json.to_String )
+#
+#   # Convert back into a JSObject:
+#   abe = JSObject( json )
+#
+#==============================================================================
+class JSON( String data )
+  # Stores a JSON-encoded String.  Convert to a JSObject collection with
+  # JSON::to_JSObject() or JSObject(JSON), or obtain a JSON string with 
+  # JSON(JSObject) or JSObject::to_JSON().JSON.
+  CLASS_METHODS
+    method parse_value( ParseReader reader ).JSObject:
+      while (reader.consume(' ')) noAction
+      which (reader.peek)
+        case '{': return JSObject(reader)
+        case '[': return JSArray(reader)
+        case '"': return JSString(reader)
+        case '0'..'9','-': return JSNumber(reader)
+        case 't': reader.must_consume("true");  return JSTrue
+        case 'f': reader.must_consume("false"); return JSFalse
+        case 'n': reader.must_consume("null");  return JSFalse
+        case 'I': reader.must_consume("Infinity"); return JSNumber(infinity)
+        case 'N': reader.must_consume("NaN"); return JSNumber(NaN)
+        others:   
+          throw Error( "Unrecognized JSON notation: Char($)" (Int32(reader.peek)) )
+      endWhich
+
+  METHODS
+    method init( JSObject object ):
+      init( object.to_JSON.data )
+
+    method to_String.String:
+      return data
+
+    method to_JSObject.JSObject:
+      return parse_value( ParseReader(data) )
+
+endClass
+
+class JSObject : Readable<<JSObject>>
+  PROPERTIES
+    values() : HashTable<<String,JSObject>>
+
+  METHODS
+    method init:
+
+    method init( String json_string ):
+      init( ParseReader(json_string) )
+
+    method init( JSON json ):
+      init( json.data )
+
+    method init( ParseReader reader ):
+      reader.consume_ws
+      reader.must_consume('{')
+
+      reader.consume_ws
+      if (reader.consume('}')) return
+
+      local var first = true
+      while (first or (not first and reader.consume(',')))
+        first = false
+      
+        local String property_name
+        reader.consume_ws
+        if (reader.peek == '"')
+          property_name = JSString(reader).value
+        else
+          # scan id
+          local StringBuilder buffer()
+          local var ch = reader.read
+          if (not ch.is_letter and ch != '_') throw Error( "Letter or underscore expected." )
+          buffer.print(ch)
+          ch = reader.peek
+          while (ch.is_alphanumeric or ch == '_')
+            buffer.print(reader.read)
+            ch = reader.peek
+          endWhile
+          property_name = buffer.to_String
+        endIf
+
+        reader.consume_ws
+        reader.must_consume(':')
+
+        reader.consume_ws
+        local var value = JSON.parse_value(reader)
+
+        set( property_name, value )
+
+        reader.consume_ws
+      endWhile
+
+      reader.must_consume('}')
+
+    method create_reader.Reader<<JSObject>>:
+      local JSObject[] keys()
+      forEach (key in values.keys) keys.add( JSString(key) )
+      return keys.create_reader
+
+    method count.Int32:
+      return values.count
+
+    method get( String property_name ).JSObject:
+      # Returns the JSObject of the given property name or "null" if it's
+      # undefined.  Note that "null" and "undefined" are not the same thing
+      # in JavaScript.
+      #
+      #   JavaScript -> JSObject
+      #   undefined     null
+      #   null          JSNull
+      #
+      # The names are slighly confusing here but the concepts are equivalent
+      # in both cases.
+      local var entry = values.find(property_name)
+      if (entry?) return entry.value
+      return null
+
+    method set( String property_name, JSObject new_value ):
+      # Sets a property of this JSObject. Note that sending in "null" will
+      # set the property to a JSNull object.
+      if (new_value is null) new_value = JSNull
+      values[property_name] = new_value
+
+    method set( String property_name, String new_value ):
+      set( property_name, JSString(new_value) )
+
+    method set( String property_name, Real64 new_value ):
+      set( property_name, JSNumber(new_value) )
+
+    method set( String property_name, Logical new_value ):
+      if (new_value?) set( property_name, JSTrue )
+      else            set( property_name, JSFalse )
+
+    method get( Int32 index ).JSObject:
+      return get(""+index)
+
+    method set( Int32 index, JSObject value ):
+      set( ""+index, value )
+
+    method set( Int32 index, String value ):
+      set( index, JSString(value) )
+
+    method set( Int32 index, Real64 value ):
+      set( index, JSNumber(value) )
+
+    method set( Int32 index, Logical value ):
+      if (value?) set( index, JSTrue )
+      else        set( index, JSFalse )
+
+    method as_String.String:
+      return to_String
+
+    method to_Real64.Real64:
+      return to_String.to_Real64
+
+    method to_Int64.Int64:
+      return Int64(to_Real64)
+
+    method to_Int32.Int32:
+      return Int32(to_Real64)
+
+    method to_Logical.Logical:
+      return true
+
+    method to_String.String:
+      local StringBuilder buffer()
+      encode_json(buffer)
+      return buffer.to_String
+
+    method to_JSON.JSON:
+      local StringBuilder buffer()
+      encode_json(buffer)
+      return JSON(buffer.to_String)
+
+    method encode_json( StringBuilder buffer ):
+      buffer.print('{')
+      local var first = true
+      forEach (key in values.keys)
+        if (first) first = false
+        else       buffer.print(',')
+        buffer.print( //"$":// (key) )
+        values[key].encode_json(buffer)
+      endForEach
+      buffer.print('}')
+
+endClass
+
+class JSArray : JSObject
+  PROPERTIES
+    data() : JSObject[]
+
+  METHODS
+    method init:
+
+    method init( JSON json ):
+      init( json.data )
+
+    method init( String json_string ):
+      init( ParseReader(json_string) )
+
+    method init( ParseReader reader ):
+      reader.consume_ws
+      reader.must_consume('[')
+
+      reader.consume_ws
+      if (reader.consume(']')) return
+
+      local var first = true
+      while (first or (not first and reader.consume(',')))
+        first = false
+
+        reader.consume_ws
+        local var value = JSON.parse_value(reader)
+        add( value )
+
+        reader.consume_ws
+      endWhile
+
+      reader.must_consume(']')
+
+    method create_reader.Reader<<JSObject>>:
+      return data.create_reader
+
+    method count.Int32:
+      return data.count
+
+    method add( JSObject value ).JSArray:
+      if (value is null) value = JSNull
+      data.add(value)
+      return this
+
+    method add( String value ).JSArray:
+      return add( JSString(value) )
+
+    method add( Real64 value ).JSArray:
+      return add( JSNumber(value) )
+
+    method add( Logical value ).JSArray:
+      if (value) return add( JSTrue )
+      else       return add( JSFalse )
+
+    method get( String property_name ).JSObject:
+      local var result = prior.get(property_name)
+      if (result?) return result
+
+      if (property_name[0].is_digit) return get( property_name.to_Int32 )
+      return null
+
+    method set( String property_name, JSObject new_value ):
+      if (property_name[0].is_digit)
+        set( property_name.to_Int32, new_value )
+      else
+        prior.set( property_name, new_value )
+      endIf
+
+    method get( Int32 index ).JSObject:
+      if (index < 0) return get(""+index)
+      return data[index]
+
+    method set( Int32 index, JSObject value ):
+      if (value is null) value = JSNull
+      if (index < 0)
+        set( ""+index, value )
+      else
+        data.ensure_count(index+1)
+        data[index] = value
+      endIf
+
+    method set( Int32 index, String new_value ):
+      set( index, JSString(new_value) )
+
+    method set( Int32 index, Real64 new_value ):
+      set( index, JSNumber(new_value) )
+
+    method set( Int32 index, Logical new_value ):
+      if (new_value) set( index, JSTrue )
+      else           set( index, JSFalse )
+
+    method encode_json( StringBuilder buffer ):
+      buffer.print('[')
+      local var first = true
+      forEach (value in data)
+        if (first) first = false
+        else       buffer.print(',')
+        value.encode_json(buffer)
+      endForEach
+      buffer.print(']')
+endClass
+
+class JSString : JSObject
+  PROPERTIES
+    value : String
+
+  METHODS
+    method init( value ):
+
+    method init( JSON json ):
+      init( ParseReader(json.data) )
+
+    method init( ParseReader reader ):
+      local StringBuilder buffer()
+
+      reader.consume_ws
+      reader.must_consume('"')
+      while (not reader.consume('"'))
+        local var ch = reader.read
+        if (ch == '\\')
+          which (reader.read)
+            case '"':  buffer.print('"')
+            case '\\': buffer.print('\\')
+            case '/':  buffer.print('/')
+            case 'b':  buffer.print(Char(8))
+            case 'f':  buffer.print(Char(12))
+            case 'n':  buffer.print(Char(10))
+            case 'r':  buffer.print(Char(13))
+            case 't':  buffer.print(Char(9))
+            case 'u':
+              local var n = 0
+              forEach (1..4)
+                n = n*16 + reader.read.to_value
+              endForEach
+              buffer.print( Char(n) )
+          endWhich
+        else
+          buffer.print(ch)
+        endIf
+      endWhile
+
+      value = buffer.to_String
+
+    method to_String.String:
+      return value
+
+    method to_Logical.Logical:
+      if (value.count == 0 or value == "0" or value == "false") return false
+      return true
+
+    method encode_json( StringBuilder buffer ):
+      buffer.print('"')
+      forEach (ch in value)
+        which (ch)
+          case '"':  buffer.print("\\\"")
+          case '\\': buffer.print("\\\\")
+          case '/':  buffer.print("\\/")
+          case   8:  buffer.print("\\b")
+          case  12:  buffer.print("\\f")
+          case  10:  buffer.print("\\n")
+          case  13:  buffer.print("\\r")
+          case   9:  buffer.print("\\t")
+          others:
+          if (ch >= 32 and ch <= 126) buffer.print(ch)
+          else buffer.print( "\\u$(04)" (Int32(ch).to_String(16)) )
+        endWhich
+      endForEach
+      buffer.print('"')
+endClass
+
+class JSNumber : JSObject
+  PROPERTIES
+    value : Real64
+
+  METHODS
+    method init( value ):
+
+    method init( JSON json ):
+      init( ParseReader(json.data) )
+
+    method init( ParseReader reader ):
+      local StringBuilder buffer()
+
+      reader.consume_ws
+      if (reader.consume('-')) buffer.print('-')
+      while (reader.peek.is_digit(10)) buffer.print(reader.read)
+
+      if (reader.consume('.'))
+        buffer.print('.')
+        while (reader.peek.is_digit(10)) buffer.print(reader.read)
+      endIf
+
+      if (reader.consume('e') or reader.consume('E'))
+        buffer.print('e')
+        if (reader.consume('-')) buffer.print('-')
+        elseIf (reader.consume('+')) buffer.print('+')
+        while (reader.peek.is_digit(10)) buffer.print(reader.read)
+      endIf
+
+      value = buffer.to_String.to_Real64
+
+    method to_Real64.Real64:
+      return value
+
+    method to_Logical.Logical:
+      return (value?)
+
+    method encode_json( StringBuilder buffer ):
+      if (value == infinity) buffer.print( "Infinity" )
+      if (value == -infinity) buffer.print( "-Infinity" )
+      if (value.is_NaN) buffer.print( "NaN" )
+
+      local var result = NumberConversions.Real64_to_String( value, 10, 1, 13 )
+      local var zeros = 0
+      forEach (ch in result.reverse_order)
+        if (ch == '0') ++zeros
+        else escapeForEach
+      endForEach
+      result .= excluding_rightmost(zeros)
+      if (result.last == '.') result = result.excluding_rightmost(1)
+
+      buffer.print( result )
+
+endClass
+
+singleton class JSTrue  : JSObject
+  METHODS
+    method encode_json( StringBuilder buffer ):
+      buffer.print( "true" )
+
+    method to_Logical.Logical:
+      return true
+endClass
+
+singleton class JSFalse : JSObject
+  METHODS
+    method encode_json( StringBuilder buffer ):
+      buffer.print( "false" )
+
+    method to_Logical.Logical:
+      return false
+endClass
+
+singleton class JSNull  : JSObject
+  METHODS
+    method encode_json( StringBuilder buffer ):
+      buffer.print( "null" )
+
+    method to_Logical.Logical:
+      return false
+endClass
+
+
+#==============================================================================
+#  URL
+#  URLData
+#==============================================================================
+class URL
+  # String wrapper class that manages a URL.
+  PROPERTIES
+    value : String
+
+  METHODS
+    method init( value ):
+
+    method protocol.String:
+      # Returns a protocol like "http" or the value "null" if the URL doesn't 
+      # contain a protocol.
+      local var i = value.index_of("://")
+      if (i >= 0) return value.leftmost(i)
+      return null
+
+    method address.String:
+      # Returns the address (e.g. "plasmaworks.com/plasmacore") of this URL
+      # excluding protocol, port and data.
+      local var i1 = value.index_of("://")
+      if (i1 >= 0) i1 += 3
+      else i1 = 0
+      local var i2 = value.index_of(':',i1)
+      if (i2 == -1) 
+        i2 = value.index_of('?',i1)
+        if (i2 == -1) i2 = value.count
+      endIf
+      return value.substring(i1,i2-1)
+
+    method port.Int32:
+      # Returns the port number or "0" if it's not given.
+      local var i1 = value.index_of("://")
+      if (i1 >= 0) i1 += 3
+      else i1 = 0
+      local var i2 = value.index_of(':',i1)
+      if (i2 == -1) return 0
+      i1 = i2 + 1
+      i2 = value.index_of('?',i1)
+      if (i2 == 0) i2 = value.count
+      try
+        return value.substring(i1,i2-1).to_Int32
+      catch (Error err)
+        return 0
+      endTry
+
+    method data.URLData:
+      # Returns the URL data after the '?' or "null" if there's no data.
+      local var i = value.index_of('?')
+      if (i == -1) return null
+      return URLData.from_encoded(value.substring(i+1))
+
+    method to_String.String:
+      return value
+
+endClass
+
+class URLData
+  # Wraps a set of encoded URL data.
+  CLASS_METHODS
+    method from_encoded( String encoded_data ).URLData:
+      return URLData(encoded_data)
+
+    method from_plain_text( String plain_text ).URLData:
+      return URLData(plain_text.url_encoded)
+
+  PROPERTIES
+    encoded : String
+
+  METHODS
+    private method init( encoded ):
+
+    method decoded.String:
+      local StringBuilder buffer(encoded.count)
+      local var i = 0
+      local var count = encoded.count
+      while (i < count)
+        local var ch = encoded[i]
+        if (ch == '+')
+          buffer.print(' ')
+        elseIf (ch == '%')
+          local var h1 = encoded[i+1].to_value
+          local var h2 = encoded[i+2].to_value
+          i += 2
+          buffer.print( Char(h1*16+h2) )
+        else
+          buffer.print(ch)
+        endIf
+        ++i
+      endWhile
+      return buffer.to_String
+
+    method to_String.String:
+      return encoded
+endClass
+
+
+#==============================================================================
+#  WebView
+#==============================================================================
+[if defined(PLASMACORE)]
+[if defined(PLATFORM_IOS)]
+class WebView : RequiresCleanup
+  # Allows an arbitrary area of the screen to be used to display a web page
+  # or custom HTML code.  This area handles its own input, including scrolling
+  # and clicking on links.  The WebView doesn't appear until it's loaded its
+  # data, so you should draw something ("Connecting (internet connection required)")
+  # behind it.
+  #
+  # Example:
+  #
+  #   [include "web.slag"]
+  #   ...
+  #   PROPERTIES
+  #     web_view : WebView
+  #   ...
+  #   web_view = WebView( URL("http://plasmaworks.com"), Box(0,0,320,240) )
+  #     # or
+  #   web_view = WebView( "<h1>Web View!</h1>", Box(0,0,320,240) )
+  #   ...
+  #   web_view.close
+  PROPERTIES
+    data : NativeData
+
+  METHODS
+    method init( URL url, Box bounding_box ):
+      # Creates a new web view to display the given URL at the given location.
+      bounds = bounding_box
+      view( url )
+
+    method init( String html, Box bounding_box ):
+      # Creates a new web view to display the given HTML at the given location.
+      bounds = bounding_box
+      view( html )
+
+    method clean_up:
+      # Internal use.
+      if (data?) data.release; data = null
+
+    method close:
+      # Hides and destroys the web view.
+      clean_up
+
+    method view( URL url ):            native
+      # Changes the web view to display the given URL.
+
+    method view( String html ):        native
+      # Changes the web view to display the given literal HTML.
+
+    method bounds( Box bounds ):       native
+      # Changes the bounds of the web view.  Example: "web_view.bounds = Box(...)".
+
+    method visible( Logical setting ): native
+      # Shows or hides the web view.  Example: "web_view.visible = false"
+
+    method visible.Logical: native
+      # Returns "true" if the web view is visible.
+
+    method loaded.Logical: native
+      # Reports "true" if the web view has loaded, or "false" if it's
+      # still loading or failed to load.
+
+    method failed.Logical: native
+      # Reports "true" if the web view failed to load, or "false" if it's
+      # still loading or loaded.
+endClass
+
+[elseIf defined(ANDROID)]
+class WebView : RequiresCleanup
+  PROPERTIES
+    id : Int32
+
+  METHODS
+    method init( URL url, Box bounding_box ):
+      bounds = bounding_box
+      view( url )
+
+    method init( String html, Box bounding_box ):
+      bounds = bounding_box
+      view( html )
+
+    method clean_up:
+      close
+      id = 0
+
+    method close: native
+
+    method view( URL url ):            native
+
+    method view( String html ):        native
+
+    method bounds( Box bounds ):       native
+
+    method visible( Logical setting ): native
+
+    method visible.Logical: native
+
+    method loaded.Logical: native
+      # Reports "true" if the web view has loaded, or "false" if it's
+      # still loading or failed to load.
+
+    method failed.Logical: native
+      # Reports "true" if the web view failed to load, or "false" if it's
+      # still loading or loaded.
+endClass
+
+[else]
+class WebView
+  # Dummy implementation for platforms other than iOS and Android.
+  METHODS
+    method init( URL url, Box bounding_box ):
+    method init( String html, Box bounding_box ):
+    method close:                      noAction
+    method view( URL url ):            noAction
+    method view( String html ):        noAction
+    method bounds( Box bounds ):       noAction
+    method visible( Logical setting ): noAction
+    method visible.Logical: return false
+    method loaded.Logical:  return false
+    method failed.Logical:  return true
+endClass
+
+[endIf]
+[endIf]  # PLASMACORE
+

@@ -1,0 +1,370 @@
+#==============================================================================
+# resource.slag
+#
+# 3.5.0 (2011.06.18)
+#
+# http://www.plasmaworks.com/plasmacore
+#
+# -----------------------------------------------------------------------------
+#
+# Copyright 2008-2011 Plasmaworks LLC
+#
+#   http://plasmaworks.com/plasmacore
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); 
+# you may not use this file except in compliance with the License. 
+# You may obtain a copy of the License at 
+#
+#   http://www.apache.org/licenses/LICENSE-2.0 
+#
+# Unless required by applicable law or agreed to in writing, 
+# software distributed under the License is distributed on an 
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, 
+# either express or implied. See the License for the specific 
+# language governing permissions and limitations under the License.
+#
+#==============================================================================
+
+#[include "introspection.slag"]
+
+class DataFile : File
+  # In console-based Slag you can use class File to read and write
+  # data, but in Plasmacore you must use class DataFile since
+  # not all gaming platforms support the standard filesystem
+  # that File is geared towards.
+  #
+  # When loading a DataFile, if you've saved a DataFile of the
+  # same name then it loads the saved data.  If there's no
+  # saved version then the system attempts to load a file of
+  # the same name that you placed in your "data" resource
+  # directory.  In either case paths on DataFile objects are 
+  # ignored.
+  #
+  # Examples:
+  #   local DataFile save("slot1.sav") 
+  #   if (save.exists)
+  #     forEach (line in LineReader(save))
+  #       local Scanner scanner(line)
+  #       ...
+  #     endForEach
+  #   endIf
+  #   ...
+  #   local var writer = DataFile("slot1.sav").create_writer
+  #   writer.println( hero.stats )
+  #   ...
+  #   writer.close
+
+  PROPERTIES
+    exists=-1    : Int32
+    size         : Int32
+    is_gamestate : Logical
+    data         : String
+
+  METHODS
+    method init( filepath ):
+
+    private method assess( Logical save_data=false ):
+      if (&exists != -1 and (data? or not save_data)) return
+
+      try
+        data = ResourceManager.load_gamestate(filename)
+        size = data.count
+        exists = 1
+        is_gamestate = true
+      catch (FileError err)
+        try
+          data = ResourceManager.load_data_file(filepath)
+          size = data.count
+          exists = 1
+          is_gamestate = false
+        catch (FileError err2)
+          exists = 0
+        endTry
+      endTry
+
+      if (not save_data) data = null
+
+    method exists.Logical:
+      # Returns whether or not this file already exists.
+      assess
+      if (&exists == 1) return true
+      return false
+
+    method size.Int32:
+      # Returns the byte size of this file.  Throws a FileError
+      # if the file does not exist.
+      assess
+      if (&exists == 1) return data.count
+      throw FileError()
+
+    method create_reader.Reader<<Char>>:
+      # Returns a Reader<<Char>> that returns characters from this
+      # data file.
+      assess(true)
+      if (&exists <= 0) throw FileError()
+      local var result = data.create_reader
+      data = null
+      return result
+
+    method create_writer.TextWriter:
+      # Returns a TextWriter that can write and print data to this file.
+      return DataFileWriter( this )
+
+    method create_appender.TextWriter:
+      # Like write() but appends data to the file, if it exists,
+      # rather than overwriting it.
+      assess(true)
+      return DataFileWriter( this, data )
+
+    method is_directory.Logical:
+      # Returns false - directory structures are not supported by DataFile.
+      return false
+
+    method absolute_path.String:
+      # Returns the absolute path denoted by this File object.
+      return path
+
+    method to_String.String:
+      # Returns the original filepath of this File object.
+      return filepath
+
+    method absolute_filepath.String:
+      # Same as 'filepath' for DataFile objects.
+      return filepath
+
+    method directory_listing.String[]:
+      # Throws an UnsupportedMethodError.
+      throw UnsupportedMethodError()
+
+    method delete:
+      # Deletes this DataFile as a saved gamestate.  The DataFile may still
+      # exist as a resource in the data directory.
+      ResourceManager.delete_gamestate(filename)
+      exists = -1
+      assess
+
+    method to_bytes.Byte[]:
+      assess(true)
+      if (&exists <= 0) throw FileError()
+      return data.to_bytes
+
+endClass
+
+class DataFileWriter : StringBuilder, RequiresCleanup
+  PROPERTIES
+    file   : DataFile
+    closed : Logical
+
+  METHODS
+    method init( file, String existing=null ):
+      if (existing?) prior.init(existing)
+      else prior.init(80)
+      file.data = null
+
+    method close:
+      if (closed) return
+      closed = true
+      ResourceManager.save_gamestate( file.filename, to_String )
+      file.data = null
+      file.is_gamestate = true
+
+    method clean_up:
+      close
+endClass
+
+
+#=====================================================================
+# ResourceGroup
+# ResourceManager
+#=====================================================================
+underlying aspect ResourceGroup
+  PROPERTIES
+    count        : Int32
+    index        : Int32
+    is_loaded    : Logical
+    is_permanent : Logical
+
+  METHODS
+    #{
+    overlaying method init_object:
+      local GenericImage requisite_type_1
+      local Sound requisite_type_2
+      local Font  requisite_type_3
+      local List<<Image>> requisite_type_4
+      local List<<Sound>> requisite_type_5
+      local RuntimeType type_generic_image("GenericImage")
+      local RuntimeType type_sound("Sound")
+      local RuntimeType type_font("Font")
+      local RuntimeType type_image_list("List<<Image>>")
+      local RuntimeType type_sound_list("List<<Sound>>")
+      forEach (p in this.runtime_properties)
+        contingent
+          sufficient (p.type.instance_of(type_generic_image))
+          sufficient (p.type.instance_of(type_sound))
+          sufficient (p.type.instance_of(type_font))
+          sufficient (p.type.instance_of(type_image_list))
+          sufficient (p.type.instance_of(type_sound_list))
+          escapeContingent
+        satisfied
+          ++count
+        endContingent
+      endForEach
+
+      insertUnderlying
+      }#
+
+    method load:
+      if (is_loaded) return;
+      if (count == 0) count = 10;
+      ++index
+      while (load_another) ++index
+      is_loaded = true
+      index = count
+      is_loaded = true
+      ResourceManager.load( this )
+
+    requisite method load_another.Logical:
+      return load_next
+
+    method load_next.Logical:
+      return false
+
+    requisite method unload:
+      #{
+      local RuntimeType type_generic_image("GenericImage")
+      local RuntimeType type_sound("Sound")
+      local RuntimeType type_font("Font")
+      local RuntimeType type_image_list("List<<Image>>")
+      local RuntimeType type_sound_list("List<<Sound>>")
+      forEach (p in this.runtime_properties)
+        if (p.type.instance_of(type_generic_image) or p.type.instance_of(type_sound)...
+            or p.type.instance_of(type_font))
+          p.as_Object = null
+        elseIf (p.type.instance_of(type_image_list) or p.type.instance_of(type_sound_list))
+          local var list_obj = p.as_Object
+          if (list_obj?) list_obj.runtime_methods["clear()"].call
+        endIf
+      endForEach
+      }#
+      is_loaded = false
+      index = 0
+      ResourceManager.unload( this )  # ensures this group is removed from the master list
+    
+    requisite method num_remaining.Int32:
+      return (count - index)
+
+    method reload_when_textures_lost.Logical:
+      return true
+
+endAspect
+
+underlying aspect SoundGroup : ResourceGroup
+  METHODS
+    method reload_when_textures_lost.Logical:
+      return false
+endAspect
+
+underlying aspect ImageGroup : ResourceGroup;
+
+singleton class ResourceManager
+  PROPERTIES
+    progress=1.0    : Real64
+    used()          : ResourceGroup[]
+    unused()        : ResourceGroup[]
+    num_loaded      : Int32
+    num_requested   : Int32
+    update_task     : Task
+
+  METHODS
+    method load( ResourceGroup group ):
+      if (update_task is null) update_task = TaskFn<<ResourceManager.update>>()
+
+      if (unused.contains(group)) unused.remove(group)
+
+      if (not used.contains(group))
+        if (progress == 1.0)
+          num_loaded = 0
+          num_requested = 0
+        endIf
+
+        used.add(group)
+        num_requested += group.num_remaining
+      endIf
+
+      # Always set progress to 0.0 to ensure that the resources_loaded
+      # system event gets called.
+      progress = 0.0
+
+    method finish_loading:
+      while (progress < 1.0) update
+
+    method unload( ResourceGroup group ):
+      ImageManager.release_all
+      progress = 0.0
+
+      if (used.contains(group))
+        used.remove(group)
+      endIf
+
+      if (not unused.contains(group) and group.is_loaded) unused.add(group)
+
+    method unload_all:
+      forEach (group in duplicate(used))
+        if (not group.is_permanent) 
+          unload(group)
+        endIf
+      endForEach
+
+    method load_data_file( String filename ).String: native
+
+    method load_gamestate( String filename ).String: native
+    method save_gamestate( String filename, String data ): native
+    method delete_gamestate( String filename ): native
+
+    method update:
+      if (progress == 1.0) return
+
+      EventManager.throttle_update_cycle(1)
+
+      # unload unused groups on first update
+      if (unused.count?)
+        forEach (group in unused) 
+          group.unload
+          group.is_loaded = false
+          group.index = 0
+        endForEach
+        unused.clear
+        System.force_garbage_collection(2)
+      endIf
+
+      forEach (group in used)
+        if (group.is_loaded) nextIteration
+        forEach (1..5)
+          ++group.index
+          ++num_loaded
+          if (not group.load_another) group.is_loaded = true; escapeForEach
+        endForEach
+        progress = Real64(num_loaded) / num_requested
+        if (progress >= 1.0) progress = 0.999
+        return
+      endForEach
+
+      progress = 1.0
+      num_loaded = 0
+      num_requested = 0
+      Signal("ResourceManager::resources_loaded").dispatch
+
+    method on_textures_lost:
+      # Free all ImageGroups and queue them to reload
+      local var groups = duplicate(used)
+      forEach (group in groups)
+        if (group.reload_when_textures_lost) group.unload
+        else removeCurrent group
+      endForEach
+      System.force_garbage_collection(2)
+      num_requested = 0
+      TextureSheetManager.free_unused_regions
+      forEach (group in groups) load(group)
+endClass
+
+

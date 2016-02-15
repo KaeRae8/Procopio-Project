@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AbsoluteLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    >
+
+    <android.opengl.GLSurfaceView android:id="@+id/surfaceviewclass"
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:weightSum="1000000"
+        android:id="@+id/mapLayout"
+        android:visibility="gone">
+
+        <Space
+            android:layout_width="fill_parent"
+            android:layout_height="0dp"
+            android:layout_weight="116192"
+            android:id="@+id/topBar"
+            android:background="#ff4cc2d2"/>
+
+        <FrameLayout
+            android:id="@+id/map_container"
+            android:layout_width="fill_parent"
+            android:layout_height="0dp"
+            android:layout_weight="813808"
+            android:background="#00000000"
+            class="com.google.android.gms.maps.SupportMapFragment" />
+
+        <RelativeLayout
+            android:layout_width="fill_parent"
+            android:layout_height="0dp"
+            android:layout_weight="70000"
+            android:id="@+id/bottomBar"
+            android:background="#ff000000">
+
+            <!--
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceLarge"
+                android:text="Museums"
+                android:id="@+id/textView2"
+                android:layout_centerVertical="true"
+                android:layout_alignParentLeft="true"
+                android:textColor="#ffffffff" />
+                -->
+            <Spinner
+              android:id="@+id/spinner"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:layout_centerVertical="true"
+              android:layout_centerHorizontal="true"/>
+        </RelativeLayout>
+
+
+    </LinearLayout>
+    
+</AbsoluteLayout>
+

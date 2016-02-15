@@ -1,0 +1,206 @@
+class ListCell
+  PROPERTIES
+    width,height,x,y : Real64
+    bounds           : Box
+    outline          : Box
+    inset            : Box
+    backgroundColor  : Color
+    separatorColor   : Color
+  
+  METHODS
+    method init(x, y, width, height)
+      bounds = Box(Vector2(x,y),Vector2(width,height))
+      outline = Box(Vector2(x,y),Vector2(width,height))
+      inset = Box(Vector2(x,y+2),Vector2(width,height-4))
+      backgroundColor = Color.white
+      separatorColor = Color.black
+
+    method update
+      bounds = Box(Vector2(x,y),Vector2(width,height))
+      outline = Box(Vector2(x,y),Vector2(width,height))
+      inset = Box(Vector2(x+2,y+2),Vector2(width-4,height-4))
+
+    method setCellBounds
+
+    method draw
+      ##Draw random Rect Color
+      outline.draw(separatorColor)
+      inset.fill(backgroundColor)
+
+    method on( MouseEvent e)
+      if (e.mouse_id != 1) return
+      if (!bounds.contains(e.position)) return
+
+      which (e.type)
+        case MouseEvent.button_press
+          #shouldnt happen
+
+        case MouseEvent.movement:
+          #shouldnt happen
+
+        case MouseEvent.button_release:
+          println("Cell Tapped")
+      endWhich
+endClass
+
+
+class ListView
+  PROPERTIES
+    velocity         : Real64
+    rubberband=0.85  : Real64
+    t,dt             : Real64
+    cellHeight       : Real64
+    x,y,width,height : Real64
+    initial          : Real64
+    drag_start       : Vector2
+    last_drag_pos    : Vector2
+    mouse_down       : Logical
+    dragging         : Logical
+    overflowing      : Logical
+    buttonTap        : Logical
+    setBackground    : Logical
+    ticks_since_drag : Int32
+    content_height   : Int32
+    top_y            : Int32
+    bounds           : Box
+    backgroundColor  : Color
+    cells()          : ListCell[]
+
+  METHODS
+    method init( bounds )
+      x = bounds.position.x
+      y = bounds.position.y
+      initial = y
+      width = bounds.size.x
+      height = bounds.size.y
+      top_y = bounds.position.y 
+      t = 0.0 
+
+    method setCells(Int32 count, Real64 cHeight)
+      local var topY = bounds.position.y
+      cellHeight = cHeight
+      forEach(i in 0..count-1)
+        cells.add(ListCell(bounds.position.x,topY+(i*cellHeight),bounds.size.x,cellHeight))
+      endForEach
+      if(cells.count > 0) content_height = cells.count*cells[0].height
+
+    method setCellsBackgroundColor(Color color)
+      forEach(c in cells) c.backgroundColor = color
+
+    method setCellBackgroundColor(Int32 index,Color color)
+      if(cells.count-1 >= index) cells[index].backgroundColor = color
+
+    method setBackgroundColor(Color color)
+      setBackground = true
+      backgroundColor = color
+
+    method setSeparatorColor(Color color)
+      forEach(c in cells) c.separatorColor = color
+
+    method tableHasCells().Logical
+      return cells.count > 0
+
+    method update
+      bounds = Box(Vector2(x,y),Vector2(width,height))
+      top_y = top_y - (initial - y)
+      if(tableHasCells)
+        if (!dragging)
+          top_y += velocity
+          velocity *= 0.97
+          if (abs(velocity) < 1.0) velocity = 0
+
+          local var y_max = bounds.position.y
+          local var y_min = y_max - (content_height - bounds.size.y)
+          if (top_y < y_min)
+            overflowing = true
+            dt = 1.0/30.0 
+            local var convertedMin = y_min - y_min
+            local var convertedTop = top_y - y_min
+
+            local var offset = convertedTop * (rubberband - t*rubberband)
+            if(offset > convertedMin)
+              top_y = y_min
+            else
+              top_y = offset + y_min
+            endIf
+          endIf
+          if (top_y > y_max) 
+            overflowing = true
+            dt = 1.0/50.0
+            local var convertedMax = y_max - y_max
+            local var convertedTop = top_y - y_max
+
+            rubberband = 0.95
+            local var offset = convertedTop * (rubberband - t*rubberband)
+            if(offset < convertedMax)
+              top_y = y_max
+            else
+              top_y = offset + y_max
+            endIf
+          endIf
+
+          if(overflowing)
+            t += dt
+            t = Math.min(t,1.0)
+          endIf
+        endIf
+
+        forEach(i in 0..cells.count-1)
+          local var c = cells[i]
+          c.y = top_y + (i*cellHeight)
+          c.x = bounds.position.x
+          c.update
+        endForEach
+        ++ticks_since_drag
+      endIf
+
+    method on( MouseEvent e )
+      if (e.mouse_id != 1) return
+      if (!tableHasCells) return
+      if (!mouse_down and !bounds.contains(e.position)) return
+
+      which (e.type)
+        case MouseEvent.button_press
+          drag_start = e.position
+          last_drag_pos = drag_start
+          dragging = true
+          mouse_down = true
+          ticks_since_drag = 1
+          velocity = 0
+          overflowing = false
+          buttonTap = true
+          t = 0.0
+
+        case MouseEvent.movement:
+          if (mouse_down)
+            if((drag_start - e.position).magnitude > 20) buttonTap = false
+            local var delta = e.position - last_drag_pos
+
+            local var y_max = bounds.position.y
+            local var y_min = y_max - (content_height - bounds.size.y)
+            if(top_y+delta.y < y_min or top_y+delta.y > y_max) delta /= 2
+
+            top_y += delta.y
+            velocity = (velocity/ticks_since_drag + delta.y) / 3
+            last_drag_pos = e.position
+            ticks_since_drag = 1
+          endIf
+
+        case MouseEvent.button_release:
+          if(buttonTap)
+            forEach(c in cells) c.on(e)
+          endIf
+          mouse_down = false
+          dragging = false
+      endWhich
+
+    method draw
+      if(tableHasCells)
+        Display.clipping_region = bounds
+        if(setBackground) bounds.fill(backgroundColor)
+        forEach(c in cells) c.draw
+        Display.clear_clipping_region
+      endIf
+
+endClass
+

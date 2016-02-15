@@ -1,0 +1,67 @@
+description: Original install.
+id: plasmacore
+version: 3.5.0
+url: http://www.plasmaworks.com/files/plasmacore/archive/plasmacore-3.5.0.zip
+date: 20110618
+name: Plasmacore 3.5.0
+
+description: Precompiled Mac platform.
+id: platform-mac
+version: 3.5.0
+url: http://www.plasmaworks.com/files/plasmacore/archive/v/3.5.0/plasmacore-3.5.0-mac.zip
+date: 20110618
+name: Plasmacore Mac Platform v3.5.0
+
+description: Pre-compiled Windows platform utilizing DirectX and Audiere.
+id: platform-windows
+version: 3.5.0
+url: http://www.plasmaworks.com/files/plasmacore/archive/v/3.5.0/plasmacore-3.5.0-windows.zip
+date: 20110618
+name: Plasmacore Windows Platform v3.5.0
+
+description: iOS platform project files. Must be compiled using Xcode.
+id: platform-ios-project
+version: 3.5.0
+url: http://www.plasmaworks.com/files/plasmacore/archive/v/3.5.0/plasmacore-3.5.0-ios-project.zip
+date: 20110618
+name: Plasmacore iOS Platform v3.5.0
+dependencies: nativelib-libplasmacore nativelib-mac_audio
+
+description: Native C++ libraries for compiling Plasmacore.
+id: nativelib-libplasmacore
+version: 3.5.0
+url: http://www.plasmaworks.com/files/plasmacore/archive/v/3.5.0/libplasmacore-3.5.0.zip
+date: 20110618
+name: Plasmacore Native Library v3.5.0
+dependencies: nativelib-zlib nativelib-slag
+
+install_path: libraries/native
+description: Zlib 1.2.3.
+id: nativelib-zlib
+url: http://www.plasmaworks.com/files/plasmacore/archive/libraries/native/zlib-1.2.3.zip
+min_version: 3.0.7
+date: 20100314
+name: Zlib 1.2.3
+
+description: Slag VM and Runtime C++ library.
+id: nativelib-slag
+version: 3.5.0
+url: http://www.plasmaworks.com/files/plasmacore/archive/v/3.5.0/libslag-3.5.0.zip
+date: 20110618
+name: Slag Native Library v3.5.0
+
+description: Simple Mac and iOS audio library.
+id: nativelib-mac_audio
+url: http://www.plasmaworks.com/files/plasmacore/archive/libraries/native/mac_audio-1.2.zip
+min_version: 3.2.0
+date: 20110319
+name: Mac Audio v1.2.
+
+description: Android platform project files. Requires installation of Android SDK and additional tools - see Plasmacore Wiki.
+id: platform-android-project
+version: 3.5.0
+url: http://plasmaworks.github.io/files/plasmacore/archive/v/3.5.0/plasmacore-3.5.0-android-project.zip
+date: 20110618
+name: Plasmacore Android Platform v3.5.0
+dependencies: nativelib-libplasmacore
+

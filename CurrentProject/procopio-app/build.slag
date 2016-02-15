@@ -1,0 +1,39 @@
+[include "build_core.slag"]
+
+class CustomBuild : BuildCore
+  METHODS
+    method build( String cmd ):
+      which(cmd)
+        case "write"
+          write_file
+      endWhich
+      prior.build(cmd)
+
+    method write_file
+      try
+        #{local PropertyTable pt = PropertyTable()
+        pt.gamesPlayed = 1
+        pt.movesMade = 2
+        pt.bestScore = 3
+        pt.x18 = 4
+        pt.x36 = 5
+        pt.x72 = 6
+        pt.x144 = 7
+        pt.x288 = 8
+        pt.x576 = 9
+        pt.x1152 = 10
+        pt.x2304 = 11
+        local File f = File("originals/GameData.txt")
+        local var writer = f.create_writer
+        writer.println(pt.to_String)
+        writer.flush
+        writer.close}#
+        local File f = File("originals/GameData.txt")
+        local Scanner scanner = Scanner(f)
+        local PropertyTable pt = PropertyTable(scanner.scan_line)
+        println("" + pt.x36.as_Int32)
+        println("Successful Read")
+      catch(Error err)
+        println("" + err)
+      endTry
+endClass

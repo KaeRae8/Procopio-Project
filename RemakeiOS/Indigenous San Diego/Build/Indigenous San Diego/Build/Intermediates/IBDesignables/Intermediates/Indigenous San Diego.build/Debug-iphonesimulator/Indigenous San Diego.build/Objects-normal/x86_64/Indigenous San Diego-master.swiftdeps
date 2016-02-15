@@ -1,0 +1,20 @@
+version: "Apple Swift version 2.1.1 (swiftlang-700.1.101.15 clang-700.1.81)"
+options: "d49addc76ca7830cea708048f94c182a"
+build_time: [508619610, 662349000]
+inputs:
+  "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/MusicViewController.swift": [508141818, 0]
+  "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/MainViewController.swift": [508144921, 0]
+  "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/GeoLocation.swift": [483851254, 0]
+  "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/SCTCAViewController.swift": [508141764, 0]
+  "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/SitePageViewController.swift": [508144921, 0]
+  "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/SiteTable.swift": [508129738, 0]
+  "/Users/Kenny/Procopio/Indigenous San Diego/MenuButton.swift": [500153306, 0]
+  "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/RightSlideAnimator.swift": [507855962, 0]
+  "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/MapViewController.swift": [508144739, 0]
+  "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/RightSlideTransition.swift": [507855962, 0]
+  "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/ProcopioViewController.swift": [508141818, 0]
+  "/Users/Kenny/Procopio/Indigenous San Diego/SiteData.swift": [508142312, 0]
+  "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/AppDelegate.swift": [508144739, 0]
+  "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/CulturalSite.swift": [508129130, 0]
+  "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/SiteCell.swift": [508126838, 0]
+  "/Users/Kenny/Procopio/Indigenous San Diego/Indigenous San Diego/AboutViewController.swift": [508144441, 0]

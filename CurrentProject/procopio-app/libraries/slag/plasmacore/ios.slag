@@ -1,0 +1,74 @@
+#==============================================================================
+# ios.slag
+#
+# $(PLASMACORE_VERSION) $(DATE)
+#
+# iOS-specific native calls.
+#
+# -----------------------------------------------------------------------------
+#
+# $(COPYRIGHT)
+#
+#   http://plasmaworks.com/plasmacore
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); 
+# you may not use this file except in compliance with the License. 
+# You may obtain a copy of the License at 
+#
+#   http://www.apache.org/licenses/LICENSE-2.0 
+#
+# Unless required by applicable law or agreed to in writing, 
+# software distributed under the License is distributed on an 
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, 
+# either express or implied. See the License for the specific 
+# language governing permissions and limitations under the License.
+#
+#==============================================================================
+[if defined(PLATFORM_IOS)]
+singleton class IOS
+  METHODS
+    method is_ipad.Logical: native
+
+    method enable_auto_dimming( Logical setting ): native
+
+    method orient( Int32 orientation ): native
+      # Changes the display orientation the status bar and pop-up menus.
+      # 0 = Up (up side up; portrait)
+      # 1 = Right (right side up; landscape)
+      # 2 = Down (down side up; inverted portrait)
+      # 3 = Left (left side up; inverted landscape)
+
+    method status_bar_visible( Logical setting ): native
+
+    method vibrate: native
+      # Causes a short vibration.
+
+    method save_photo( Bitmap bitmap ): native
+      # Saves the given photo to the photo album.
+endClass
+
+[else]
+singleton class IOS
+  METHODS
+    method is_ipad.Logical
+      return false
+
+    method enable_auto_dimming( Logical setting )
+
+    method orient( Int32 orientation ):
+      # Changes the display orientation the status bar and pop-up menus.
+      # 0 = Up (up side up; portrait)
+      # 1 = Right (right side up; landscape)
+      # 2 = Down (down side up; inverted portrait)
+      # 3 = Left (left side up; inverted landscape)
+
+    method status_bar_visible( Logical setting ):
+
+    method vibrate:
+      # Causes a short vibration.
+
+    method save_photo( Bitmap bitmap ):
+      # Saves the given photo to the photo album.
+endClass
+[endIf]
+

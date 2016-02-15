@@ -1,0 +1,2097 @@
+#=====================================================================
+# shape.slag
+#
+# 3.5.0 (2011.06.18)
+#
+# --------------------------------------------------------------------
+#
+# Copyright 2008-2011 Plasmaworks LLC
+#
+#   http://plasmaworks.com/plasmacore
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); 
+# you may not use this file except in compliance with the License. 
+# You may obtain a copy of the License at 
+#
+#   http://www.apache.org/licenses/LICENSE-2.0 
+#
+# Unless required by applicable law or agreed to in writing, 
+# software distributed under the License is distributed on an 
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, 
+# either express or implied. See the License for the specific 
+# language governing permissions and limitations under the License.
+#
+#=====================================================================
+
+#=====================================================================
+# Vector2
+#=====================================================================
+requisite compound Vector2( Real64 x, Real64 y )
+  # Represents a 2D Coordinate that can be interacted with using 
+  # polar or rectangular coordinates. This datatype is also useful 
+  # for representing 2D vectors and includes supporting functionality
+  # such as dot and cross operations.
+  #
+  # Example:
+  #   local Vector2 v(3,4)
+
+singleton class Vector2Manager
+  # Contains methods for operating on Vector2 compounds.
+  PROPERTIES
+    zero(0,0) : Vector2
+    invalid(infinity,infinity) : Vector2
+    sqrt_0_5 = sqrt(0.5) : Real64
+
+  METHODS
+    method create_from( Real64 _magnitude, Radians angle ).Vector2:
+      # Creates a Vector2 compound from the given magnitude and
+      # angle in radians.
+      #
+      # Example:
+      #   local Vector2 v( 5, pi/2 )
+      return Vector2( _magnitude * cos(angle), _magnitude * sin(angle) )
+
+    method create_from( Real64 _magnitude, Degrees angle ).Vector2:
+      # Creates a Vector2 compound from the given _magnitude and
+      # angle in degrees.
+      #
+      # Example:
+      #   local Vector2 v( 5, Degrees(90) )
+      return create_from( _magnitude, to_Radians(angle) )
+
+    method to_String( Vector2 v ).String:
+      # Returns a string representation of 'v'.
+      return "($(.2),$(.2))" (v.x,v.y)
+
+    method xv( Vector2 v ).Vector2:
+      # Returns a modified "x vector" that preserves 'x' and clears 'y' to zero.
+      #
+      # Example:
+      #   Vector2(4,5).xv -> Vector2(4,0)
+      return Vector2(v.x,0)
+
+    method yv( Vector2 v ).Vector2:
+      # Returns a modified "y vector" that preserves 'y' and clears 'x' to zero.
+      #
+      # Example:
+      #   Vector2(4,5).yv -> Vector2(0,5)
+      return Vector2(0,v.y)
+
+    method area( Vector2 v ).Real64:
+      # Returns x*y.
+      return v.x * v.y
+
+    method max( Vector2 v1, Vector2 v2 ).Vector2:
+      # Returns a vector containing the largest x and the largest y
+      # between the two vectors.
+      #
+      # Example:
+      #   println( max(Vector2(3,6), Vector2(4,5)) )
+      #   # prints: (4.0,6.0)
+      return Vector2( max(v1.x,v2.x), max(v1.y,v2.y) )
+
+    method max( Vector2 v ).Real64:
+      # Returns the largest of the two vector components.
+      #
+      # Example:
+      #   println( Vector2(3,4).max )  # prints: 4.00
+      return max( v.x, v.y )
+
+    method min( Vector2 v1, Vector2 v2 ).Vector2:
+      # Returns a vector containing the smallest x and the smallest y
+      # between the two vectors.
+      #
+      # Example:
+      #   println( min(Vector2(3,6), Vector2(4,5)) )
+      #   # prints: (3.0,5.0)
+      return Vector2( min(v1.x,v2.x), min(v1.y,v2.y) )
+
+    method min( Vector2 v ).Real64:
+      # Returns the smallest of the two vector components.
+      #
+      # Example:
+      #   println( Vector2(3,4).min )  # prints: 3.00
+      return min( v.x, v.y )
+
+    method bounding_box( Vector2 v ).Box:
+      # Returns a bounding box that encloses 'v'.  This box has size 0;
+      # typically you would call box.enclosing(another_point) to grow
+      # the bounding box.
+      #
+      # Example:
+      #   bounding_box = pt.bounding_box
+      return Box( v, Vector2(0,0) )
+
+    method bounding_circle( Vector2 v ).Circle:
+      # Returns a bounding circle that encloses 'v'.  The circle will be
+      # at position v and have radius zero.
+      #
+      # Example:
+      #   bounding_circle = pt.bounding_circle
+      return Circle( v, 0 )
+
+    method abs( Vector2 v ).Vector2:
+      # Returns the vector containing the absolute value of each
+      # component of 'v'.
+      #
+      # Examples:
+      #   println( v.abs )
+      #   println( abs(v) )
+      return Vector2( abs(v.x), abs(v.y) )
+
+    method floor( Vector2 v ).Vector2:
+      # Returns the vector containing the floor of each
+      # component of 'v'.
+      #
+      # Examples:
+      #   println( v.floor )
+      #   println( floor(v) )
+      return Vector2( floor(v.x), floor(v.y) )
+
+    method round( Vector2 v ).Vector2:
+      # Returns the vector containing the rounded-off values of each
+      # component of 'v'.
+      #
+      # Examples:
+      #   println( v.round )
+      #   println( round(v) )
+      return floor( v + 0.5 )
+
+    method ceiling( Vector2 v ).Vector2:
+      # Returns the vector containing the ceiling of each
+      # component of 'v'.
+      #
+      # Examples:
+      #   println( v.ceiling )
+      #   println( ceiling(v) )
+      return Vector2( ceiling(v.x), ceiling(v.y) )
+
+    method distance_to( Vector2 v1, Vector2 v2 ).Real64:
+      # Returns the straight-line distance between v1 and v2.
+      #
+      # Example:
+      #   println( v1.distance_to(v2) )
+      return (v2 - v1).magnitude
+
+    method transposed( Vector2 v ).Vector2:
+      # Returns a Vector2 with the components swapped; if v=Vector2(x,y)
+      # then v.transposed == Vector2(y,x).
+      return Vector2(v.y,v.x)
+
+    method rotated( Vector2 v, Radians rad ).Vector2:
+      # Rotates 'v' around the origin by the given number of radians.
+      #
+      # Example:
+      #   v2 = v1.rotated( pi/2 )
+      return Vector2( v.magnitude, v.radians + rad )
+
+    method rotated( Vector2 v, Degrees deg ).Vector2:
+      # Rotates 'v' around the origin by the given number of degrees.
+      #
+      # Example:
+      #   v2 = v1.rotated( Degrees(90) )
+      return Vector2( v.magnitude, v.degrees + deg )
+
+    method normalized( Vector2 v ).Vector2:
+      # Normalizes 'v' to have the same angle with magnitude 1.0.
+      #
+      # Example:
+      #   v = v.normalized
+      return Vector2( 1.0, v.radians )
+
+    method dot( Vector2 v1, Vector2 v2 ).Real64:
+      # Returns the dot product of 'v1' and 'v2'.  Returns
+      #   v1.x*v2.x + v1.y*v2.y
+      #
+      # Example:
+      #   dot_product = v1.dot(v2)
+      return v1.x * v2.x + v1.y * v2.y
+
+    method cross( Vector2 v1, Vector2 v2 ).Real64:
+      # Returns the cross product of 'v1' and 'v2':
+      #   v1.x*v2.y - v1.y*v2.x
+      #
+      # Example:
+      #   cross_product = v1.cross(v2)
+      return v1.x * v2.y - v1.y * v2.x
+
+    method parallelum( Vector2 v, Vector2 axis ).Vector2:
+      # Returns the component of 'v' that lies along the axis defined
+      # by the second parameter.
+      #
+      # Example:
+      #   x = v.parallelum(axis)
+      return (v.dot(axis) / axis.dot(axis)) * axis
+
+    method perpendiculum( Vector2 v, Vector2 axis ).Vector2:
+      # Returns the component of 'v' that lies perpendicular to the axis defined
+      # by the second parameter.
+      #
+      # Example:
+      #   y = v.perpendiculum(axis)
+      return v - v.parallelum(axis)
+
+    method parallelum( Vector2 v, Line line ).Vector2:
+      # Returns the component of 'v' that lies along the axis defined
+      # by the second parameter.
+      #
+      # Example:
+      #   x = v.parallelum(axis)
+      local var axis = line.pt2 - line.pt1
+      return (v.dot(axis) / axis.dot(axis)) * axis
+
+    method perpendiculum( Vector2 v, Line line ).Vector2:
+      # Returns the component of 'v' that lies perpendicular to the axis defined
+      # by the second parameter.
+      #
+      # Example:
+      #   y = v.perpendiculum(axis)
+      local var axis = line.pt2 - line.pt1
+      return v - v.parallelum(axis)
+
+    method projection_on( Vector2 v, Line line ).Vector2:
+      # Returns the projection of 'v' on 'line'.  The return value
+      # is a point along the axis of 'line' although it may be outside
+      # the beginning or end point of the line.
+      #
+      # Example:
+      #   y = v.projection_on(axis)
+      local var P1 = line.pt1
+      local var A = v - P1
+      local var B = line.pt2 - P1
+      return P1 + (A.dot(B) / B.dot(B)) * B
+
+    method clamped( Vector2 v, Box b ).Vector2:
+      # Adjusts 'v' to be within the boundaries of the given box.
+      #
+      # Example:
+      #   cursor = cursor.clamped( Display.region )
+      local var vx = v.x
+      local var vy = v.y
+      local var x1 = b.x1
+      local var y1 = b.y1
+      local var x2 = b.x2
+      local var y2 = b.y2
+
+      if (vx < x1) vx = x1
+      elseIf (vx > x2) vx = x2
+
+      if (vy < y1) vy = y1
+      elseIf (vy > y2) vy = y2
+
+      return Vector2(vx,vy)
+
+    method clamped( Vector2 v, Corners c ).Vector2:
+      # Adjusts 'v' to be within the given corners.
+      #
+      # Example:
+      #   cursor = cursor.clamped( Corners(-1,-1,1,1) )
+      local var vx = v.x
+      local var vy = v.y
+      local var x1 = c.x1
+      local var y1 = c.y1
+      local var x2 = c.x2
+      local var y2 = c.y2
+
+      if (vx < x1) vx = x1
+      elseIf (vx > x2) vx = x2
+
+      if (vy < y1) vy = y1
+      elseIf (vy > y2) vy = y2
+
+      return Vector2(vx,vy)
+
+    method clamped( Vector2 v, Real64 x1, Real64 y1, Real64 x2, Real64 y2 ).Vector2:
+      # Adjusts 'v' to be within the given corners.
+      #
+      # Example:
+      #   cursor = cursor.clamped(-1,-1,1,1)
+      local var vx = v.x
+      local var vy = v.y
+
+      if (vx < x1) vx = x1
+      elseIf (vx > x2) vx = x2
+
+      if (vy < y1) vy = y1
+      elseIf (vy > y2) vy = y2
+
+      return Vector2(vx,vy)
+
+    method clamped( Vector2 v, Line line ).Vector2:
+      # Returns the point along the given line segment that is closest
+      # to 'v'.
+      #
+      # Example:
+      #
+      #   closest_pt_on_line = v.clamped(line)
+      #
+      # Notes:
+      #
+      # Points along the line are defined by:
+      #
+      #   Line(t) = line.pt1 + t * (line.pt2 - line.pt1)
+      #
+      # where t is 0 to 1.  We can define t as:
+      #
+      #   A = v - line.pt1
+      #   B = line.pt2 - line.pt1
+      #   t = dot(A,B) / dot(B,B)
+      #
+      # as this is the projection of A along and proportional to B.
+      local var P1 = line.pt1
+      local var P2 = line.pt2
+      local var A = v - P1
+      local var B = P2 - P1
+      local var t_numer = A.dot(B)
+      if (t_numer < 0) return P1
+      local var t_denom = B.dot(B)
+      if (t_numer > t_denom) return P2
+      return P1 + (t_numer / t_denom) * B
+
+    method is_on( Vector2 v, Line line, Real64 tolerance=0.00001 ).Logical:
+      # Returns true if 'v' is on the given line with the given tolerance.
+      return (v.clamped(line).distance_to(v) <= tolerance)
+
+    method normal( Vector2 v ).Vector2:
+      # Returns the normal of the given vector.
+      #
+      # Example:
+      #   println( v.normal )
+      return Vector2( -v.y, v.x )
+      
+    method radians( Vector2 v ).Radians:
+      # Returns the angle of the given vector in radians.
+      #
+      # Example:
+      #   println( v.radians )
+      return atan2(v.y,v.x)
+
+    method degrees( Vector2 v ).Degrees:
+      # Returns the angle of the given vector in degrees.
+      #
+      # Example:
+      #   println( v.degrees )
+      return Degrees(atan2(v.y,v.x))
+
+    method magnitude( Vector2 v ).Real64:
+      # Returns the magnitude (radial length) of the given vector.
+      #
+      # Example:
+      #   println( v.magnitude )
+      local var x = v.x
+      local var y = v.y
+      return sqrt( x*x + y*y )
+
+    method magnitude_squared( Vector2 v ).Real64:
+      # Returns the squared magnitude of the given vector.  Can be used
+      # to avoid expensive square roots in relative comparisons.
+      local var x = v.x
+      local var y = v.y
+      return x*x + y*y
+
+    method within_distance( Vector2 v, Real64 d ).Logical:
+      # An optimized magnitude-distance comparison that doesn't require a sqrt.
+      local var x = v.x
+      local var y = v.y
+      return (x*x + y*y) <= d*d
+
+    method op+( Vector2 v1, Vector2 v2 ).Vector2:
+      # Returns the vector sum v3 = v1 + v2 where
+      #   v3.x = v1.x + v2.x
+      #   v3.y = v1.y + v2.y
+      #
+      # Examples:
+      #   v3 = v1 + v2
+      #   v1 += v2
+      return Vector2( v1.x + v2.x, v1.y + v2.y )
+
+    method op-( Vector2 v1, Vector2 v2 ).Vector2:
+      # Returns the vector sum v3 = v1 - v2 where
+      #   v3.x = v1.x - v2.x
+      #   v3.y = v1.y - v2.y
+      #
+      # Examples:
+      #   v3 = v1 - v2
+      #   v1 -= v2
+      return Vector2( v1.x - v2.x, v1.y - v2.y )
+
+    method op*( Vector2 v1, Vector2 v2 ).Vector2:
+      # Returns the vector product v3 = v1 * v2 where
+      #   v3.x = v1.x * v2.x
+      #   v3.y = v1.y * v2.y
+      #
+      # Examples:
+      #   v3 = v1 * v2
+      #   v1 *= v2
+      return Vector2( v1.x * v2.x, v1.y * v2.y )
+
+    method op/( Vector2 v1, Vector2 v2 ).Vector2:
+      # Returns the vector product v3 = v1 / v2 where
+      #   v3.x = v1.x / v2.x
+      #   v3.y = v1.y / v2.y
+      #
+      # Examples:
+      #   v3 = v1 / v2
+      #   v1 /= v2
+      return Vector2( v1.x / v2.x, v1.y / v2.y )
+
+    method op%( Vector2 v1, Vector2 v2 ).Vector2:
+      # Returns the vector product v3 = v1 % v2 where
+      #   v3.x = v1.x % v2.x
+      #   v3.y = v1.y % v2.y
+      #
+      # Examples:
+      #   v3 = v1 % v2
+      #   v1 %= v2
+      return Vector2( v1.x % v2.x, v1.y % v2.y )
+
+    method op-( Vector2 v ).Vector2:
+      # Returns the negative of this vector v2 = -v1 where
+      #   v2.x = -v1.x
+      #   v2.y = -v1.y
+      #
+      # Example:
+      #   v1 = -v1
+      return Vector2( -v.x, -v.y )
+
+    method op+( Vector2 v1, Real64 n ).Vector2:
+      # Adds 'n' to both components of v1.  Equivalent to
+      #   v1 + Vector2(n,n)
+      #
+      # Examples:
+      #   v = v + 5
+      #   v += 5
+      return Vector2( v1.x + n, v1.y + n )
+
+    method op-( Vector2 v1, Real64 n ).Vector2:
+      # Subtracts 'n' from both components of v1.  Equivalent to
+      #   v1 - Vector2(n,n)
+      #
+      # Examples:
+      #   v = v - 5
+      #   v -= 5
+      return Vector2( v1.x - n, v1.y - n )
+
+    method op*( Vector2 v1, Real64 n ).Vector2:
+      # Multiplies both components of v1 by 'n'.  Equivalent to
+      #   v1 * Vector2(n,n)
+      #
+      # Examples:
+      #   v = v * 5
+      #   v *= 5
+      return Vector2( v1.x * n, v1.y * n )
+
+    method op/( Vector2 v1, Real64 n ).Vector2:
+      # Divides both components of v1 by 'n'.  Equivalent to
+      #   v1 / Vector2(n,n)
+      #
+      # Examples:
+      #   v = v / 5
+      #   v /= 5
+      return Vector2( v1.x / n, v1.y / n )
+
+    method op%( Vector2 v1, Real64 n ).Vector2:
+      # Returns the Vector2 modulo of each component of 'v1' divided
+      # by 'n'.  Equivalent to
+      #   v1 % Vector2(n,n)
+      #
+      # Examples:
+      #   v = v % 5
+      #   v %= 5
+      return Vector2( v1.x % n, v1.y % n )
+
+    method op+( Real64 n, Vector2 v ).Vector2:
+      # Equivalent to Vector2(n,n) + v
+      #
+      # Example:
+      #   v = 5 + v
+      return Vector2( n + v.x, n + v.y )
+
+    method op-( Real64 n, Vector2 v ).Vector2:
+      # Equivalent to Vector2(n,n) - v
+      #
+      # Example:
+      #   v = 5 - v
+      return Vector2( n - v.x, n - v.y )
+
+    method op*( Real64 n, Vector2 v ).Vector2:
+      # Equivalent to Vector2(n,n) * v
+      #
+      # Example:
+      #   v = 5 * v
+      return Vector2( n * v.x, n * v.y )
+
+    method op/( Real64 n, Vector2 v ).Vector2:
+      # Equivalent to Vector2(n,n) / v
+      #
+      # Example:
+      #   v = 5 / v
+      return Vector2( n / v.x, n / v.y )
+
+    method op%( Real64 n, Vector2 v ).Vector2:
+      # Equivalent to Vector2(n,n) % v
+      #
+      # Example:
+      #   v = 5 % v
+      return Vector2( n % v.x, n % v.y )
+
+    method draw( Vector2 v, Color color, Render render_flags=Render.default ): native
+      # Draws the specified color at the given point 'v'.
+      #
+      # Example:
+      #   v.draw( Color.red )
+endClass
+
+
+augment RandomNumberGenerator
+  METHODS
+    method random_Vector2.Vector2:
+      # Creates a Vector2 compound with randomized (x,y) values,
+      # each in the range (0.0,1.0) exclusive.
+      #
+      # Example:
+      #   local var random_screen_pos = random_Vector2 * display_size
+      return Vector2( random_Real64, random_Real64 )
+endAugment
+
+#=====================================================================
+# Line
+#=====================================================================
+requisite compound Line( Vector2 pt1, Vector2 pt2 )
+  # Defines an abstract line as a 'pt1' and an 'pt2' coordinate 
+  # pair.
+  #
+  # Example:
+  #   local Line line( Vector2(0,0), view.size )
+
+
+singleton class LineManager
+  # Contains methods for operating on Line compounds.
+  PROPERTIES
+    invalid(Vector2.invalid,Vector2.invalid) : Line
+
+  METHODS
+    method create_from( Real64 x1, Real64 y1, Real64 x2, Real64 y2 ).Line:
+      # Creates a Line from (x1,y1) to (x2,y2).
+      #
+      # Example:
+      #   local Line line( x1, y2, x2, y2 )
+      return Line( Vector2(x1,y1), Vector2(x2,y2) )
+
+    method bounding_box( Line line ).Box:
+      # Returns a box just big enough to contain the given
+      # line.
+      return line.pt1.bounding_box.enclosing( line.pt2 )
+
+    method bounding_circle( Line line ).Circle:
+      # Creates a circle just big enough to contain the given line.
+      #
+      # Example:
+      #   hit_zone = line.bounding_circle
+      return Circle( line.midpoint, line.length/2 )
+
+    method to_String( Line line ).String:
+      # Returns a string representation of 'line'.
+      return "($(.2),$(.2))->($(.2),$(.2))" (line.pt1.x,line.pt1.y,line.pt2.x,line.pt2.y)
+
+    method point_along( Line line, Real64 p ).Vector2:
+      # Returns the point along the given line corresponding to
+      # fraction 'p', where 0 <= p <= 1.0.
+      #
+      # Invariant:
+      #   point_along(line,0.0) == line.pt1
+      #   point_along(line,0.5) == line.center
+      #   point_along(line,1.0) == line.pt2
+      #
+      # Example:
+      #   three_quarters = line.point_along(0.75)
+      local var delta = line.pt2 - line.pt1
+      return line.pt1 + delta * p
+
+    method at( Line line, Real64 p ).Vector2:
+      # Returns the point along the given line corresponding to
+      # fraction 'p', where 0 <= p <= 1.0.
+      #
+      # Invariant:
+      #   at(line,0.0) == line.pt1
+      #   at(line,0.5) == line.center
+      #   at(line,1.0) == line.pt2
+      #
+      # Example:
+      #   three_quarters = line.at(0.75)
+      local var delta = line.pt2 - line.pt1
+      return line.pt1 + delta * p
+
+    method axis( Line line ).Vector2:
+      # Returns the vector axis of a line.  Equivalent to
+      # (line.pt2 - line.pt1).
+      return line.pt2 - line.pt1
+
+    method center( Line line ).Vector2:
+      # Returns the center point of the given line.
+      #
+      # Example:
+      #   m = line.center
+      return (line.pt1 + line.pt2) / 2.0
+
+    method midpoint( Line line ).Vector2:
+      # Returns the point in the middle of the given line.
+      # Equivalent to center().
+      #
+      # Example:
+      #   m = line.midpoint
+      return (line.pt1 + line.pt2) / 2.0
+
+    method length( Line line ).Real64:
+      # Returns the length of the given line.
+      #
+      # Example:
+      #   println( line.length )
+      return (line.pt2 - line.pt1).magnitude
+
+    method rotated( Line line, Radians rads ).Line:
+      # Rotates ''line'' by ''rads'' radians around (0,0).
+      #
+      # Example:
+      #
+      #   line = line.rotated(Radians(pi/2))
+      return Line( line.pt1.rotated(rads), line.pt2.rotated(rads) )
+
+    method rotated( Line line, Degrees deg ).Line:
+      # Rotates ''line'' by ''deg'' degrees around (0,0).
+      #
+      # Example:
+      #
+      #   line = line.rotated(Degrees(45))
+      return rotated( line, Radians(deg) )
+
+    method op+( Line line, Vector2 v ).Line:
+      # Shifts the position of 'line' by +v.
+      #
+      # Examples:
+      #   line2 = line1 + Vector2(5,0)
+      #   line += Vector2(5,0)
+      return Line( line.pt1 + v, line.pt2 + v )
+
+    method op-( Line line, Vector2 v ).Line:
+      # Shifts the position of 'line' by -v.
+      #
+      # Examples:
+      #   line2 = line1 - Vector2(5,0)
+      #   line -= Vector2(5,0)
+      return Line( line.pt1 - v, line.pt2 - v )
+
+    method op*( Line line, Vector2 n ).Line:
+      # Scales the position of 'line' by n.
+      #
+      # Examples:
+      #   line2 = line1 * Vector2(1024,768)
+      #   line *= Vector2(1024,768)
+      return Line( line.pt1 * n, line.pt2 * n )
+
+    method op*( Line line, Real64 n ).Line:
+      # Scales the position of 'line' by n.
+      #
+      # Examples:
+      #   line2 = line1 * 2
+      #   line *= 2
+      return Line( line.pt1 * n, line.pt2 * n )
+
+    method op/( Line line, Vector2 n ).Line:
+      # Scales the position of 'line' by 1/n.
+      #
+      # Examples:
+      #   line2 = line1 / Vector2(1024,768)
+      #   line /= Vector2(1024,768)
+      return Line( line.pt1 / n, line.pt2 / n )
+
+    method op/( Line line, Real64 n ).Line:
+      # Scales the position of 'line' by 1/n.
+      #
+      # Examples:
+      #   line2 = line1 / 2
+      #   line /= 2
+      return Line( line.pt1 / n, line.pt2 / n )
+
+    method intersection( Line line1, Line line2 ).Vector2:
+      # Returns the point of intersection between line1 and line 2
+      # or Vector2.invalid ("Vector2(infinity,infinity)") if there is no intersection.
+      #
+      # Example:
+      #   local var intersection = line1.intersection(line2) 
+      #   if (intersection != Vector2.invalid ) ...
+      local var P1 = line1.pt1
+      local var P2 = line1.pt2
+      local var P3 = line2.pt1
+      local var P4 = line2.pt2
+      local var A = P2 - P1
+      local var B = P4 - P3
+      local var C = P3 - P1
+      local var denom = B.cross(A)
+      local var t0 = B.cross(C) / denom
+      local var t1 = A.cross(C) / denom
+      if (t0 < 0.0 or t0 > 1.0 or t1 < 0.0 or t1 > 1.0)
+        return Vector2(infinity,infinity)
+      endIf
+      return P1 + t0 * A
+
+    method intersects( Line line1, Line line2 ).Logical:
+      # Returns true if line segments 'line1' and 'line2' intersect.
+      # Use 'intersection' to determine the point of intersection.
+      #
+      # Example:
+      #   if (line1.intersects(line2)) ...
+      return line1.intersection(line2) != Vector2(infinity,infinity)
+
+    method intersects( Line line, Box box ).Logical:
+      # Returns true if 'line' and 'box' intersect.
+      #
+      # Example:
+      #   if (line.intersects(box)) ...
+      return line.intersection(box) != Line.invalid
+
+    method intersection( Line line, Box box ).Line:
+      # This method clips a line to a box, returning a line segment 
+      # that is enclosed by the box if such a segment exists.
+      #
+      # The result will be Line.invalid if the line is completely 
+      # outside the Box.  If you know the line originates from outside 
+      # the box, you can use this method to determine IF and where a 
+      # line intersets a box at both points.
+      #
+      # This is implemented using the Liang-Barsky line clipping algorithm.
+
+      local Real64 t0 = 0
+      local Real64 t1 = 1
+      local Vector2 delta=line.pt2-line.pt1
+
+      # LEFT EDGE CHECK
+      local Real64 P = -delta.x
+      local Real64 Q = (line.pt1.x-box.x1)
+      if(P==0)
+        if(Q<0) return Line.invalid
+      else
+        local Real64 R = Q/P
+        if(P<0)
+          if(R>t1) return Line.invalid
+          elseIf(R>t0) t0=R
+        else
+          if(R<t0) return Line.invalid
+          elseIf(R<t1) t1=R
+        endIf
+      endIf
+
+      # RIGHT EDGE CHECK
+      P = delta.x
+      Q = (box.x2-line.pt1.x)
+      if(P==0) 
+        if(Q<0) return Line.invalid
+      else
+        local Real64 R = Q/P
+        if(P<0)
+          if(R>t1) return Line.invalid
+          elseIf(R>t0) t0=R
+        else
+          if(R<t0) return Line.invalid
+          elseIf(R<t1) t1=R
+        endIf
+      endIf
+
+      # BOTTOM EDGE CHECK
+      P = -delta.y
+      Q = (line.pt1.y-box.y1)
+      if(P==0) 
+        if(Q<0) return Line.invalid
+      else
+        local Real64 R = Q/P
+        if(P<0)
+          if(R>t1) return Line.invalid
+          elseIf(R>t0) t0=R
+        else
+          if(R<t0) return Line.invalid
+          elseIf(R<t1) t1=R
+        endIf
+      endIf
+
+      # TOP EDGE CHECK
+      P = delta.y
+      Q = (box.y2-line.pt1.y)
+      if(P==0) 
+        if(Q<0) return Line.invalid
+      else
+        local Real64 R = Q/P
+        if(P<0)
+          if(R>t1) return Line.invalid
+          elseIf(R>t0) t0=R
+        else
+          if(R<t0) return Line.invalid
+          elseIf(R<t1) t1=R
+        endIf
+      endIf
+
+      #create the final line, which may be the original line or a part of it
+      local Vector2 src(line.pt1)
+      local Vector2 dest(line.pt2)
+      if(t1<1)
+        dest=Vector2(line.pt1.x+t1*delta.x,line.pt1.y+t1*delta.y)
+      endIf
+      if(t0>0)
+        src=Vector2(line.pt1.x+t0*delta.x,line.pt1.y+t0*delta.y)
+      endIf
+      return Line(src,dest)
+
+    method intersects( Line line, Quad q ).Logical:
+      # Returns "true" if ''line'' and ''q'' intersect.
+      return q.intersects(line)
+
+    method intersects( Line line, Circle circle ).Logical:
+      # Returns true if 'line' and 'circle' intersect.
+      #
+      # Example:
+      #   if (line.intersects(circle)) ...
+      local var closest_pt = circle.position.clamped( line )
+      return (circle.position.distance_to(closest_pt) <= circle.radius)
+
+    method intersection( Line line, Circle circle ).Line:
+      # Returns the subset of the line that lies inside the circle or
+      # Line.invalid if the line is completely outside of the circle.
+      local var d = line.pt2 - line.pt1
+      local var f = line.pt1 - circle.position
+
+      local var a = d.dot(d)
+      local var b = 2 * f.dot(d)
+      local var c = f.dot(f) - circle.radius^2
+
+      local var discriminant = b*b - 4*a*c
+      if (discriminant < 0) return Line.invalid
+
+      discriminant = sqrt(discriminant)
+      local var t1 = (-b + discriminant)/(2*a)
+      local var t2 = (-b - discriminant)/(2*a)
+
+      if (t1 >= 0 and t1 <= 1)
+        if (t2 >= 0 and t2 <= 1)
+          return Line(line.point_along(t2),line.point_along(t1))
+        else
+          return Line(line.pt1,line.point_along(t1))
+        endIf
+
+      elseIf (t2 >= 0 and t2 <= 1)
+        return Line(line.point_along(t2),line.pt2)
+
+      else
+        return line
+      endIf
+
+    method draw( Line line, Color color, Render render_flags=Render.default ): native
+      # Draws the given line to the screen in the given color.
+      #
+      # Example:
+      #   line.draw( Color.yellow )
+endClass
+
+
+#=====================================================================
+# Corners
+#=====================================================================
+compound Corners( Vector2 top_left, Vector2 bottom_right )
+  # Compound consisting of two corners.  Exists both as a means to 
+  # create a box from two corners rather than a corner and a size and
+  # as a way to store data such as UV coordinates that are "naturally"
+  # represented as two points rather than as a point and a size.
+  #
+  # Example:
+  #   local Corners c( center-0.5, center+0.5 )
+
+singleton class CornersManager
+  # Contains methods for operating on Corners compounds.
+  METHODS
+    method create_from( Real64 x1, Real64 y1, Real64 x2, Real64 y2 ).Corners:
+      # Creates a Corners compound from the given top-left and bottom-
+      # right coordinates.
+      #
+      # Example:
+      #   local Corners c( x1, y1, x2, y2 )
+      return Corners( Vector2(x1,y1), Vector2(x2,y2) )
+
+    method create_from( Vector2 position ).Corners:
+      # Creates a corners compound with 'position' as both the 
+      # top-left and bottom-right coordinates.
+      #
+      # Example:
+      #   local Corners c( pt )
+      return Corners( position, position )
+
+    method create_from( Box b ).Corners:
+      # Creates a corners compound with the same dimensions as 'b'.
+      #
+      # Example:
+      #   local Corners img_corners( img.bounding_box )
+      return Corners( b.position, b.bottom_right )
+
+    method to_String( Corners c ).String:
+      # Returns a string representation of 'c'.
+      return "[$(.2),$(.2) $(.2),$(.2)]" (c.top_left.x,c.top_left.y,...
+          c.bottom_right.x, c.bottom_right.y )
+
+    method bounding_box( Corners corners ).Box:
+      # Returns a bounding box that encloses 'corners'.
+      #
+      # Example:
+      #   bounding_box = corners.bounding_box
+      return Box( corners.top_left, corners.size )
+
+    method bounding_circle( Corners corners ).Circle:
+      # Returns a bounding circle that encloses 'corners'.
+      #
+      # Example:
+      #   bounding_circle = corners.bounding_circle
+      return Box(corners.top_left, corners.size).bounding_circle
+
+    method x1( Corners c ).Real64:
+      # Returns the leftmost x coordinate of 'c'.
+      #
+      # Example:
+      #   println( "left edge:$" (corners.x1) )
+      return c.top_left.x
+
+    method y1( Corners c ).Real64:
+      # Returns the topmost y coordinate of 'c'.
+      #
+      # Example:
+      #   println( "top edge:$" (corners.y1) )
+      return c.top_left.y
+
+    method x2( Corners c ).Real64:
+      # Returns the rightmost x coordinate of 'c'.
+      #
+      # Example:
+      #   println( "right edge:$" (corners.x2) )
+      return c.bottom_right.x
+
+    method y2( Corners c ).Real64:
+      # Returns the bottommost y coordinate of 'c'.
+      #
+      # Example:
+      #   println( "bottom edge:$" (corners.y2) )
+      return c.bottom_right.y
+
+    method size( Corners c ).Vector2:
+      # Returns the size of 'c' as a Vector2.
+      #
+      # Example:
+      #   println( "Dimensions: $" (corners.size) )
+      return c.bottom_right - c.top_left
+
+    method op+( Corners corners, Vector2 v ).Corners:
+      # Shifts the position of 'corners' by +v.
+      #
+      # Example:
+      #   corners = corners + origin
+      return Corners( corners.top_left + v, corners.bottom_right + v )
+
+    method op-( Corners corners, Vector2 v ).Corners:
+      # Shifts the position of 'corners' by -v.
+      #
+      # Example:
+      #   corners = corners - origin
+      return Corners( corners.top_left - v, corners.bottom_right - v )
+
+    method op*( Corners corners, Vector2 n ).Corners:
+      # Scales the "vertices" of 'corners' by 'n'.
+      #
+      # Example:
+      #   corners = corners * scale
+      return Corners( corners.top_left*n, corners.bottom_right * n )
+
+    method op*( Corners corners, Real64 n ).Corners:
+      # Scales the "vertices" of 'corners' by 'n'.
+      #
+      # Example:
+      #   corners = corners * k
+      return Corners( corners.top_left*n, corners.bottom_right * n )
+
+    method op/( Corners corners, Vector2 n ).Corners:
+      # Scales the "vertices" of 'corners' by '1/n'.
+      #
+      # Example:
+      #   corners = corners / scale
+      return Corners( corners.top_left/n, corners.bottom_right / n )
+
+    method op/( Corners corners, Real64 n ).Corners:
+      # Scales the "vertices" of 'corners' by '1/n'.
+      #
+      # Example:
+      #   corners = corners / k
+      return Corners( corners.top_left/n, corners.bottom_right / n )
+
+endClass
+
+#=====================================================================
+# Box
+#=====================================================================
+compound Box( Vector2 position, Vector2 size )
+  # Compound representing an abstract 2D box with a top-left 
+  # 'position' and a total size.  Used for sub-image specification, 
+  # collision physics, and the like.
+  #
+  # The coordinates and dimensions of a Box use a continuous rather
+  # than discrete interval, meaning that a box at position (0,0)
+  # and having size (5,10) will have a bottom-right coordinate of 
+  # (5,10) and not (4,9).
+  #
+  # Example:
+  #   local Box recticle( view.size/2 - 10, Vector2(20,20) )
+
+singleton class BoxManager
+  # Contains methods for operating on Box compounds.
+  METHODS
+    method create_from( Vector2 size ).Box:
+      # Creates a Box compound with the given size and position 
+      # (0,0).
+      #
+      # Example:
+      #   local Box screen_region( view.size )
+      return Box( Vector2(0,0), size )
+
+    method create_from( Corners c ).Box:
+      # Creates a Box compound with the given corners.
+      #
+      # Example:
+      #   local Box recticle( Corners(view.size/2 - 10, view.size/2 + 10) )
+      return Box( c.top_left, c.size )
+
+    method create_from( Real64 x, Real64 y, Real64 width, Real64 height ).Box:
+      # Creates a Box compound with the given position and size.
+      #
+      # Example:
+      #   local Box bounding_box(x,y,64,64)
+      return Box( Vector2(x,y), Vector2(width,height) )
+
+    method create_from( Vector2 position, Real64 width, Real64 height ).Box:
+      # Creates a Box compound with the given position and size.
+      #
+      # Example:
+      #   local Box bounding_box(x,y,64,64)
+      return Box( position, Vector2(width,height) )
+
+    method create_from( Real64 x, Real64 y, Real64 size ).Box:
+      # Creates a Box compound with the given position and size.
+      #
+      # Example:
+      #   local Box bounding_box(x,y,64)
+      return Box( Vector2(x,y), Vector2(size,size) )
+
+    method create_from( Vector2 position, Real64 size ).Box:
+      # Creates a Box compound with the given position and size.
+      #
+      # Example:
+      #   local Box bounding_box(Input.mouse_position-32,64)
+      return Box( position, Vector2(size,size) )
+
+    method to_String( Box box ).String:
+      # Returns a string representation of 'box'.
+      return "[$(.2),$(.2) $(.2)x$(.2)]" (box.position.x,box.position.y,box.size.x,box.size.y)
+
+    method clamped( Box inner, Box outer ).Box:
+      # Clamps ''inner'' to ''outer'', first by positioning and then
+      # by resizing if it's still too large.
+      local var pos = inner.position - outer.position
+      local var br = pos + inner.size
+      if (br.x > outer.size.x) pos += Vector2(outer.size.x-br.x,0)
+      if (br.y > outer.size.y) pos += Vector2(0,outer.size.y-br.y)
+      if (pos.x < 0) pos += Vector2(-pos.x,0)
+      if (pos.y < 0) pos += Vector2(0,-pos.y)
+      local var size = inner.size
+      if (size.x > outer.size.x) size = Vector2(outer.size.x,size.y)
+      if (size.y > outer.size.y) size = Vector2(size.x,outer.size.y)
+      return Box( pos + outer.position, size )
+
+    method rotated( Box box, Radians rads ).Quad:
+      # Rotates ''box'' by ''rads'' radians and returns the resulting Quad.
+      #
+      # Example:
+      #
+      #   local Quad quad = box.rotated(Radians(pi/2))
+      return Quad(box).rotated(rads)
+
+    method rotated( Box box, Degrees deg ).Quad:
+      # Rotates ''box'' by ''deg'' degrees and returns the resulting Quad.
+      #
+      # Example:
+      #
+      #   local Quad quad = box.rotated(Degrees(45))
+      return Quad(box).rotated(Radians(deg))
+
+    method relative_to( Box box, Int32 handle_constant ).Box
+      # Returns a Box with the same size that has a position relative
+      # to the given handle constant (Handle.center, etc.).  The new 
+      # box does not remember the handle.
+      #
+      # Example:
+      #
+      #   # Create a 160x100 Box centered in the display
+      #   local Box box = Box(Display.center,160,100).relative_to(Handle.center)
+      return box - Handle(handle_constant).adjusted_for_size(box.size).offset
+
+    method op+( Box box, Vector2 v ).Box:
+      # Shifts the position of 'box' by +v.
+      #
+      # Examples:
+      #   new_pos = box + offset 
+      #   box += offset 
+      return Box( box.position + v, box.size )
+
+    method op-( Box box, Vector2 v ).Box:
+      # Shifts the position of 'box' by -v.
+      #
+      # Examples:
+      #   new_pos = box - offset 
+      #   box -= offset 
+      return Box( box.position - v, box.size )
+
+    method op*( Box box, Vector2 n ).Box:
+      # Scales the "vertices" of 'box' by 'n'.
+      #
+      # Examples:
+      #   b3 = b2 * b1 
+      #   box *= scale
+      return Box( box.position*n, box.size*n )
+
+    method op*( Box box, Real64 n ).Box:
+      # Scales the "vertices" of 'box' by 'n'.
+      #
+      # Examples:
+      #   b2 = b1 * factor
+      #   box *= factor 
+      return Box( box.position*n, box.size*n )
+
+    method op/( Box box, Vector2 n ).Box:
+      # Scales the "vertices" of 'box' by '1/n'.
+      #
+      # Examples:
+      #   b2 = b1 / scale
+      #   box /= scale 
+      return Box( box.position/n, box.size/n )
+
+    method op/( Box box, Real64 n ).Box:
+      # Scales the "vertices" of 'box' by '1/n'.
+      #
+      # Examples:
+      #   b1 = b1 / factor
+      #   box /= factor 
+      return Box( box.position/n, box.size/n )
+
+    method scaled( Box box, Vector2 factor ).Box:
+      # Scales the size of 'box' by 'factor' without affecting the position.
+      #
+      # Example:
+      #   half_height = box.scaled( Vector2(1.0,0.5) )
+      return Box( box.position, box.size * factor )
+
+    method scaled( Box box, Real64  factor ).Box:
+      # Scales the size of 'box' by 'factor' without affecting the position.
+      #
+      # Example:
+      #   half_size = box.scaled( 0.5 )
+      return Box( box.position, box.size * factor )
+
+    method x1( Box box ).Real64:
+      # Returns the leftmost x coordinate of 'box'.
+      #
+      # Example:
+      #   println( "left edge:$" (box.x1) )
+      return box.position.x
+
+    method y1( Box box ).Real64:
+      # Returns the topmost y coordinate of 'box'.
+      #
+      # Example:
+      #   println( "top edge:$" (box.y1) )
+      return box.position.y
+
+    method x2( Box box ).Real64:
+      # Returns the rightmost x coordinate of 'box'.
+      #
+      # Example:
+      #   println( "right edge:$" (box.x2) )
+      return box.position.x + box.size.x
+
+    method y2( Box box ).Real64:
+      # Returns the bottommost y coordinate of 'box'.
+      #
+      # Example:
+      #   println( "bottom edge:$" (box.y2) )
+      return box.position.y + box.size.y
+
+    method top_left( Box box ).Vector2:
+      # Returns the top-left corner of 'box'.
+      #
+      # Example:
+      #   println( box.top_left )
+      return box.position
+
+    method top_right( Box box ).Vector2:
+      # Returns the top-right corner of 'box'.
+      #
+      # Example:
+      #   println( box.top_right )
+      return Vector2( x2(box), box.position.y )
+
+    method bottom_right( Box box ).Vector2:
+      # Returns the bottom-right corner of 'box'.
+      #
+      # Example:
+      #   println( box.bottom_right )
+      return box.position + box.size
+
+    method bottom_left( Box box ).Vector2:
+      # Returns the bottom-left corner of 'box'.
+      #
+      # Example:
+      #   println( box.bottom_left )
+      return Vector2( box.position.x, y2(box) )
+
+    method width( Box box ).Real64:
+      # Returns the width of 'box'.
+      #
+      # Example:
+      #   println( box.width )
+      return box.size.x
+
+    method height( Box box ).Real64:
+      # Returns the height of 'box'.
+      #
+      # Example:
+      #   println( box.height )
+      return box.size.y
+
+    method center( Box box ).Vector2:
+      # Returns the center point of 'box'.
+      #
+      # Example:
+      #   local Vector2 sprite_center = sprite.bounding_box.center
+      return box.position + box.size / 2.0
+
+    method at( Box box, Real64 px, Real64 py ).Vector2:
+      # Returns a position within the box, where (px,py) of (0,0) gives the top-left
+      # corner and (1.0,1.0) gives the bottom right corner.
+      #
+      # Example: 
+      #   # Plot a point centered in the top 1/3 of the screen:
+      #   Display.bounding_box.at(0.5,1.0/3.0).draw(Color.white)
+      return Vector2( box.top_left.x + box.size.x*px, box.top_left.y + box.size.y*py )
+
+    method at( Box box, Vector2 p ).Vector2:
+      # Returns a position within the box, where p of (0,0) gives the top-left
+      # corner and (1.0,1.0) gives the bottom right corner.
+      #
+      # Example: 
+      #   # Plot a point centered in the top 1/3 of the screen:
+      #   Display.bounding_box.at(0.5,1.0/3.0).draw(Color.white)
+      return Vector2( box.top_left.x + box.size.x*p.x, box.top_left.y + box.size.y*p.y )
+
+    method area( Box box ).Real64:
+      # Returns the area of 'box' (width * height).
+      #
+      # Example:
+      #   println( box.area ) 
+      return box.size.x * box.size.y
+
+    method contains( Box box, Vector2 pt ).Logical:
+      # Returns "true" if 'box' contains the given point.
+      #
+      # Example:
+      #   println( actor.bounding_box.contains(Input.mouse_position) )
+      local Real64 x = pt.x
+      local Real64 y = pt.y
+      if (x < box.position.x or y < box.position.y) return false
+      if (x >= box.x2 or y >= box.y2) return false
+      return true
+
+    method contains( Box box, Line line ).Logical:
+      # Returns "true" if 'box' contains the given line.
+      return box.contains(line.pt1) and box.contains(line.pt2)
+
+    method contains( Box box1, Box box2 ).Logical:
+      # Returns true if 'box1' contains 'box2'.  An exactly overlapping 'box2'
+      # would count as being contained within 'box1'.
+      if (box2.x1 < box1.x1 or box2.x2 > box1.x2) return false
+      if (box2.y1 < box1.y1 or box2.y2 > box1.y2) return false
+      return true
+
+    method contains( Box box, Quad quad ).Logical:
+      # Returns true if 'box' contains 'quad'.
+      return box.contains(quad.top_left) and box.contains(quad.top_right) ...
+        and box.contains(quad.bottom_right) and box.contains(quad.bottom_left)
+
+    method contains( Box box, Circle circle ).Logical:
+      # Returns true if 'box' contains 'circle'.
+      return box.contains(circle.bounding_box)
+
+    method intersects( Box box, Line line ).Logical:
+      # Returns true if 'box' and 'line' intersect.
+      #
+      # Example:
+      #   if (box.intersects(line)) ...
+      return line.intersection(box) != Line.invalid
+
+    method intersects( Box box1, Box box2 ).Logical:
+      # Returns "true" if rectangles box1 and box2 intersect at all.
+      #
+      # Example:
+      #   if (actor1.bounding_box.intersects(actor2.bounding_box)) ...
+      if (x1(box1) >= x2(box2)) return false
+      if (x2(box1) <= x1(box2)) return false
+      if (y1(box1) >= y2(box2)) return false
+      if (y2(box1) <= y1(box2)) return false
+      return true
+
+    method intersects( Box box, Quad quad ).Logical:
+      # Returns "true" if ''box'' and ''quad'' intersect.
+      return Quad(box).intersects(quad)
+
+    method intersects( Box box, Circle circle ).Logical:
+      # Returns "true" if ''box'' and ''circle'' intersect.
+      return Quad(box).intersects(circle)
+
+    method intersection( Box box1, Box box2 ).Box:
+      # Returns the box defining the area that is common to both
+      # 'box1' and 'box2'.  If the result's size is zero then the 
+      # rectangles do not overlap.
+      #
+      # Example:
+      #   collision_region = actor1.bounding_box.intersection(actor2.bounding_box)
+      #   if (collision_region.area?) ...
+      local Real64 x1 = box1.position.x
+      local Real64 y1 = box1.position.y
+      local Real64 x2 = x2(box1)
+      local Real64 y2 = y2(box1)
+
+      local Real64 r2_x1 = box2.position.x
+      local Real64 r2_y1 = box2.position.y
+      local Real64 r2_x2 = x2(box2)
+      local Real64 r2_y2 = y2(box2)
+
+      if (x1 < r2_x1) x1 = r2_x1
+      if (y1 < r2_y1) y1 = r2_y1
+      if (x2 > r2_x2) x2 = r2_x2
+      if (y2 > r2_y2) y2 = r2_y2
+
+      if (x1 > x2 or y1 > y2) 
+        # will result in zero area
+        x2 = x1; y2 = y1
+      endIf
+
+      return Box( Corners(x1, y1, x2, y2) )
+
+    method intersection( Box box, Line line ).Line:
+      # See Line::intersection(Box).
+      return line.intersection(box)
+
+    method expanded( Box box, Real64 per_side ).Box:
+      # Returns a box that is 'per_side' units larger on every 
+      # side.
+      #
+      # Example:
+      #   padded_box = box.expanded(16)
+      local Vector2 pos = box.position - per_side
+      local Vector2 size = box.size + 2 * per_side
+      return Box( pos, size )
+
+    method expanded( Box box, Vector2 amount ).Box:
+      # Returns a box that is "amount.x" units larger on the
+      # left and right sides and "amount.y" units larger on the top
+      # and bottom.
+      #
+      # Example:
+      #   padded_box = box.expanded(border_size)
+      local Vector2 pos = box.position - amount
+      local Vector2 size = box.size + amount * 2
+      return Box( pos, size )
+
+    method cropped( Box box, Real64 per_side ).Box:
+      # Returns a box that is 'per_side' units smaller on every
+      # side.
+      #
+      # Example:
+      #   smaller_box = box.cropped(16)
+      local Vector2 top_left = box.position + per_side
+      local Vector2 bottom_right = box.bottom_right - per_side
+      return Box( Corners(top_left, bottom_right) )
+
+    method cropped( Box box, Vector2 amount ).Box:
+      # Returns a box that is smaller on the left and right 
+      # sides by "amount.x" and is smaller on the top and bottom
+      # sides by "amount.y".
+      #
+      # Example:
+      #   smaller_box = box.cropped(border_size)
+      local Vector2 top_left = box.position + amount
+      local Vector2 bottom_right = box.bottom_right - amount
+      return Box( Corners(top_left, bottom_right) )
+
+    method enclosing( Box b, Vector2 pt ).Box:
+      # Returns a box just big enough to contain the given
+      # box and the given point.
+      local var position = b.position
+      local Real64 x1 = position.x
+      local Real64 y1 = position.y
+      local Real64 x2 = b.x2
+      local Real64 y2 = b.y2
+
+      local Real64 pt_x = pt.x
+      local Real64 pt_y = pt.y
+
+      return Box( Corners(min(x1,pt_x), min(y1,pt_y), max(x2,pt_x), max(y2,pt_y)) )
+
+    method enclosing( Box box1, Box box2 ).Box:
+      # Returns a box just big enough to contain both given
+      # rectangles.
+      return box1.enclosing(box2.position).enclosing(box2.bottom_right)
+
+    method bounding_circle( Box box ).Circle:
+      # Creates a circle just big enough to contain the given box.
+      #
+      # Example:
+      #   hit_zone = sprite.bounding_circle
+      local var center = box.center
+      return Circle( center, (box.position - center).magnitude )
+
+    method fill( Box box, Color color ):
+      # Draws 'box' to the screen filled with the given color.
+      #
+      # Example:
+      #   box.fill( COLOR.red )
+      Quad(box).fill( ColorGradient(color) )
+
+    method fill( Box box, ColorGradient colors ):
+      # Draws 'box' to the screen as a gradient fill.  The four colors
+      # are assigned clockwise starting with the top-left corner.
+      Quad(box).fill( colors )
+
+    method draw( Box box, Color color ):
+      # Draws an outline of 'box' to the screen in the given color.
+      #
+      # Example:
+      #   box.draw( COLOR.white )
+      local Real64 x1 = box.position.x
+      local Real64 y1 = box.position.y
+      local Real64 x2 = box.x2 - 1
+      local Real64 y2 = box.y2 - 1
+      local var w = box.width
+      local var h = box.height
+      #Line(x1,y1,x2,y1).draw( color )
+      #Line(x2,y1,x2,y2).draw( color )
+      #Line(x2,y2,x1,y2).draw( color )
+      #Line(x1,y2,x1,y1).draw( color )
+      Box(x1,y1,w,1).fill(color)
+      Box(x1,y2,w,1).fill(color)
+      Box(x1,y1+1,1,h-2).fill(color)
+      Box(x2,y1+1,1,h-2).fill(color)
+endClass
+
+#=====================================================================
+# Quad
+#=====================================================================
+compound Quad( Vector2 top_left, Vector2 top_right, Vector2 bottom_right, Vector2 bottom_left )
+  # Defines an abstract geometric quadrangle composed of four vertices.
+
+singleton class QuadManager
+  # Contains methods for operating on Quad compounds.
+  METHODS
+    method create_from( Box box ).Quad:
+      # Creates a Quad with the same position and size as the given 
+      # box.
+      local Real64 x1 = box.x1
+      local Real64 y1 = box.y1
+      local Real64 x2 = box.x2
+      local Real64 y2 = box.y2
+      return Quad( Vector2(x1,y1), Vector2(x2,y1), Vector2(x2,y2), Vector2(x1,y2) )
+
+    method create_from( Corners corners ).Quad:
+      local Real64 x1 = corners.x1
+      local Real64 y1 = corners.y1
+      local Real64 x2 = corners.x2
+      local Real64 y2 = corners.y2
+      return Quad( Vector2(x1,y1), Vector2(x2,y1), Vector2(x2,y2), Vector2(x1,y2) )
+
+    method to_String( Quad q ).String:
+      # Returns a string representation of 'q'.
+      return "[$,$,$,$]" (q.top_left, q.top_right, q.bottom_right, q.bottom_left)
+
+    method bounding_box( Quad quad ).Box:
+      # Returns a bounding box that encloses 'quad'.
+      #
+      # Example:
+      #   bounding_box = quad.bounding_box
+      return quad.top_left.bounding_box.enclosing(quad.top_right).enclosing(quad.bottom_right).enclosing(quad.bottom_left)
+
+    method bounding_circle( Quad quad ).Circle:
+      # Returns a bounding circle that encloses 'quad'.
+      #
+      # Example:
+      #   bounding_circle = quad.bounding_circle
+      return quad.top_left.bounding_circle.enclosing(quad.top_right).enclosing(quad.bottom_right).enclosing(quad.bottom_left)
+
+    method contains( Quad quad, Vector2 v ).Logical:
+      # Returns true if ''quad'' contains point ''v''.
+      if (Triangle(quad.top_left,quad.top_right,quad.bottom_right).contains(v)) return true
+      return Triangle(quad.top_left,quad.bottom_right,quad.bottom_left).contains(v)
+
+    method contains( Quad quad, Box box ).Logical:
+      # Returns true if ''quad'' contains ''box''.
+      return quad.contains(Quad(box))
+
+    method contains( Quad quad1, Quad quad2 ).Logical:
+      # Returns true if ''quad1'' contains ''quad2''.
+      if (quad1.intersects(quad2)) return false
+      return quad1.contains(quad2.top_left)
+
+    method contains( Quad quad, Circle circle ).Logical:
+      # Returns true if ''quad'' contains ''circle''.
+      if (quad.intersects(circle)) return false
+      return quad.contains(circle.position)
+
+    method intersects( Quad q, Line line ).Logical:
+      # Returns "true" if ''q'' and ''line'' intersect.
+
+      # See if any lines intersect
+      if (line.intersects(Line(q.top_left,q.top_right))) return true
+      if (line.intersects(Line(q.top_right,q.bottom_right))) return true
+      if (line.intersects(Line(q.bottom_right,q.bottom_left))) return true
+      if (line.intersects(Line(q.bottom_left,q.top_left))) return true
+
+      # Either the quad an line don't intersect or the quad completely contains
+      # the line.  We can test any 1 point from the line to see if it lies 
+      # within the quad.
+      if (q.contains(line.pt1)) return true
+
+      return false
+
+    method intersects( Quad quad, Box box ).Logical:
+      # Returns "true" if ''quad'' and ''box'' intersect.
+      return intersects(quad,Quad(box))
+
+
+    method intersects( Quad q1, Quad q2 ).Logical:
+      # Returns "true" if ''q1'' and ''q2'' intersect.
+      if (not q1.bounding_box.intersects(q2.bounding_box)) return false
+
+      # See if any lines intersect
+      local Line line( q1.top_left, q1.top_right )
+      if (line.intersects(Line(q2.top_left,q2.top_right))) return true
+      if (line.intersects(Line(q2.top_right,q2.bottom_right))) return true
+      if (line.intersects(Line(q2.bottom_right,q2.bottom_left))) return true
+      if (line.intersects(Line(q2.bottom_left,q2.top_left))) return true
+
+      line = Line( q1.top_right, q1.bottom_right )
+      if (line.intersects(Line(q2.top_left,q2.top_right))) return true
+      if (line.intersects(Line(q2.top_right,q2.bottom_right))) return true
+      if (line.intersects(Line(q2.bottom_right,q2.bottom_left))) return true
+      if (line.intersects(Line(q2.bottom_left,q2.top_left))) return true
+
+      line = Line( q1.bottom_right, q1.bottom_left )
+      if (line.intersects(Line(q2.top_left,q2.top_right))) return true
+      if (line.intersects(Line(q2.top_right,q2.bottom_right))) return true
+      if (line.intersects(Line(q2.bottom_right,q2.bottom_left))) return true
+      if (line.intersects(Line(q2.bottom_left,q2.top_left))) return true
+
+      line = Line( q1.bottom_left, q1.top_left )
+      if (line.intersects(Line(q2.top_left,q2.top_right))) return true
+      if (line.intersects(Line(q2.top_right,q2.bottom_right))) return true
+      if (line.intersects(Line(q2.bottom_right,q2.bottom_left))) return true
+      if (line.intersects(Line(q2.bottom_left,q2.top_left))) return true
+
+      # Either the quads don't intersect or one completely contains the other.
+      # We can test any 1 point from each to see if it lies within the other.
+      if (q1.contains(q2.top_left)) return true
+      if (q2.contains(q1.top_left)) return true
+
+      return false
+
+    method intersects( Quad quad, Circle circle ).Logical:
+      # Returns true if ''quad'' intersects ''circle''.
+      if (Line(quad.top_left,quad.top_right).intersects(circle)) return true
+      if (Line(quad.top_right,quad.bottom_right).intersects(circle)) return true
+      if (Line(quad.bottom_right,quad.bottom_left).intersects(circle)) return true
+      if (Line(quad.bottom_left,quad.top_left).intersects(circle)) return true
+
+      # The circle could be entirely inside the quad
+      return (quad.contains(circle.position))
+
+
+    method rotated( Quad quad, Radians rads ).Quad:
+      # Rotates ''quad'' by ''rads'' radians and returns the resulting Quad.
+      #
+      # Example:
+      #
+      #   quad = quad.rotated(Radians(pi/2))
+      return Quad( quad.top_left.rotated(rads), quad.top_right.rotated(rads),
+        quad.bottom_right.rotated(rads), quad.bottom_left.rotated(rads) )
+
+    method rotated( Quad quad, Degrees deg ).Quad:
+      # Rotates ''quad'' by ''deg'' degrees and returns the resulting Quad.
+      #
+      # Example:
+      #
+      #   quad = quad.rotated(Degrees(45))
+      return rotated(quad,Radians(deg))
+
+    method op+( Quad quad, Vector2 n ).Quad:
+      # Shifts the vertices of 'quad' by n.
+      #
+      # Examples:
+      #   quad2 = quad1 + n
+      #   quad += n
+      return Quad( quad.top_left+n, quad.top_right+n, quad.bottom_right+n, quad.bottom_left+n )
+
+    method op-( Quad quad, Vector2 n ).Quad:
+      # Shifts the vertices of 'quad' by -n.
+      #
+      # Examples:
+      #   quad2 = quad1 - n
+      #   quad -= n
+      return Quad( quad.top_left-n, quad.top_right-n, quad.bottom_right-n, quad.bottom_left-n )
+
+    method op*( Quad quad, Vector2 n ).Quad:
+      # Scales the vertices of 'quad' by n.
+      #
+      # Examples:
+      #   quad2 = quad1 * n
+      #   quad *= n
+      return Quad( quad.top_left*n, quad.top_right*n, quad.bottom_right*n, quad.bottom_left*n )
+
+    method op*( Quad quad, Real64 n ).Quad:
+      # Scales the vertices of 'quad' by n.
+      #
+      # Examples:
+      #   quad2 = quad1 * n
+      #   quad *= n
+      return Quad( quad.top_left*n, quad.top_right*n, quad.bottom_right*n, quad.bottom_left*n )
+
+    method op/( Quad quad, Vector2 n ).Quad:
+      # Scales the vertices of 'quad' by 1/n.
+      #
+      # Examples:
+      #   quad2 = quad1 / n
+      #   quad /= n
+      return Quad( quad.top_left/n, quad.top_right/n, quad.bottom_right/n, quad.bottom_left/n )
+
+    method op/( Quad quad, Real64 n ).Quad:
+      # Scales the vertices of 'quad' by 1/n.
+      #
+      # Examples:
+      #   quad2 = quad1 / n
+      #   quad /= n
+      return Quad( quad.top_left/n, quad.top_right/n, quad.bottom_right/n, quad.bottom_left/n )
+
+    method fill( Quad quad, Color color ):
+      # Draws 'q' to the screen filled with the given color.
+      #
+      # Example:
+      #   quad.fill( Color.red )
+      fill( quad, ColorGradient(color) )
+
+    method fill( Quad quad, ColorGradient colors, Render render_flags=Render.default ): native
+      # Draws 'q' to the screen as a gradient fill.  The four colors in the gradient
+      # are assigned clockwise starting with the first vertex.
+
+    method draw( Quad q, Color color ):
+      # Draws an outline of 'q' to the screen in the given color.
+      #
+      # Example:
+      #   quad.draw( Color.black )
+      Line(q.top_left,q.top_right).draw( color )
+      Line(q.top_right,q.bottom_right).draw( color )
+      Line(q.bottom_right,q.bottom_left).draw( color )
+      Line(q.bottom_left,q.top_left).draw( color )
+endClass
+
+#=====================================================================
+# Triangle
+#=====================================================================
+compound Triangle( Vector2 a, Vector2 b, Vector2 c )
+  # Defines an abstract geometric triangle composed of three vertices.
+
+singleton class TriangleManager
+  # Contains methods for operating on Triangle compounds.
+  METHODS
+    method to_String( Triangle t ).String:
+      # Returns a string representation of 't'.
+      return "[$,$,$]" (t.a, t.b, t.c)
+
+    method bounding_box( Triangle t ).Box:
+      # Returns a bounding box that encloses 't'.
+      #
+      # Example:
+      #   bounding_box = triangle.bounding_box
+      return t.a.bounding_box.enclosing(t.b).enclosing(t.c)
+
+    method bounding_circle( Triangle t ).Circle:
+      # Returns a bounding circle that encloses 't'.
+      #
+      # Example:
+      #   bounding_circle = triangle.bounding_circle
+      return t.a.bounding_circle.enclosing(t.b).enclosing(t.c)
+
+    #{
+      UNTESTED
+    method area( Triangle t ).Real64:
+      # Returns the area of ''t''.
+
+      # Taken from bugzpodder at http://compsci.ca/v3/viewtopic.php?t=6034
+      # for example, if A=(x1,y1) B=(x2,y2), C=(x3,y3)
+      # Area= abs(x1*y2+x2*y3+x3*y1-x1*y3-x3*y2-x2*y1)/2
+      local var x1 = t.a.x
+      local var y1 = t.a.y
+      local var x2 = t.b.x
+      local var y2 = t.b.y
+      local var x3 = t.c.x
+      local var y3 = t.c.y
+      return abs(x1*y2+x2*y3+x3*y1-x1*y3-x3*y2-x2*y1)/2
+    }#
+
+    method contains( Triangle t, Vector2 p ).Logical:
+      # Returns "true" if triangle ''t'' contains point ''v''.
+
+      # Using Barycentric technique as described here:
+      #   http://www.blackpawn.com/texts/pointinpoly/default.html
+
+      # Compute vectors        
+      local var v0 = t.c - t.a
+      local var v1 = t.b - t.a
+      local var v2 = p   - t.a
+
+      # Compute dot products
+      local var dot00 = v0.dot(v0)
+      local var dot01 = v0.dot(v1)
+      local var dot02 = v0.dot(v2)
+      local var dot11 = v1.dot(v1)
+      local var dot12 = v1.dot(v2)
+
+      # Compute barycentric coordinates
+      local var invDenom = 1.0 / (dot00 * dot11 - dot01 * dot01)
+      local var u = (dot11 * dot02 - dot01 * dot12) * invDenom
+      local var v = (dot00 * dot12 - dot01 * dot02) * invDenom
+
+      # Check if point is in triangle
+      return (u > 0) and (v > 0) and (u + v < 1)
+
+    method intersects( Triangle t1, Triangle t2 ).Logical:
+      # Returns "true" if ''t1'' and ''t2'' overlap.
+      local Line line(t1.a,t1.b)
+      if (line.intersects(Line(t2.a,t2.b))) return true
+      if (line.intersects(Line(t2.b,t2.c))) return true
+      if (line.intersects(Line(t2.a,t2.c))) return true
+
+      line = Line(t1.b,t1.c)
+      if (line.intersects(Line(t2.a,t2.b))) return true
+      if (line.intersects(Line(t2.b,t2.c))) return true
+      if (line.intersects(Line(t2.a,t2.c))) return true
+
+      line = Line(t1.a,t1.c)
+      if (line.intersects(Line(t2.a,t2.b))) return true
+      if (line.intersects(Line(t2.b,t2.c))) return true
+      if (line.intersects(Line(t2.a,t2.c))) return true
+
+      # Either they don't overlap or one completely contains
+      # the other.  Test 1 pt from each to see if it lies
+      # within the other.
+      if (t1.contains(t2.a)) return true
+      if (t2.contains(t1.a)) return true
+
+      return false
+
+    method op+( Triangle t, Vector2 n ).Triangle:
+      # Shifts the vertices of 't' by n.
+      #
+      # Examples:
+      #   t2 = t1 + n
+      #   t += n
+      return Triangle( t.a+n, t.b+n, t.c+n )
+
+    method op-( Triangle t, Vector2 n ).Triangle:
+      # Shifts the vertices of 't' by -n.
+      #
+      # Examples:
+      #   t2 = t1 - n
+      #   t -= n
+      return Triangle( t.a-n, t.b-n, t.c-n )
+
+    method op*( Triangle t, Vector2 n ).Triangle:
+      # Scales the vertices of 't' by n.
+      #
+      # Examples:
+      #   t2 = t1 * n
+      #   t *= n
+      return Triangle( t.a*n, t.b*n, t.c*n )
+
+    method op*( Triangle t, Real64 n ).Triangle:
+      # Scales the vertices of 't' by n.
+      #
+      # Examples:
+      #   t2 = t1 * n
+      #   t *= n
+      return Triangle( t.a*n, t.b*n, t.c*n )
+
+    method op/( Triangle t, Vector2 n ).Triangle:
+      # Scales the vertices of 't' by 1/n.
+      #
+      # Examples:
+      #   t2 = t1 / n
+      #   t /= n
+      return Triangle( t.a/n, t.b/n, t.c/n )
+
+    method op/( Triangle t, Real64 n ).Triangle:
+      # Scales the vertices of 't' by 1/n.
+      #
+      # Examples:
+      #   t2 = t1 / n
+      #   t /= n
+      return Triangle( t.a/n, t.b/n, t.c/n )
+
+    method fill( Triangle t, Color color, Render render_flags=Render.default ):
+      # Draws 't' to the screen filled with the given color.
+      #
+      # Example:
+      #   t.fill( Color.red )
+      fill( t, color, color, color, render_flags )
+
+    method fill( Triangle t, Color c1, Color c2, Color c3, Render render_flags=Render.default ): native
+      # Draws 't' to the screen with interpolated color values.
+
+    method draw( Triangle t, Color color ):
+      # Draws an outline of 't' to the screen in the given color.
+      #
+      # Example:
+      #   t.draw( Color.black )
+      Line(t.a,t.b).draw( color )
+      Line(t.b,t.c).draw( color )
+      Line(t.c,t.a).draw( color )
+endClass
+
+#=====================================================================
+# Circle
+#=====================================================================
+compound Circle( Vector2 position, Real64 radius )
+  # Defines an abstract circle as 'position' and 'radius'.
+  # Note: Circle drawing requires many operations!
+
+singleton class CircleManager
+  # Contains methods for operating on Circle compounds.
+  METHODS
+    method enclosing( Circle circle, Vector2 v ).Circle:
+      # Creates a circle just big enough to contain the given circle
+      # and vector.
+      #
+      # Example:
+      #   circle = circle.enclosing(pt)
+      local var m2 = (v - circle.position).magnitude_squared
+      local var r = circle.radius
+      if (m2 > r*r) return Circle( circle.position, sqrt(m2) )
+      else return circle
+
+    method enclosing( Circle c1, Circle c2 ).Circle:
+      # Creates a circle just big enough to contain both given circles.
+      #
+      # Example:
+      #   hit_zone = body.bounding_circle.enclosing(left_wing).enclosing(right_wing)
+      local Line line( c1.position, c2.position )
+      local var center = line.center
+      local var r = (c1.position - center).magnitude
+      r += max( c1.radius, c2.radius )
+      return Circle( center, r )
+
+    method to_String( Circle circle ).String:
+      # Returns a string representation of 'circle'.
+      return "@$,$R" (circle.position,circle.radius)
+
+    method point_at( Circle circle, Radians angle ).Vector2:
+      # Returns the point along the edge of the circle at the given angle.
+      #
+      # Example:
+      #   one_oclock = circle.point_at( 2*pi/12 )
+      return circle.position + Vector2( circle.radius, angle )
+
+    method point_at( Circle circle, Degrees angle ).Vector2:
+      # Returns the point along the edge of the circle at the given angle.
+      #
+      # Example:
+      #   one_oclock = circle.point_at( Degrees(360.0/12.0) )
+      return circle.position + Vector2( circle.radius, angle )
+
+    method op+( Circle circle, Vector2 v ).Circle:
+      # Shifts the position of 'circle' by +v.
+      #
+      # Examples:
+      #   circle2 = circle1 + offset
+      #   circle += offset
+      return Circle( circle.position + v, circle.radius )
+
+    method op-( Circle circle, Vector2 v ).Circle:
+      # Shifts the position of 'circle' by -v.
+      #
+      # Examples:
+      #   circle2 = circle1 - offset
+      #   circle -= offset
+      return Circle( circle.position - v, circle.radius )
+
+    method op*( Circle circle, Real64 n ).Circle:
+      # Scales the position and size of 'circle' by 'n'.
+      #
+      # Examples:
+      #   circle2 = circle1 * k
+      #   circle *= k
+      return Circle( circle.position * n, circle.radius * n )
+
+    method op/( Circle circle, Real64 n ).Circle:
+      # Scales the position and size of 'circle' by '1/n'.
+      #
+      # Examples:
+      #   circle2 = circle1 / k
+      #   circle /= k
+      return Circle( circle.position / n, circle.radius / n )
+
+    method scaled( Circle circle, Real64 factor ).Circle:
+      # Scales the radius of 'circle' by 'factor' without affecting
+      # the position.
+      #
+      # Example:
+      #   circle = circle.scaled(2)
+      return Circle( circle.position, circle.radius * factor )
+
+    method x1( Circle circle ).Real64:
+      # Returns the leftmost coordinate of the given circle.
+      #
+      # Example:
+      #   println( circle.x1 )
+      return circle.position.x - circle.radius
+
+    method y1( Circle circle ).Real64:
+      # Returns the topmost coordinate of the given circle.
+      #
+      # Example:
+      #   println( circle.y1 )
+      return circle.position.y - circle.radius
+
+    method x2( Circle circle ).Real64:
+      # Returns the rightmost coordinate of the given circle.
+      #
+      # Example:
+      #   println( circle.x2 )
+      return circle.position.x + circle.radius
+
+    method y2( Circle circle ).Real64:
+      # Returns the bottommost coordinate of the given circle.
+      #
+      # Example:
+      #   println( circle.y2 )
+      return circle.position.y + circle.radius
+
+    method contains( Circle c, Vector2 v ).Logical:
+      return (v - c.position).magnitude <= c.radius
+
+    method intersects( Circle circle, Line line ).Logical:
+      # Returns true if 'circle' and 'line' intersect.
+      #
+      # Example:
+      #   if (circle1.intersects(line)) ...
+      return line.intersects(circle)
+
+    method intersection( Circle circle, Line line ).Line:
+      # Returns the subset of the line that lies inside the circle or
+      # Line.invalid if the line is completely outside of the circle.
+      return line.intersection(circle)
+
+    method intersects( Circle circle, Box box ).Logical:
+      # Returns true if 'circle' and 'box' intersect.
+      return Quad(box).intersects(circle)
+
+    method intersects( Circle circle, Quad quad ).Logical:
+      # Returns true if 'circle' and 'quad' intersect.
+      return quad.intersects(circle)
+
+    method intersects( Circle c1, Circle c2 ).Logical:
+      # Returns "true" if c1 and c2 intersect.
+      #
+      # Example:
+      #   if (circle1.intersects(circle2)) ...
+      local var m = c1.position - c2.position
+      return m.dot(m) < (c1.radius + c2.radius)^2
+
+    method bounding_box( Circle circle ).Box:
+      # Returns a box just big enough to contain the given circle.
+      #
+      # Example:
+      #   local Box bounds = circle.bounding_box
+      local var box = circle.radius
+      return Box( Corners(-box,-box,box,box) ) + circle.position
+
+    method draw( Circle circle, Color color, Real64 segments=(1.0/12.0) ):
+      # Draws the given circle to the screen in the given color.
+      #
+      # Parameters:
+      #   circle
+      #     The circle to draw, centered at "circle.position" and with
+      #     pixel radius "circle.radius".
+      #
+      #   color
+      #     The color to draw the circle in.
+      #
+      #   segments [default: (1.0/12.0)]
+      #     If whole - the number of segements.  
+      #     If fractional -  the number of segements is dynamically determined 
+      #     as this fraction of the circle's circumference.
+      #
+      # Example:
+      #   Circle(view.size/2, 16).draw( Color.blue )
+      if (segments < 1.0)
+        local var circ = circle.radius * 2 * pi
+        segments = floor( circ * segments )
+      endIf
+      local Real64 angle_step = pi * 2 / segments
+      if (angle_step > pi/8) angle_step = pi/8
+      local Vector2 first = circle.point_at(Radians(0))
+      local Vector2 pt1 = first
+      forEach (angle in angle_step..2*pi step angle_step)
+        local Vector2 pt2 = circle.point_at(Radians(angle))
+        Line(pt1,pt2).draw( color )
+        pt1 = pt2
+      endForEach
+      Line(pt1,first).draw( color )
+
+    method fill( Circle circle, Color color, Real64 segments=(1.0/12.0) ):
+      # Fills the given circle with the given color.
+      #
+      # Parameters:
+      #   circle
+      #     The circle to fill, centered at "circle.position" and with
+      #     pixel radius "circle.radius".
+      #
+      #   color
+      #     The color to draw the circle in.
+      #
+      #   segments [default: (1.0/12.0)]
+      #     If whole - the number of segements.  
+      #     If fractional -  the number of segements is dynamically determined 
+      #     as this fraction of the circle's circumference.
+      #
+      # Example:
+      #   Circle(view.size/2, 16).draw( Color.blue )
+      if (segments < 1.0)
+        local var circ = circle.radius * 2 * pi
+        segments = floor( circ * segments )
+      endIf
+      local Real64 angle_step = pi * 2 / segments
+      if (angle_step > pi/8) angle_step = pi/8
+      local Vector2 first = circle.point_at(Radians(0))
+      local Vector2 pt1 = first
+      forEach (angle in angle_step..2*pi step angle_step)
+        local Vector2 pt2 = circle.point_at(Radians(angle))
+        Triangle(pt1,pt2,circle.position).fill(color)
+        pt1 = pt2
+      endForEach
+      Triangle(pt1,first,circle.position).fill( color )
+endClass
+

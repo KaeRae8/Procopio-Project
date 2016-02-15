@@ -1,0 +1,251 @@
+#=====================================================================
+# script.slag
+#
+# 3.5.0 (2011.06.18)
+#
+# --------------------------------------------------------------------
+#
+# Copyright 2010 Plasmaworks LLC
+#
+#   http://plasmaworks.com/plasmacore
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); 
+# you may not use this file except in compliance with the License. 
+# You may obtain a copy of the License at 
+#
+#   http://www.apache.org/licenses/LICENSE-2.0 
+#
+# Unless required by applicable law or agreed to in writing, 
+# software distributed under the License is distributed on an 
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, 
+# either express or implied. See the License for the specific 
+# language governing permissions and limitations under the License.
+#
+#=====================================================================
+class Cmd()
+  PROPERTIES
+    active : Logical
+      # Internal use.
+
+    next : Cmd
+      # The next command to run after this command.
+
+  METHODS
+    method chain( Cmd cmd ).Cmd:
+      # Schedules the given command to execute after all the
+      # other commands in this command's script.  Returns this
+      # object for call chaining.
+      local var cur = this
+      while (cur.next?) cur .= next
+      cur.next = cmd
+      return this
+
+    method on_activate:
+      # Called just before execute() is called for the first time.
+
+    method execute.Cmd:
+      # Return "this" to yield execution of the script and run
+      # this command again on the next script update or "next"
+      # otherwise.
+      return next
+endClass
+
+class CmdFn<<$code>> : Cmd
+  # A Script command that executes a snippet of code once.
+  METHODS
+    method execute.Cmd:
+      $code
+      return next
+endClass
+
+
+class Script() : Cmd
+  PROPERTIES
+    current    : Cmd
+    concurrent : Cmd[]
+
+  METHODS
+    method add( Cmd cmd ).Script
+      # Adds the given command chain to the end of this script to be
+      # excecuted sequentially.  Use attach() instead of concurrent
+      # execution is desired.
+      if (current?)
+        local var cur = current
+        while (cur.next?) cur .= next
+        cur.next = cmd
+      else
+        current = cmd
+      endIf
+
+      return this
+
+    method push( Cmd cmd ).Script
+      # Inserts the given command chain to happen first followed by any 
+      # previously existing command chain.
+      local var cur = cmd
+      while (cur.next?) cur .= next
+      cur.next = current
+      current = cmd
+      return this
+
+    method attach( Cmd cmd ).Script
+      # Attaches the given command chain to be executed concurrently with
+      # any existing commands.  Use add() instead if sequential execution
+      # is desired.
+      if (concurrent is null) concurrent = Cmd[](1)
+      concurrent.add( cmd )
+      return this
+
+    method clear:
+      # Removes all remaining commands.
+      current = null
+      if (concurrent?) concurrent.clear
+
+    method finished.Logical:
+      return (current is null and (concurrent is null or concurrent.count == 0))
+
+    method update.Logical:
+      # Executes commands until a command returns itself or null.
+      # Returns ''false'' if all commands have been processed.
+      local var still_running = false
+
+      if (current?)
+        still_running = true
+
+        while (current?)
+          if (not current.active)
+            current.active = true
+            current.on_activate
+          endIf
+          local var nxt = current.execute
+
+          if (nxt is current)
+            # If the command stays the same, only execute it once.
+            escapeWhile
+          else 
+            # Otherwise keep executing.
+            current.active = false
+            current = nxt
+          endIf
+
+        endWhile
+      endIf
+
+      if (concurrent? and concurrent.count?)
+        still_running = true
+
+        local var r = 0
+        local var w = 0
+        while (r < concurrent.count)
+          local var cmd = concurrent[r]
+          ++r
+
+          while (cmd?)
+            if (not cmd.active) cmd.active = true; cmd.on_activate
+
+            local var nxt = cmd.execute
+            if (nxt is cmd)
+              escapeWhile
+            else
+              cmd.active = false
+              cmd = nxt
+            endIf
+          endWhile
+
+          if (cmd?)
+            concurrent[w] = cmd
+            ++w
+          endIf
+
+        endWhile
+
+        concurrent.discard_from(w)
+      endIf
+
+      return still_running
+
+    method execute.Cmd:
+      # Allows a script to be executed as a command in another script.
+      if (update) return this
+      return      next
+endClass
+
+
+class CmdGroup : Cmd
+  # Add multiple commands to this set to have them executed concurrently
+  # instead of sequentially.
+  #
+  # Example:
+  #
+  #   script.add( CmdGroup(cmd1,cmd2) )
+  PROPERTIES
+    commands(4) : Cmd[]
+
+  METHODS
+    method init( Cmd cmd1, Cmd cmd2=null, Cmd cmd3=null, Cmd cmd4=null ):
+      commands.add(cmd1)
+      if (cmd2?) commands.add(cmd2)
+      if (cmd3?) commands.add(cmd3)
+      if (cmd4?) commands.add(cmd4)
+
+    method add( Cmd c ).CmdGroup:
+      commands.add(c)
+      return this
+
+    method execute.Cmd:
+      local var r = 0
+      local var w = 0
+      while (r < commands.count)
+        local var cmd = commands[r]
+        ++r
+
+        if (not cmd.active) cmd.active = true; cmd.on_activate
+
+        cmd .= execute
+
+        if (cmd?)
+          commands[w] = cmd
+          ++w
+        endIf
+
+      endWhile
+
+      commands.discard_from(w)
+
+      if (commands.count?) return this
+      else                 return next
+endClass
+
+class CmdInterval : Cmd
+  # A generic time interval command that automatically runs for a specified 
+  # duration (originally in seconds, translated into ticks).  Extend, override
+  # execute() to return prior.execute() at the end, and use progress() if 
+  # desired to perform an action based on the overall progress 
+  # (0.0 <= progress < 1.0).
+  PROPERTIES
+    cur_ticks   : Int32
+    total_ticks : Int32
+
+  METHODS
+    method init( Real64 seconds ):
+      # Call this (prior.init(num_seconds)) from your extended initializer.
+      total_ticks = seconds * 60
+
+    method update:
+      # Called on each tick of execution.  Override this.
+
+    method progress.Real64:
+      # Returns 0.0 <= progress < 1.0.
+      return Real64(cur_ticks) / total_ticks
+
+    method execute.Cmd:
+      update
+      ++cur_ticks
+      if (cur_ticks < total_ticks) return this
+      else                     return next
+endClass
+
+class CmdWait : CmdInterval
+  # An entity that waits for the given number of seconds.
+endClass
+

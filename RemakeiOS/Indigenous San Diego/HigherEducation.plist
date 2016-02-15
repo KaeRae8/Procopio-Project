@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<array>
+	<dict>
+		<key>Category</key>
+		<string>Higher Education</string>
+		<key>Site</key>
+		<string>American Indian Studies at SDSU</string>
+		<key>Latitude</key>
+		<string>32.771957</string>
+		<key>Longitude</key>
+		<string>-177.072727</string>
+		<key>General Info</key>
+		<string>San Diego State University (SDSU) was founded in 1897 and is the largest education institution in San Diego County. SDSU has several Indigenous programs including: American Indian Studies, the American Indian Recruitment program, Elymash Yuuchaap Indigenous Scholars and Leaders program, and the Native American Student Alliance (NASA). SDSU&apos;s Love Library holds over 3,500 books and media, and over 22,000 articles of dissertations regarding Native Americans.</string>
+		<key>Fees</key>
+		<string>None</string>
+		<key>Hours</key>
+		<string>N/A</string>
+		<key>Website</key>
+		<string></string>
+	</dict>
+	<dict>
+		<key>Category</key>
+		<string>Higher Education</string>
+		<key>Site</key>
+		<string>CA Indian Culture and Sovereignty Center at CSUSM</string>
+		<key>Latitude</key>
+		<string>33.129191</string>
+		<key>Longitude</key>
+		<string>-117.159137</string>
+		<key>General Info</key>
+		<string>The CICSC&apos;s mission is to foster collaborative research and community service relationships between the faculty, staff, and students of CSUSM and members of local Tribal communities, for the purpose of developing and conducting research projects that support the maintenance of sovereignty and culture within those communities. California State University San Marcos (CSUSM) was established in 1989 and has several American Indian programs including: the American Indian Student Alliance, an American Indian Studies Department, a Native Advisory Council, Tribal Liaison and the California Indian Culture &amp; Sovereignty Center. The annual San Diego American Indian Film Festival is also held on the campus of CSUSM.</string>
+		<key>Fees</key>
+		<string>None</string>
+		<key>Hours</key>
+		<string>N/A</string>
+		<key>Website</key>
+		<string>www.csusm.edu/cicsc</string>
+	</dict>
+	<dict>
+		<key>Category</key>
+		<string>Higher Education</string>
+		<key>Site</key>
+		<string>Ethnic Studies at UCSD</string>
+		<key>Latitude</key>
+		<string>32.875201</string>
+		<key>Longitude</key>
+		<string>-117.235811</string>
+		<key>General Info</key>
+		<string>The Universiry of California, San Diego (UCSD) is recognized as one of the top 15 research universities worldwide. There are two main Native groups on the UCSD campus. The Native American Council (NAC) representing staff, faculty, and students works to promote the Native American presence on the university&apos;s campus. The Native American Student Alliance (NASA) at UCSD is a Native student organization that focuses on the Native American communities, culture, and issues. NASA facilitates the education surrounding Native issues at UCSD, while maintaining a community and a safe space for Native students on campus.</string>
+		<key>Fees</key>
+		<string>None</string>
+		<key>Hours</key>
+		<string>N/A</string>
+		<key>Website</key>
+		<string>www.nativestudents.com</string>
+	</dict>
+	<dict>
+		<key>Category</key>
+		<string>Higher Education</string>
+		<key>Site</key>
+		<string>Kumeyaay Community College</string>
+		<key>Latitude</key>
+		<string>32.778118</string>
+		<key>Longitude</key>
+		<string>-116.840099</string>
+		<key>General Info</key>
+		<string>Kumeyaay Community College is located on the Sycuan Reservation near El Cajon, CA. The mission of Kumeyaay Community College is to promote a quality education for the Kumeyaay / Diegueno Nation, California Native American Indians, and other individuals interested in a unique and supportive educational experience. A primary focus of KCC is to strike a healthy balance between traditional Indigenous and Western systems of knowledge. For example, KCC focuses on educational areas such as Kumeyaay language, history, ethnobotany, and arts such as basketry and pottery.</string>
+		<key>Fees</key>
+		<string>None</string>
+		<key>Hours</key>
+		<string>Variable</string>
+		<key>Website</key>
+		<string>www.kumeyaaycommunitycollege.com</string>
+	</dict>
+	<dict>
+		<key>Category</key>
+		<string>Higher Education</string>
+		<key>Site</key>
+		<string>Palomar Community College</string>
+		<key>Latitude</key>
+		<string>33.163027</string>
+		<key>Longitude</key>
+		<string>-117.161768</string>
+		<key>General Info</key>
+		<string>Palomar College is a community college located in Northern San Diego County and was established in 1946. Palomar College has an American Indian Studies/American Studies department as well as a Native American Student Alliance. Palomar College often partners with local tribes to provide college credit courses in local Native languages and history within the tribal communities.</string>
+		<key>Fees</key>
+		<string>None</string>
+		<key>Hours</key>
+		<string>N/A</string>
+		<key>Website</key>
+		<string>http://www2.palomar.edu/pages/ais/</string>
+	</dict>
+	<dict>
+		<key>Category</key>
+		<string>Higher Education</string>
+		<key>Site</key>
+		<string>Sycuan Institute on Tribal Gaming</string>
+		<key>Latitude</key>
+		<string>32.771957</string>
+		<key>Longitude</key>
+		<string>-117.072727</string>
+		<key>General Info</key>
+		<string>As part of the L. Robert Payne School of Hospitality &amp; Tourism Management at San Diego State University, the Sycuan Institute on Tribal Gaming (SITG) focuses on research, policy studies, and education related to the area of tribal gaming management. The institute, centered in the largest tribal gaming community in the world, is geared toward studying tribal gaming within the broader industry of hospitality and tourism management.</string>
+		<key>Fees</key>
+		<string>None</string>
+		<key>Hours</key>
+		<string>N/A</string>
+		<key>Website</key>
+		<string>http://htm.sdsu.edu/web/index.php/centers/sycuan</string>
+	</dict>
+</array>
+</plist>

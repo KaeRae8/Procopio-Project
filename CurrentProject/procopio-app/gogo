@@ -1,0 +1,39 @@
+#!/bin/bash
+
+if [ -e "upgrade/new_project" ]; then
+  cp -r upgrade/new_project/* .
+  rm -r upgrade/new_project
+  if [ -e "build" ]; then rm -r "build"; fi
+  if [ -e "dist" ]; then rm -r "dist"; fi
+
+  echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
+  echo "                          PROJECT UPGRADED                           "
+  echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
+fi
+
+if [ `uname` == "Darwin" ]; then
+  bin_dir="bin/mac"
+  bin_files="bin/mac/*"
+  gogo_exe="bin/mac/gogo"
+
+  chmod a+rx $bin_files
+  $gogo_exe -bin $bin_dir -src_path "bin;libraries/slag/standard" $@
+
+else
+  gogo_exe="gogo"
+
+  if [ "`which slag`" == "" ]; then
+    echo "*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*ATTENTION*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*"
+    echo "On Linux you must first install the Slag language using Mercurial or"
+    echo "by downloading a source snapshot from:"
+    echo ""
+    echo "  http://code.google.com/p/slag"
+    echo ""
+    echo "Retry this command once Slag is installed."
+    echo "*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*"
+    exit 1
+  fi
+
+  $gogo_exe -src_path "bin;libraries/slag/standard" $@
+fi
+

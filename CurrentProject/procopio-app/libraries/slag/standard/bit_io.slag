@@ -1,0 +1,250 @@
+#=====================================================================
+# bit_io.slag
+#
+# Slag Standard Library
+# v3.5.0 (2011.06.18)
+#
+# Allows reading and writing bits at a time instead of characters
+# at a time.
+#
+# Primary classes:
+#   BitReader - wraps an existing Reader<<Char>>
+#   BitWriter - wraps an existing Writer<<Char>>
+#
+# Example:
+#   [include "bit_io.slag"]
+#   ...
+#
+#   # Write a set of values (0-15) to a file with 4 bits per value.
+#   local BitWriter writer( File("packed.bin") )
+#   forEach (n in data) writer.write(n,4)
+#   writer.close
+#
+#   # Read 4-bit values from a file.
+#   local BitReader reader( File("packed.bin") )
+#   while (reader.has_another(4)) println( reader.read(4) )
+#   reader.close
+# 
+# --------------------------------------------------------------------
+#
+# Copyright 2010 Plasmaworks LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); 
+# you may not use this file except in compliance with the License. 
+# You may obtain a copy of the License at 
+#
+#   http://www.apache.org/licenses/LICENSE-2.0 
+#
+# Unless required by applicable law or agreed to in writing, 
+# software distributed under the License is distributed on an 
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, 
+# either express or implied. See the License for the specific 
+# language governing permissions and limitations under the License.
+#
+#=====================================================================
+
+class BitReader : Reader<<Char>>
+  # A BitReader wraps an existing Reader<<Char>> and is able to read
+  # in 1-bit to 32-bit values at a time under normal operations.  
+  # There are special method variants capable of reading in 64-bit 
+  # values.
+  PROPERTIES
+    src          : Reader<<Char>>
+      # The backing source of characters.
+
+    bit_buffer   : Int64
+      # Internal use.
+
+    bit_count    : Int32
+      # Internal use.
+
+  METHODS
+    method init( src ):
+      # Initializes this BitReader to read from the given character 
+      # reader.
+
+    method fill_buffer( Int32 to_n_bits ):
+      # Internal use.
+      while (bit_count < to_n_bits and src.has_another)
+        bit_buffer = bit_buffer.left_shifted(8) | (src.read & 255)
+        bit_count += 8
+      endWhile
+
+    method has_another.Logical: 
+      # Returns true if there are at least 8 bits left to read.
+      #
+      # See also: has_another(Int32)
+      fill_buffer( 8 )
+      return bit_count >= 8
+
+    method has_another( Int32 n_bits ).Logical: 
+      # Returns true if there are at least 'n_bits' left to read.  'n_bits' 
+      # must be 1..32.
+      fill_buffer( n_bits )
+      return bit_count >= n_bits
+
+    method peek.Char:
+      # Returns the next 8-bit value that will be returned by read().
+      return peek(8).(Char)
+
+    method peek( Int32 n_bits ).Int32:
+      # Returns the next 'n_bits' value that will be returned by 
+      # read(n_bits).
+      fill_buffer( n_bits )
+      if (bit_count < n_bits) throw NoNextValueError()
+      local var mask = Int64(1).left_shifted(n_bits) - 1
+      return Int32((bit_buffer.right_shifted(bit_count-n_bits)) & mask)
+
+    method peek_bit.Int32:
+      # Returns the bit of input that will be returned by read_bit.
+      return peek(1)
+
+    method read.Char:
+      # Returns the next 8 bits as a Char.
+      local var result = peek
+      bit_count -= 8
+      return result
+
+    method read( Int32 n_bits ).Int32:
+      # Returns the next value of size 'n_bits', giving a value 
+      # between 0 and n_bits-1.
+      #
+      # Example:
+      #   ...
+      #   if (bits.peek == 0b01011000)
+      #     println( bits.read(3) )  # prints "2" (010)
+      #     println( bits.read(2) )  # prints "3" (11)
+      #     println( bits.read(3) )  # prints "0" (000)
+      #   endIf
+      local var result = peek( n_bits )
+      bit_count -= n_bits
+      return result
+
+    method read_low_high( Int32 n_bits ).Int32:
+      # Returns the next n_bits as a value.  n_bits must be 16 or 32 
+      # bits.  This method assumes that the first 8 bits to be read 
+      # are the least significant byte of the answer (bits 7:1) and 
+      # the last 8 bits are the most significant byte of the number 
+      # (e.g. bits 31:24).
+      #
+      # Requires:
+      #   n_bits == 16 or n_bits == 32
+      which (n_bits)
+        case 32:
+          local var result = read_low_high(16)
+          return result | read_low_high(16).left_shifted(16)
+
+        case 16:
+          local var result = read
+          return result | read.left_shifted(8)
+
+        others: throw InvalidOperandError( "n_bits","$"(n_bits) )
+      endWhich
+
+    method read_bit.Int32:
+      # Returns the next bit of input.
+      return Int32( read(1) )
+
+    method read_Int64.Int64:
+      # Returns the next 64 bits as an Int64 assumed to be in 
+      # high-low byte order.
+      local Int64 a = Int64(read(32)).left_shifted(32)
+      local Int64 b = (Int64(read(32)) & Int64(0xffffffff))
+      return a | b
+
+    method read_Int64_low_high.Int64:
+      # Returns the next 64 bits as an Int64 assumed to be in 
+      # low-high byte order.
+      local Int64 result = Int64(read_low_high(32)) & Int64(0xffffffff)
+      return result | Int64(read_low_high(32)).left_shifted(32)
+endClass
+
+
+class BitWriter : Writer<<Char>>
+  # A BitWriter wraps an existing Writer<<Char>> and allows 
+  # arbitrarily-sized values of 1-32 bits to be written. 64-bit values
+  # may also be written using a separate call.
+  #
+  # The bits are buffered and groups of 8 at a time (single bytes)
+  # are written to the backing Char writer. 
+  PROPERTIES
+    dest : Writer<<Char>>
+      # The backing character writer that a BitWriter outputs to.
+
+    bit_buffer : Int64
+      # Internal use.
+
+    bit_count  : Int32
+      # Internal use.
+
+  METHODS
+    method init( dest ):
+      # Initializes this BitWriter to output to the given writer.
+
+    method init( Writable<<Char>> writable ):
+      # Initializes this BitWriter to output to the given writable
+      # object.
+      init( writable.create_writer )
+
+    method write( Char value ):
+      # Writes 'value' in 8 bits.
+      write( Int64(value), 8 )
+
+    method write( Int32 value, Int32 n_bits ):
+      # Writes 'value' in 'n_bits' using high-low byte order.
+      value &= (Int64(1).left_shifted(n_bits) - 1)
+      bit_buffer = bit_buffer.left_shifted( n_bits ) | value
+      bit_count += n_bits
+      while (bit_count >= 8)
+        dest.write( Char((bit_buffer.right_shifted(bit_count-8))&255) )
+        bit_count -= 8
+      endWhile
+
+    method write_low_high( Int32 value, Int32 n_bits ):
+      # Writes 'value' in 'n_bits' using low-high byte order.
+      # 'n_bits' must be 16 or 32.  The least-significant byte
+      # is written first and the most significant byte is written
+      # last.
+      #
+      # Requires:
+      #   n_bits == 16 or n_bits == 32
+      which (n_bits)
+        case 32:
+          write_low_high( value, 16 )
+          write_low_high( value.right_shifted(16), 16 )
+
+        case 16:
+          write( value, 8 )
+          write( value.right_shifted(8), 8 )
+
+        others: throw InvalidOperandError( "n_bits", "$"(n_bits) )
+      endWhich
+
+    method write_bit( Int32 b ): 
+      # Writes 'b' (0 or 1) as a single bit.
+      write( b, 1 )
+
+    method write_Int64( Int64 value ):
+      # Writes 'value' in 64 bits using high-low byte order.
+      write( value.right_shifted(32), 32 )
+      write( value, 32 )
+
+    method write_Int64_low_high( Int64 value ):
+      # Writes 'value' in 64 bits using low-high byte order.
+      write_low_high( value, 32 )
+      write_low_high( value.right_shifted(32), 32 )
+
+    method flush:
+      # If there are any buffered bits that haven't been written
+      # to the backing writer yet, flush() writes out enough zero
+      # bits to make eight total and writes the resulting byte
+      # of information.
+      if (bit_count > 0) write( 0, 8 - bit_count )
+
+    method close:
+      # Flushes and closes this BitWriter.
+      flush
+      dest.close
+endClass
+
+
